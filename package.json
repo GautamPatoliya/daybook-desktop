@@ -1,0 +1,123 @@
+{
+  "name": "daybook",
+  "version": "1.0.0",
+  "description": "Daybook — offline daily work tracker for office teams",
+  "author": "Gautam Patoliya",
+  "license": "UNLICENSED",
+  "private": true,
+  "main": "dist-electron/electron/main.js",
+  "scripts": {
+    "dev:renderer": "next dev renderer -p 41763",
+    "dev:electron": "tsc -p electron/tsconfig.json && electron .",
+    "dev": "npm run build:electron && concurrently -k \"next dev renderer -p 41763\" \"wait-on http://127.0.0.1:41763 && cross-env ELECTRON_DEV=1 electron .\"",
+    "build:renderer": "next build renderer",
+    "build:electron": "tsc -p electron/tsconfig.json",
+    "build": "npm run build:renderer && npm run build:electron",
+    "dist": "npm run build && electron-builder --publish never",
+    "dist:win": "npm run build && electron-builder --win --publish never",
+    "dist:mac": "npm run build && electron-builder --mac --publish never",
+    "publish:github": "npm run build && electron-builder --publish always",
+    "postinstall": "electron-builder install-app-deps"
+  },
+  "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/utilities": "^3.2.2",
+    "@iconify/react": "^6.0.2",
+    "auto-launch": "^5.0.6",
+    "electron-updater": "^6.6.2",
+    "next": "^15.3.4",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@types/auto-launch": "^5.0.5",
+    "@types/node": "^22.15.30",
+    "@types/react": "^19.1.6",
+    "@types/react-dom": "^19.1.6",
+    "concurrently": "^9.1.2",
+    "cross-env": "^7.0.3",
+    "electron": "^35.5.1",
+    "electron-builder": "^26.0.12",
+    "typescript": "^5.8.3",
+    "wait-on": "^8.0.3"
+  },
+  "optionalDependencies": {
+    "node-llama-cpp": "^3.10.0"
+  },
+  "build": {
+    "appId": "com.bcreative.worktasktracker",
+    "productName": "Daybook",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "icon": "build/icon.png",
+    "files": [
+      "dist-electron/**/*",
+      "renderer/out/**/*",
+      "package.json",
+      "CHANGELOG.md"
+    ],
+    "extraResources": [
+      {
+        "from": "CHANGELOG.md",
+        "to": "CHANGELOG.md"
+      }
+    ],
+    "asarUnpack": [
+      "**/node_modules/node-llama-cpp/**/*"
+    ],
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "YOUR_GITHUB_USER",
+        "repo": "daybook"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "artifactName": "${productName}-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Daybook",
+      "uninstallDisplayName": "Daybook",
+      "deleteAppDataOnUninstall": false,
+      "runAfterFinish": true,
+      "installerSidebar": "build/nsis-sidebar.png",
+      "uninstallerSidebar": "build/nsis-sidebar.png"
+    },
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "category": "public.app-category.productivity",
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
+    },
+    "dmg": {
+      "title": "Daybook ${version}",
+      "iconSize": 120,
+      "contents": [
+        {
+          "x": 130,
+          "y": 150
+        },
+        {
+          "x": 410,
+          "y": 150,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
+    }
+  }
+}

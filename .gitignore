@@ -1,0 +1,12 @@
+node_modules/
+dist-electron/
+renderer/out/
+renderer/.next/
+release/
+*.log
+.DS_Store
+.env
+.env.*
+*.pfx
+*.p12
+*.key
