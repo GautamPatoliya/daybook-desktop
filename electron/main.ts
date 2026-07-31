@@ -167,12 +167,23 @@ function startReminderLoop() {
 }
 
 function setupUpdater() {
-  if (isDev) return;
-  autoUpdater.autoDownload = true;
-  autoUpdater.autoInstallOnAppQuit = true;
+  // Dev builds are unpackaged; force the GitHub feed via dev-app-update.yml so
+  // "Check for updates" can be verified without a full installer each time.
+  // Do not auto-download/install from `npm run dev` — that path is for detection only.
+  autoUpdater.logger = console;
+  autoUpdater.autoDownload = !isDev;
+  autoUpdater.autoInstallOnAppQuit = !isDev;
+  if (isDev) {
+    autoUpdater.forceDevUpdateConfig = true;
+  }
+
   autoUpdater.on('update-available', (info) => {
     markUpdateReady(false);
     mainWindow?.webContents.send('updater:event', { type: 'available', info });
+  });
+  autoUpdater.on('update-not-available', (info) => {
+    markUpdateReady(false);
+    mainWindow?.webContents.send('updater:event', { type: 'not-available', info });
   });
   autoUpdater.on('download-progress', (progress) => {
     mainWindow?.webContents.send('updater:event', { type: 'progress', progress });
@@ -185,14 +196,17 @@ function setupUpdater() {
     markUpdateError(err.message);
     mainWindow?.webContents.send('updater:event', { type: 'error', message: err.message });
   });
+
   void autoUpdater.checkForUpdates().catch((err) => {
     markUpdateError((err as Error).message);
   });
-  setInterval(() => {
-    void autoUpdater.checkForUpdates().catch((err) => {
-      markUpdateError((err as Error).message);
-    });
-  }, 4 * 60 * 60 * 1000);
+  if (!isDev) {
+    setInterval(() => {
+      void autoUpdater.checkForUpdates().catch((err) => {
+        markUpdateError((err as Error).message);
+      });
+    }, 4 * 60 * 60 * 1000);
+  }
 }
 
 app.whenReady().then(async () => {

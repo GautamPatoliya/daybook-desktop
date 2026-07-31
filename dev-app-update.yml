@@ -1,0 +1,4 @@
+provider: github
+owner: GautamPatoliya
+repo: daybook-desktop
+updaterCacheDirName: daybook-updater

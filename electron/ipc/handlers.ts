@@ -318,31 +318,83 @@ export function registerIpc(deps: Deps) {
   ipcMain.handle('updater:status', () => ({
     ready: updateReady,
     error: lastUpdateError ? friendlyUpdateError(lastUpdateError) : null,
+    packaged: app.isPackaged,
+    version: app.getVersion(),
+    updaterActive: autoUpdater.isUpdaterActive(),
   }));
 
   ipcMain.handle('updater:check', async () => {
     try {
+      if (!autoUpdater.isUpdaterActive()) {
+        const hint = app.isPackaged
+          ? 'The updater is disabled in this build.'
+          : 'Updates only run in a packaged install (or with forceDevUpdateConfig). Use the Setup/.dmg build to test end-to-end.';
+        return {
+          ok: false,
+          error: hint,
+          ready: false,
+          packaged: app.isPackaged,
+          version: app.getVersion(),
+        };
+      }
+
       const result = await autoUpdater.checkForUpdates();
       lastUpdateError = null;
-      const hasUpdate = Boolean(result?.updateInfo);
+
+      // checkForUpdates() returns null when the updater is inactive.
+      // When active, always prefer isUpdateAvailable — updateInfo is present even when up to date.
+      if (!result) {
+        return {
+          ok: false,
+          error:
+            'Updater did not run. Install Daybook from the Setup/.dmg package to check for updates.',
+          ready: false,
+          packaged: app.isPackaged,
+          version: app.getVersion(),
+        };
+      }
+
+      const remoteVersion = result.updateInfo?.version || null;
+      const hasUpdate = Boolean(result.isUpdateAvailable);
+      const downloading = hasUpdate && Boolean(result.downloadPromise);
+
       return {
         ok: true,
-        updateInfo: result?.updateInfo || null,
+        updateInfo: remoteVersion ? { version: remoteVersion } : null,
+        isUpdateAvailable: hasUpdate,
         ready: updateReady,
+        packaged: app.isPackaged,
+        version: app.getVersion(),
         message: hasUpdate
           ? updateReady
-            ? 'An update is ready to install.'
-            : 'An update was found and is downloading.'
-          : 'You’re on the latest version.',
+            ? `Version ${remoteVersion} is ready to install.`
+            : downloading
+              ? `Version ${remoteVersion} found — downloading…`
+              : `Version ${remoteVersion} is available.`
+          : `You’re on the latest version (${app.getVersion()}${
+              remoteVersion ? `; feed ${remoteVersion}` : ''
+            }).`,
       };
     } catch (err) {
       const raw = (err as Error).message;
       markUpdateError(raw);
-      return { ok: false, error: friendlyUpdateError(raw), ready: false };
+      return {
+        ok: false,
+        error: friendlyUpdateError(raw),
+        ready: false,
+        packaged: app.isPackaged,
+        version: app.getVersion(),
+      };
     }
   });
 
   ipcMain.handle('updater:install', () => {
+    if (!app.isPackaged) {
+      return {
+        ok: false,
+        error: 'Install from a packaged build before applying updates.',
+      };
+    }
     if (!updateReady) {
       return { ok: false, error: 'No update is ready to install yet.' };
     }

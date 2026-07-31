@@ -83,14 +83,23 @@ export const api = {
   analyticsCsv: () => invoke<string>('analytics:csv'),
   changelog: () => invoke<string>('changelog:get'),
   updaterStatus: () =>
-    invoke<{ ready: boolean; error: string | null }>('updater:status'),
+    invoke<{
+      ready: boolean;
+      error: string | null;
+      packaged?: boolean;
+      version?: string;
+      updaterActive?: boolean;
+    }>('updater:status'),
   checkUpdates: () =>
     invoke<{
       ok: boolean;
-      updateInfo?: unknown;
+      updateInfo?: { version?: string } | null;
+      isUpdateAvailable?: boolean;
       error?: string;
       ready?: boolean;
       message?: string;
+      packaged?: boolean;
+      version?: string;
     }>('updater:check'),
   installUpdate: () => invoke<{ ok: boolean; error?: string }>('updater:install'),
   listDates: () => invoke<string[]>('dates:list'),

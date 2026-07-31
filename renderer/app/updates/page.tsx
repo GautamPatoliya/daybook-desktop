@@ -5,12 +5,15 @@ import { Icon } from '@iconify/react';
 import { api } from '../../lib/api';
 import { I } from '../../lib/icons';
 
-type Phase = 'idle' | 'checking' | 'up-to-date' | 'downloading' | 'ready' | 'error' | 'unavailable';
+type Phase = 'idle' | 'checking' | 'up-to-date' | 'available' | 'downloading' | 'ready' | 'error' | 'unavailable';
 
 function friendlyEventError(raw?: string): string {
   const msg = raw || 'Something went wrong while checking for updates.';
   if (/YOUR_GITHUB_USER/i.test(msg) || /404/.test(msg)) {
     return 'Updates aren’t set up for this build yet. Install a newer package when your team provides one.';
+  }
+  if (/packaged install|Updater did not run|forceDevUpdateConfig/i.test(msg)) {
+    return msg;
   }
   if (/ENOTFOUND|ECONNREFUSED|ETIMEDOUT|net::/i.test(msg)) {
     return 'Couldn’t reach the update server. Check your internet connection and try again.';
@@ -170,15 +173,20 @@ export default function UpdatesPage() {
         setPhase('ready');
         setMessage('An update is downloaded and ready. Restart to finish installing.');
       } else if (s.error) {
-        setPhase(/not configured|not set up|YOUR_GITHUB/i.test(s.error) ? 'unavailable' : 'error');
+        setPhase(/not configured|not set up|YOUR_GITHUB|packaged install|Updater did not run/i.test(s.error) ? 'unavailable' : 'error');
         setMessage(s.error);
       }
     });
     const off = window.wtt?.on('updater:event', (evt) => {
-      const e = evt as { type: string; progress?: { percent: number }; message?: string };
+      const e = evt as { type: string; progress?: { percent: number }; message?: string; info?: { version?: string } };
       if (e.type === 'available') {
         setPhase('downloading');
-        setMessage('A newer version was found. Downloading in the background…');
+        const v = e.info?.version ? ` (${e.info.version})` : '';
+        setMessage(`A newer version was found${v}. Downloading in the background…`);
+      }
+      if (e.type === 'not-available') {
+        setPhase('up-to-date');
+        setMessage('You’re on the latest version.');
       }
       if (e.type === 'progress') {
         setPhase('downloading');
@@ -193,7 +201,7 @@ export default function UpdatesPage() {
       }
       if (e.type === 'error') {
         const friendly = friendlyEventError(e.message);
-        setPhase(/not set up|not configured/i.test(friendly) ? 'unavailable' : 'error');
+        setPhase(/not set up|not configured|packaged install|Updater did not run/i.test(friendly) ? 'unavailable' : 'error');
         setMessage(friendly);
       }
     });
@@ -204,12 +212,13 @@ export default function UpdatesPage() {
     if (phase === 'ready') return 'var(--status-done)';
     if (phase === 'error') return 'var(--status-high)';
     if (phase === 'unavailable') return 'var(--status-none)';
-    if (phase === 'checking' || phase === 'downloading') return 'var(--accent)';
+    if (phase === 'checking' || phase === 'downloading' || phase === 'available') return 'var(--accent)';
     return 'var(--status-done)'; // up-to-date
   };
 
   const getStatusLabel = () => {
     if (phase === 'ready') return 'Ready to install';
+    if (phase === 'available') return 'Update available';
     if (phase === 'up-to-date') return 'Up to date';
     if (phase === 'downloading') return 'Downloading update';
     if (phase === 'checking') return 'Checking…';
@@ -279,20 +288,30 @@ export default function UpdatesPage() {
                 setChecking(true);
                 setPhase('checking');
                 setMessage('Looking for a newer version…');
-                const res = await api.checkUpdates();
-                if (!res.ok) {
-                  const err = res.error || 'Check failed';
-                  setPhase(/not set up|not configured|provided one/i.test(err) ? 'unavailable' : 'error');
-                  setMessage(err);
-                } else if (res.ready) {
-                  setPhase('ready');
-                  setMessage(res.message || 'An update is ready to install.');
-                } else if (res.updateInfo) {
-                  setPhase('downloading');
-                  setMessage(res.message || 'Update found — downloading…');
-                } else {
-                  setPhase('up-to-date');
-                  setMessage(res.message || 'You’re on the latest version.');
+                try {
+                  const res = await api.checkUpdates();
+                  if (!res.ok) {
+                    const err = res.error || 'Check failed';
+                    setPhase(
+                      /not set up|not configured|provided one|packaged install|Updater did not run/i.test(err)
+                        ? 'unavailable'
+                        : 'error',
+                    );
+                    setMessage(err);
+                  } else if (res.ready) {
+                    setPhase('ready');
+                    setMessage(res.message || 'An update is ready to install.');
+                  } else if (res.isUpdateAvailable) {
+                    const downloading = /downloading/i.test(res.message || '');
+                    setPhase(downloading ? 'downloading' : 'available');
+                    setMessage(res.message || 'Update found.');
+                  } else {
+                    setPhase('up-to-date');
+                    setMessage(res.message || 'You’re on the latest version.');
+                  }
+                } catch (err) {
+                  setPhase('error');
+                  setMessage(err instanceof Error ? err.message : 'Check failed');
                 }
                 setChecking(false);
               }}
