@@ -2,6 +2,19 @@
 
 All notable changes to Daybook will be documented in this file.
 
+## 1.0.1 — 2026-08-03
+
+### Fixes
+* **EOD reminder:** End-of-day now builds and shows the email draft immediately (no more blank side panel until reopen).
+* **Hourly reminder:** Hourly nudge opens the **New task** dialog so you can log work right away.
+* **Local AI downloads:** Cancel and pause work reliably; clearer handling for network errors, disk space issues, and interrupted downloads with Resume / Discard.
+* **Reminders:** Hourly/EOD bring you back to the Board if you were on another tab, and survive window reopen more reliably.
+* **Updates check:** Correct “update available” detection (`isUpdateAvailable`) instead of falsely reporting up to date in some cases.
+
+### Improvements
+* Mac packaging hooks for signing/notarization readiness (Developer ID + notarize when secrets are configured).
+* Local AI download UX: Pause, Cancel, Resume, and Discard for partial downloads.
+
 ## 1.0.0 — 2026-07-31
 
 Welcome to **Daybook v1.0.0**! This is the initial stable release of Daybook, a local-first daily work tracker and automated email companion tailored for office teams.

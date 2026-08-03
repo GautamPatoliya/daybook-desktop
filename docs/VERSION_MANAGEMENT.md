@@ -81,33 +81,19 @@ git push origin main --tags
 
 ---
 
-## 🧪 How to Test Auto-Update (0.9.0 → 1.0.0)
+## 🧪 How to Test Auto-Update (1.0.0 → 1.0.1)
 
-`npm run dev` used to report **UP TO DATE** incorrectly because `electron-updater` is inactive in unpackaged apps, and the UI treated a `null` check result as “latest.” That is fixed: dev can *detect* updates via `dev-app-update.yml`, but **download/install only works from a packaged Setup/.dmg**.
+Dev can *detect* updates via `dev-app-update.yml`, but **download/install only works from a packaged Setup/.dmg**.
 
 ### Correct end-to-end test
 
-1. Keep GitHub Release **v1.0.0** published (with `latest.yml` / `latest-mac.yml`).
-2. Set `"version": "0.9.0"` in `package.json`.
-3. Build installers locally (do **not** publish):
-   - Windows: `npm run dist:win` → install `release/Daybook-Setup-0.9.0.exe`
-   - macOS: `npm run dist:mac` → install the `.dmg` (copy app to `/Applications`)
-4. Quit any `npm run dev` instance. Open the **installed** Daybook only.
-5. Open **Updates → Check for updates**. You should see download progress for **1.0.0**, then **Restart & install**.
-
-### Quick detection-only check (dev)
-
-With `package.json` at `0.9.0` and `dev-app-update.yml` present:
-
-```bash
-npm run dev
-```
-
-**Updates → Check for updates** should report that **1.0.0** is available. Dev will not download/install it.
+1. Keep an older install on **1.0.0** (or build one locally with `"version": "1.0.0"`).
+2. Publish **v1.0.1** to GitHub Releases (`latest.yml` / `latest-mac.yml`).
+3. Open the **installed** 1.0.0 app (not `npm run dev`).
+4. Open **Updates → Check for updates**. You should see download progress for **1.0.1**, then **Restart & install**.
 
 ### Notes
 
-* Release feed is public and correct (`latest.yml` → `Daybook-Setup-1.0.0.exe`).
 * Current macOS CI artifacts are **arm64 only**. Intel Macs need an `x64` (or universal) zip in the release or the download step will fail after detection.
 * Unsigned macOS builds may fail at *install* time until Apple signing/notarization secrets are configured.
 
