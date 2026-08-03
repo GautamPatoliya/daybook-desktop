@@ -42,4 +42,5 @@ export const I = {
   projects: 'solar:folder-with-files-bold-duotone',
   success: 'solar:verified-check-bold-duotone',
   info: 'solar:info-circle-bold-duotone',
+  pause: 'solar:pause-circle-bold-duotone',
 } as const;

@@ -12,7 +12,7 @@ import AutoLaunch from 'auto-launch';
 import { autoUpdater } from 'electron-updater';
 import { DataRoot, readSettings } from '../shared/store';
 import { shouldFireReminder } from './scheduler/reminders';
-import { markUpdateError, markUpdateReady, registerIpc } from './ipc/handlers';
+import { markUpdateError, markUpdateReady, queueReminder, registerIpc } from './ipc/handlers';
 import { rendererOutDir, startStaticServer, WTT_UI_PORT } from './static-server';
 
 let mainWindow: BrowserWindow | null = null;
@@ -42,14 +42,44 @@ function rendererUrl(route = '/') {
   return `${staticBaseUrl}${route.startsWith('/') ? route : `/${route}`}`;
 }
 
+function deliverReminder(mode: string) {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('reminder:open', { mode });
+  }
+}
+
+function isBoardUrl(url: string) {
+  try {
+    const u = new URL(url);
+    const p = u.pathname.replace(/\/+$/, '') || '/';
+    return p === '/' || p === '';
+  } catch {
+    return false;
+  }
+}
+
 async function createWindow(mode?: string) {
+  const isReminder = mode === 'hourly' || mode === 'eod';
+  if (isReminder) queueReminder(mode);
+
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.show();
     mainWindow.focus();
     if (mode === 'onboarding') {
       await mainWindow.loadURL(rendererUrl('/onboarding/'));
-    } else if (mode) {
-      mainWindow.webContents.send('reminder:open', { mode });
+      return mainWindow;
+    }
+    if (isReminder) {
+      const current = mainWindow.webContents.getURL();
+      if (!isBoardUrl(current)) {
+        await new Promise<void>((resolve) => {
+          mainWindow!.webContents.once('did-finish-load', () => resolve());
+          void mainWindow!.loadURL(rendererUrl('/'));
+        });
+      }
+      // Give React a tick to subscribe, then deliver (also available via reminder:consume)
+      setTimeout(() => deliverReminder(mode!), 150);
+      return mainWindow;
     }
     return mainWindow;
   }
@@ -76,10 +106,13 @@ async function createWindow(mode?: string) {
 
   mainWindow.once('ready-to-show', () => {
     mainWindow?.show();
-    if (mode && mode !== 'onboarding') {
-      mainWindow?.webContents.send('reminder:open', { mode });
-    }
   });
+
+  if (isReminder && mode) {
+    mainWindow.webContents.once('did-finish-load', () => {
+      setTimeout(() => deliverReminder(mode), 250);
+    });
+  }
 
   const startRoute = mode === 'onboarding' ? '/onboarding/' : '/';
   await mainWindow.loadURL(rendererUrl(startRoute));

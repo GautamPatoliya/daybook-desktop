@@ -65,6 +65,7 @@ export const api = {
   emailOpen: (draft: EmailDraft) => invoke<{ ok: boolean }>('email:open', draft),
   downloadModel: (id: string) => invoke<{ started: boolean }>('models:download', id),
   cancelDownload: (id: string) => invoke<{ ok: boolean }>('models:cancel', id),
+  pauseDownload: (id: string) => invoke<{ ok: boolean }>('models:pause', id),
   deleteModel: (id: string) => invoke<boolean>('models:delete', id),
   listModels: () =>
     invoke<
@@ -73,12 +74,14 @@ export const api = {
           installed: boolean;
           path?: string;
           downloading: boolean;
+          paused?: boolean;
           received: number;
           total: number;
           percent: number;
         }
       >
     >('models:list'),
+  consumeReminder: () => invoke<{ mode: string | null }>('reminder:consume'),
   analytics: () => invoke<AnalyticsSummary>('analytics:get'),
   analyticsCsv: () => invoke<string>('analytics:csv'),
   changelog: () => invoke<string>('changelog:get'),

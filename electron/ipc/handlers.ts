@@ -27,7 +27,14 @@ import {
 import { activeProjectNames } from '../../shared/types';
 import { buildEmailDraft } from '../../shared/email';
 import { analyticsToCsv, computeAnalytics, writeEmailArtifacts } from '../../shared/analytics';
-import { cancelDownload, deleteModel, listLocalModels, polishText, startDownload } from '../llm/models';
+import {
+  cancelDownload,
+  deleteModel,
+  listLocalModels,
+  pauseDownload,
+  polishText,
+  startDownload,
+} from '../llm/models';
 import type { AppSettings, SubItem, Task, TaskPriority, TaskStatus } from '../../shared/types';
 
 type Deps = {
@@ -40,6 +47,13 @@ type Deps = {
 /** Shared updater state so UI never shows "Restart & install" on errors. */
 let updateReady = false;
 let lastUpdateError: string | null = null;
+
+/** Reminder mode waiting for the board page to mount (hourly | eod). */
+let pendingReminderMode: string | null = null;
+
+export function queueReminder(mode: string) {
+  pendingReminderMode = mode;
+}
 
 export function markUpdateReady(ready: boolean) {
   updateReady = ready;
@@ -286,13 +300,23 @@ export function registerIpc(deps: Deps) {
   ipcMain.handle('models:list', () => listLocalModels(deps.getRoot()));
   ipcMain.handle('models:delete', (_e, id: string) => deleteModel(deps.getRoot(), id));
   ipcMain.handle('models:cancel', (_e, id: string) => {
-    cancelDownload(id);
+    cancelDownload(deps.getRoot(), id);
+    return { ok: true };
+  });
+  ipcMain.handle('models:pause', (_e, id: string) => {
+    pauseDownload(deps.getRoot(), id);
     return { ok: true };
   });
   ipcMain.handle('models:download', (_e, id: string) => {
     const result = startDownload(deps.getRoot(), id);
     if (!result.ok) throw new Error(result.error);
     return { started: true };
+  });
+
+  ipcMain.handle('reminder:consume', () => {
+    const mode = pendingReminderMode;
+    pendingReminderMode = null;
+    return { mode };
   });
 
   ipcMain.handle('analytics:get', () => computeAnalytics(deps.getRoot()));

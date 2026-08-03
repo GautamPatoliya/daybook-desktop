@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "@iconify/react";
 import {
   DndContext,
@@ -235,6 +235,8 @@ export default function BoardPage() {
     window.setTimeout(() => setToast(null), 2800);
   }, []);
 
+  const reminderLock = useRef(false);
+
   const load = useCallback(async (date?: string) => {
     try {
       setError(null);
@@ -262,13 +264,63 @@ export default function BoardPage() {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+
+    async function applyReminder(mode?: string | null) {
+      if (!mode || cancelled || reminderLock.current) return;
+      reminderLock.current = true;
+      try {
+        if (mode === 'hourly') {
+          setComposerOpen(true);
+          setTaskTitle('');
+          setComposerSubItems(['']);
+          return;
+        }
+        if (mode === 'eod') {
+          setDraft(null);
+          setMailBusy(true);
+          setMailOpen(true);
+          try {
+            const settings = await api.getSettings();
+            const parts = new Intl.DateTimeFormat('en-CA', {
+              timeZone: settings.timezone,
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
+            }).formatToParts(new Date());
+            const g = (t: string) => parts.find((p) => p.type === t)?.value || '00';
+            const today = `${g('year')}-${g('month')}-${g('day')}`;
+            const payload = await api.initDay(today);
+            if (cancelled) return;
+            setDay(payload);
+            setTo(payload.config.emailTo || '');
+            const d = await api.emailDraft(today, false);
+            if (cancelled) return;
+            setDraft(d);
+          } catch (err) {
+            if (!cancelled) showToast((err as Error).message);
+          } finally {
+            if (!cancelled) setMailBusy(false);
+          }
+        }
+      } finally {
+        window.setTimeout(() => {
+          reminderLock.current = false;
+        }, 1500);
+      }
+    }
+
     void load();
-    const off = window.wtt?.on("reminder:open", (payload) => {
+    void api.consumeReminder().then((r) => applyReminder(r?.mode));
+
+    const off = window.wtt?.on('reminder:open', (payload) => {
       const mode = (payload as { mode?: string })?.mode;
-      if (mode === "eod") setMailOpen(true);
-      void load();
+      void applyReminder(mode);
     });
-    return () => off?.();
+    return () => {
+      cancelled = true;
+      off?.();
+    };
   }, [load]);
 
   useEffect(() => {
@@ -454,6 +506,19 @@ export default function BoardPage() {
     return (
       <div className="page">
         <p className="page-sub">Loading your day…</p>
+        {mailOpen && (
+          <>
+            <div className="overlay" />
+            <aside className="drawer" role="dialog" aria-label="Daily email draft">
+              <header className="drawer-header">
+                <strong>Daily email draft</strong>
+              </header>
+              <div className="drawer-body">
+                <p className="page-sub">Preparing your draft…</p>
+              </div>
+            </aside>
+          </>
+        )}
       </div>
     );
   }
@@ -1116,6 +1181,9 @@ export default function BoardPage() {
             <div className="drawer-body">
               {mailBusy && !draft ? (
                 <p className="page-sub">Preparing your draft…</p>
+              ) : null}
+              {!mailBusy && !draft ? (
+                <p className="page-sub">Couldn’t prepare the draft. Close and try Email draft again.</p>
               ) : null}
               {draft && (
                 <>

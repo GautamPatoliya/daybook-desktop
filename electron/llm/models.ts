@@ -14,11 +14,17 @@ export type DownloadProgress = {
   done: boolean;
   error?: string;
   percent: number;
+  /** cancelled | paused | network | storage | unknown */
+  reason?: string;
 };
 
 type ActiveDownload = {
   req?: http.ClientRequest;
+  res?: http.IncomingMessage;
+  out?: fs.WriteStream;
   abort: boolean;
+  /** pause keeps .part; cancel deletes it */
+  keepPartial: boolean;
   received: number;
   total: number;
   lastEmit: number;
@@ -46,6 +52,65 @@ function emitThrottled(state: ActiveDownload, id: string, force = false) {
   });
 }
 
+function friendlyDownloadError(err: unknown): { message: string; reason: string } {
+  const raw = err instanceof Error ? err.message : String(err || 'Download failed');
+  const code = err && typeof err === 'object' && 'code' in err ? String((err as { code?: string }).code) : '';
+
+  if (code === 'ENOSPC' || /ENOSPC|no space|not enough space/i.test(raw)) {
+    return {
+      message: 'Not enough disk space to finish this download. Free some space, then resume.',
+      reason: 'storage',
+    };
+  }
+  if (
+    code === 'ENOTFOUND' ||
+    code === 'ECONNRESET' ||
+    code === 'ECONNREFUSED' ||
+    code === 'ETIMEDOUT' ||
+    code === 'EAI_AGAIN' ||
+    /ENOTFOUND|ECONNRESET|ECONNREFUSED|ETIMEDOUT|network|socket|TLS|SSL/i.test(raw)
+  ) {
+    return {
+      message: 'Network error while downloading. Check your connection, then resume.',
+      reason: 'network',
+    };
+  }
+  if (/HTTP 429|rate limit/i.test(raw)) {
+    return { message: 'Download server is busy (rate limited). Wait a moment, then resume.', reason: 'network' };
+  }
+  if (/HTTP 404|HTTP 403/i.test(raw)) {
+    return { message: `Could not fetch the model file (${raw}).`, reason: 'network' };
+  }
+  return { message: raw.slice(0, 220), reason: 'unknown' };
+}
+
+function partialPath(root: DataRoot, filename: string) {
+  return path.join(root.modelsDir, `${filename}.part`);
+}
+
+function destPath(root: DataRoot, filename: string) {
+  return path.join(root.modelsDir, filename);
+}
+
+function safeUnlink(file: string) {
+  try {
+    if (fs.existsSync(file)) fs.unlinkSync(file);
+  } catch {
+    /* ignore */
+  }
+}
+
+function freeDiskBytes(dir: string): number | null {
+  try {
+    // Node 18.13+ / Electron 35
+    const s = (fs as typeof fs & { statfsSync?: (p: string) => { bavail: number; bsize: number } }).statfsSync?.(dir);
+    if (s && s.bavail != null && s.bsize != null) return Number(s.bavail) * Number(s.bsize);
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
+
 export function getActiveDownload(id: string): DownloadProgress | null {
   const d = downloads.get(id);
   if (!d) return null;
@@ -65,6 +130,7 @@ export function listLocalModels(
     installed: boolean;
     path?: string;
     downloading: boolean;
+    paused: boolean;
     received: number;
     total: number;
     percent: number;
@@ -72,15 +138,16 @@ export function listLocalModels(
 > {
   root.ensureDirs();
   return MODEL_CATALOG.map((m) => {
-    const dest = path.join(root.modelsDir, m.filename);
-    const tmp = `${dest}.part`;
+    const dest = destPath(root, m.filename);
+    const tmp = partialPath(root, m.filename);
     const installed = fs.existsSync(dest);
     const active = downloads.get(m.id);
     let received = 0;
     let total = m.sizeBytes;
     let downloading = false;
+    let paused = false;
 
-    if (active) {
+    if (active && !active.abort) {
       downloading = true;
       received = active.received;
       total = active.total || m.sizeBytes;
@@ -88,7 +155,7 @@ export function listLocalModels(
       try {
         received = fs.statSync(tmp).size;
         total = m.sizeBytes;
-        downloading = false; // paused/incomplete — UI can resume
+        paused = received > 0;
       } catch {
         received = 0;
       }
@@ -105,6 +172,7 @@ export function listLocalModels(
       installed,
       path: installed ? dest : undefined,
       downloading,
+      paused,
       received,
       total,
       percent,
@@ -113,25 +181,105 @@ export function listLocalModels(
 }
 
 export function deleteModel(root: DataRoot, id: string): boolean {
-  cancelDownload(id);
+  stopDownload(id, { keepPartial: false, reason: 'cancelled', silent: true });
   const item = MODEL_CATALOG.find((m) => m.id === id);
   if (!item) return false;
-  const dest = path.join(root.modelsDir, item.filename);
-  const tmp = `${dest}.part`;
-  for (const p of [dest, tmp]) {
-    if (fs.existsSync(p)) {
-      try {
-        fs.unlinkSync(p);
-      } catch {
-        /* ignore */
-      }
-    }
-  }
+  safeUnlink(destPath(root, item.filename));
+  safeUnlink(partialPath(root, item.filename));
   return true;
 }
 
 export function isDownloading(id: string): boolean {
-  return downloads.has(id);
+  const d = downloads.get(id);
+  return Boolean(d && !d.abort);
+}
+
+/**
+ * Stop an active download.
+ * - pause: keep .part so Resume works
+ * - cancel: delete .part
+ */
+export function stopDownload(
+  id: string,
+  opts: { keepPartial: boolean; reason?: string; silent?: boolean } = { keepPartial: false },
+): { ok: boolean; wasActive: boolean } {
+  const item = MODEL_CATALOG.find((m) => m.id === id);
+  const d = downloads.get(id);
+  if (!d) {
+    if (!opts.keepPartial && item) {
+      // Cancel with no active request — still clear leftover partial if requested
+      // (caller may pass root via deleteModel; here we only know catalog filename)
+    }
+    return { ok: true, wasActive: false };
+  }
+
+  d.abort = true;
+  d.keepPartial = opts.keepPartial;
+
+  try {
+    d.res?.destroy();
+  } catch {
+    /* ignore */
+  }
+  try {
+    d.req?.destroy();
+  } catch {
+    /* ignore */
+  }
+  try {
+    d.out?.destroy();
+  } catch {
+    /* ignore */
+  }
+
+  const received = d.received;
+  const total = d.total;
+  downloads.delete(id);
+
+  if (!opts.keepPartial && item) {
+    // Best-effort: partial path needs models dir — reconstruct from common userData layout via dest name only if we have filename
+    // deleteModel handles full cleanup; for cancel from UI we need root — see cancelDownload(root, id)
+  }
+
+  if (!opts.silent) {
+    const reason = opts.reason || (opts.keepPartial ? 'paused' : 'cancelled');
+    broadcastProgress({
+      id,
+      received: opts.keepPartial ? received : 0,
+      total: opts.keepPartial ? total : 0,
+      done: true,
+      error:
+        reason === 'paused'
+          ? undefined
+          : reason === 'cancelled'
+            ? 'Download cancelled'
+            : undefined,
+      percent: opts.keepPartial && total > 0 ? Math.min(99.5, (received / total) * 100) : 0,
+      reason,
+    });
+  }
+
+  return { ok: true, wasActive: true };
+}
+
+export function pauseDownload(root: DataRoot, id: string) {
+  return stopDownload(id, { keepPartial: true, reason: 'paused' });
+}
+
+export function cancelDownload(root: DataRoot, id: string) {
+  const item = MODEL_CATALOG.find((m) => m.id === id);
+  const result = stopDownload(id, { keepPartial: false, reason: 'cancelled' });
+  if (item) safeUnlink(partialPath(root, item.filename));
+  broadcastProgress({
+    id,
+    received: 0,
+    total: item?.sizeBytes || 0,
+    done: true,
+    error: 'Download cancelled',
+    percent: 0,
+    reason: 'cancelled',
+  });
+  return result;
 }
 
 /**
@@ -139,13 +287,16 @@ export function isDownloading(id: string): boolean {
  * Resolves immediately once the request is underway — progress is broadcast.
  */
 export function startDownload(root: DataRoot, id: string): { ok: true } | { ok: false; error: string } {
-  if (downloads.has(id)) return { ok: true };
+  if (isDownloading(id)) return { ok: true };
+  // Clear any aborted zombie entry
+  if (downloads.has(id)) downloads.delete(id);
+
   const item = MODEL_CATALOG.find((m) => m.id === id);
   if (!item) return { ok: false, error: 'Unknown model' };
 
   root.ensureDirs();
-  const dest = path.join(root.modelsDir, item.filename);
-  const tmp = `${dest}.part`;
+  const dest = destPath(root, item.filename);
+  const tmp = partialPath(root, item.filename);
 
   if (fs.existsSync(dest)) {
     broadcastProgress({ id, received: item.sizeBytes, total: item.sizeBytes, done: true, percent: 100 });
@@ -161,8 +312,18 @@ export function startDownload(root: DataRoot, id: string): { ok: true } | { ok: 
     }
   }
 
+  const remaining = Math.max(0, item.sizeBytes - startAt);
+  const free = freeDiskBytes(root.modelsDir);
+  if (free != null && remaining > 0 && free < remaining + 50_000_000) {
+    return {
+      ok: false,
+      error: 'Not enough disk space for this model. Free some space, then try again.',
+    };
+  }
+
   const state: ActiveDownload = {
     abort: false,
+    keepPartial: true,
     received: startAt,
     total: item.sizeBytes,
     lastEmit: 0,
@@ -170,73 +331,111 @@ export function startDownload(root: DataRoot, id: string): { ok: true } | { ok: 
   downloads.set(id, state);
   emitThrottled(state, id, true);
 
+  const cleanupStreams = () => {
+    try {
+      state.res?.removeAllListeners();
+    } catch {
+      /* ignore */
+    }
+    try {
+      state.out?.removeAllListeners();
+    } catch {
+      /* ignore */
+    }
+  };
+
   const finishOk = () => {
+    cleanupStreams();
     try {
       if (!fs.existsSync(tmp)) {
         throw new Error('Download file missing — please try again');
       }
-      // Prefer rename; fall back to copy+unlink on Windows lock quirks
+      const size = fs.statSync(tmp).size;
+      if (state.total > 0 && size < state.total * 0.98) {
+        throw new Error('Download incomplete — please resume to finish');
+      }
       try {
         fs.renameSync(tmp, dest);
       } catch {
         fs.copyFileSync(tmp, dest);
-        try {
-          fs.unlinkSync(tmp);
-        } catch {
-          /* ignore */
-        }
+        safeUnlink(tmp);
       }
       downloads.delete(id);
       broadcastProgress({
         id,
-        received: state.total,
-        total: state.total,
+        received: state.total || size,
+        total: state.total || size,
         done: true,
         percent: 100,
       });
     } catch (err) {
       downloads.delete(id);
-      const message = (err as Error).message;
-      broadcastProgress({ id, received: 0, total: 0, done: true, error: message, percent: 0 });
+      const { message, reason } = friendlyDownloadError(err);
+      broadcastProgress({
+        id,
+        received: state.received,
+        total: state.total,
+        done: true,
+        error: message,
+        percent: state.total > 0 ? Math.min(99.5, (state.received / state.total) * 100) : 0,
+        reason,
+      });
     }
   };
 
-  const fail = (message: string) => {
+  const fail = (err: unknown) => {
+    cleanupStreams();
+    if (state.abort) return;
     downloads.delete(id);
-    broadcastProgress({ id, received: state.received, total: state.total, done: true, error: message, percent: 0 });
+    const { message, reason } = friendlyDownloadError(err);
+    broadcastProgress({
+      id,
+      received: state.received,
+      total: state.total,
+      done: true,
+      error: message,
+      percent: state.total > 0 ? Math.min(99.5, (state.received / state.total) * 100) : 0,
+      reason,
+    });
   };
 
   const get = (url: string, redirects = 0) => {
-    if (redirects > 5) {
-      fail('Too many redirects');
+    if (state.abort) return;
+    if (redirects > 8) {
+      fail(new Error('Too many redirects'));
       return;
     }
     const lib = url.startsWith('https') ? https : http;
-    const headers: Record<string, string> = {};
+    const headers: Record<string, string> = {
+      'User-Agent': 'Daybook/1.0',
+      Accept: '*/*',
+    };
     if (startAt > 0) headers.Range = `bytes=${startAt}-`;
 
-    const req = lib.get(url, { headers }, (res) => {
-      if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-        get(res.headers.location, redirects + 1);
+    const req = lib.get(url, { headers, timeout: 60_000 }, (res) => {
+      state.res = res;
+      if (state.abort) {
+        res.destroy();
         return;
       }
 
-      // 200 = full body, 206 = partial resume
+      if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+        const next = new URL(res.headers.location, url).toString();
+        res.resume();
+        get(next, redirects + 1);
+        return;
+      }
+
       if (res.statusCode !== 200 && res.statusCode !== 206) {
-        fail(`Download failed: HTTP ${res.statusCode}`);
+        fail(new Error(`HTTP ${res.statusCode}`));
         res.resume();
         return;
       }
 
       if (res.statusCode === 200 && startAt > 0) {
-        // Server ignored Range — restart file
         startAt = 0;
         state.received = 0;
-        try {
-          fs.unlinkSync(tmp);
-        } catch {
-          /* ignore */
-        }
+        safeUnlink(tmp);
       }
 
       const contentLength = Number(res.headers['content-length'] || 0);
@@ -248,11 +447,45 @@ export function startDownload(root: DataRoot, id: string): { ok: true } | { ok: 
         state.total = Math.max(state.total, item.sizeBytes);
       }
 
-      const out = fs.createWriteStream(tmp, { flags: startAt > 0 && res.statusCode === 206 ? 'a' : 'w' });
+      let settled = false;
+      const out = fs.createWriteStream(tmp, {
+        flags: startAt > 0 && res.statusCode === 206 ? 'a' : 'w',
+      });
+      state.out = out;
+
+      const settleAbort = () => {
+        if (settled) return;
+        settled = true;
+        cleanupStreams();
+        downloads.delete(id);
+        if (!state.keepPartial) safeUnlink(tmp);
+        broadcastProgress({
+          id,
+          received: state.keepPartial ? state.received : 0,
+          total: state.keepPartial ? state.total : item.sizeBytes,
+          done: true,
+          error: state.keepPartial ? undefined : 'Download cancelled',
+          percent:
+            state.keepPartial && state.total > 0
+              ? Math.min(99.5, (state.received / state.total) * 100)
+              : 0,
+          reason: state.keepPartial ? 'paused' : 'cancelled',
+        });
+      };
 
       res.on('data', (chunk: Buffer) => {
         if (state.abort) {
-          res.destroy();
+          try {
+            res.destroy();
+          } catch {
+            /* ignore */
+          }
+          try {
+            out.destroy();
+          } catch {
+            /* ignore */
+          }
+          settleAbort();
           return;
         }
         state.received += chunk.length;
@@ -260,34 +493,37 @@ export function startDownload(root: DataRoot, id: string): { ok: true } | { ok: 
       });
 
       res.on('error', (err) => {
-        out.destroy();
-        if (!state.abort) fail(err.message);
+        try {
+          out.destroy();
+        } catch {
+          /* ignore */
+        }
+        if (state.abort) settleAbort();
+        else fail(err);
       });
 
       out.on('error', (err) => {
-        res.destroy();
-        if (!state.abort) fail(err.message);
+        try {
+          res.destroy();
+        } catch {
+          /* ignore */
+        }
+        if (state.abort) settleAbort();
+        else fail(err);
       });
 
       out.on('finish', () => {
+        if (settled) return;
         if (state.abort) {
-          try {
-            fs.unlinkSync(tmp);
-          } catch {
-            /* ignore */
-          }
-          downloads.delete(id);
-          broadcastProgress({
-            id,
-            received: 0,
-            total: 0,
-            done: true,
-            error: 'Download cancelled',
-            percent: 0,
-          });
+          settleAbort();
           return;
         }
+        settled = true;
         finishOk();
+      });
+
+      out.on('close', () => {
+        if (state.abort && !settled) settleAbort();
       });
 
       res.pipe(out);
@@ -295,8 +531,30 @@ export function startDownload(root: DataRoot, id: string): { ok: true } | { ok: 
 
     state.req = req;
     downloads.set(id, state);
+
+    req.setTimeout(60_000, () => {
+      req.destroy(new Error('ETIMEDOUT'));
+    });
+
     req.on('error', (err) => {
-      if (!state.abort) fail(err.message);
+      if (state.abort) {
+        downloads.delete(id);
+        if (!state.keepPartial) safeUnlink(tmp);
+        broadcastProgress({
+          id,
+          received: state.keepPartial ? state.received : 0,
+          total: state.keepPartial ? state.total : item.sizeBytes,
+          done: true,
+          error: state.keepPartial ? undefined : 'Download cancelled',
+          percent:
+            state.keepPartial && state.total > 0
+              ? Math.min(99.5, (state.received / state.total) * 100)
+              : 0,
+          reason: state.keepPartial ? 'paused' : 'cancelled',
+        });
+      } else {
+        fail(err);
+      }
     });
   };
 
@@ -317,14 +575,14 @@ export function downloadModel(
       return;
     }
     const item = MODEL_CATALOG.find((m) => m.id === id)!;
-    const dest = path.join(root.modelsDir, item.filename);
+    const dest = destPath(root, item.filename);
     if (fs.existsSync(dest) && !downloads.has(id)) {
       resolve(dest);
       return;
     }
 
     const tick = setInterval(() => {
-      if (fs.existsSync(dest) && !downloads.has(id)) {
+      if (fs.existsSync(dest) && !isDownloading(id)) {
         clearInterval(tick);
         onProgress({ id, received: item.sizeBytes, total: item.sizeBytes, done: true, percent: 100 });
         resolve(dest);
@@ -332,21 +590,12 @@ export function downloadModel(
       }
       const active = getActiveDownload(id);
       if (active) onProgress(active);
-      if (!downloads.has(id) && !fs.existsSync(dest)) {
-        // Failed or cancelled
+      if (!isDownloading(id) && !fs.existsSync(dest)) {
         clearInterval(tick);
         reject(new Error('Download did not complete'));
       }
     }, 250);
   });
-}
-
-export function cancelDownload(id: string) {
-  const d = downloads.get(id);
-  if (d) {
-    d.abort = true;
-    d.req?.destroy();
-  }
 }
 
 /** Optional LLM polish — falls back to rule-based if node-llama-cpp unavailable. */
@@ -357,7 +606,7 @@ export async function polishText(root: DataRoot, modelId: string | null, raw: st
 
   const item = MODEL_CATALOG.find((m) => m.id === modelId);
   if (!item) return ruleBasedPolish(cleaned);
-  const modelPath = path.join(root.modelsDir, item.filename);
+  const modelPath = destPath(root, item.filename);
   if (!fs.existsSync(modelPath)) return ruleBasedPolish(cleaned);
 
   try {
@@ -370,7 +619,9 @@ export async function polishText(root: DataRoot, modelId: string | null, raw: st
       `Rewrite this work-log bullet to be concise and professional. Keep meaning. One line only. No quotes.\n\n${cleaned}`,
       { maxTokens: 80 },
     );
-    const text = String(result || '').trim().replace(/^["']|["']$/g, '');
+    const text = String(result || '')
+      .trim()
+      .replace(/^["']|["']$/g, '');
     if (!text || text.length > Math.max(cleaned.length * 1.4, cleaned.length + 40)) {
       return ruleBasedPolish(cleaned);
     }
