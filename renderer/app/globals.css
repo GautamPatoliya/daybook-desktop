@@ -96,6 +96,11 @@ select:focus-visible,
   flex-direction: column;
   overflow: hidden;
 }
+.app-shell--onboarding {
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
 
 .topbar {
   display: flex;
@@ -820,25 +825,176 @@ select:focus-visible,
 
 .onboarding-shell {
   min-height: 100%;
-  display: grid;
-  place-items: center;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 1rem 1rem 1.5rem;
+  box-sizing: border-box;
+  background: radial-gradient(circle at top, #161e31 0%, #090b10 80%);
+}
+.onboarding-loading {
+  min-height: min(100vh, 100%);
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 0.75rem;
   padding: 2rem 1rem;
 }
 .onboarding-card {
   width: min(520px, 100%);
+  margin: max(0.5rem, 2vh) auto 1.5rem;
   background: linear-gradient(180deg, #151926, #0c0e14);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-lg);
-  padding: 1.75rem 1.6rem;
+  padding: 1.35rem 1.25rem 1rem;
   box-shadow: var(--shadow-float);
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  max-width: 100%;
+}
+.onboarding-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.35rem;
+}
+.onboarding-brand h1 {
+  margin: 0;
+  font-size: clamp(1.25rem, 4vw, 1.6rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.onboarding-brand-mark {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--accent), #3b82f6);
+  display: grid;
+  place-items: center;
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+  margin-bottom: 0.35rem;
 }
 .onboarding-steps {
-  display: flex; gap: 0.35rem; margin-bottom: 1.25rem;
+  display: flex;
+  gap: 0.35rem;
 }
 .onboarding-steps span {
-  flex: 1; height: 4px; border-radius: 999px; background: var(--bg-hover);
+  flex: 1;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--bg-hover);
 }
-.onboarding-steps span.on { background: var(--accent); }
+.onboarding-steps span.on {
+  background: var(--accent);
+}
+.onboarding-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  min-height: 0;
+}
+.onboarding-body h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 750;
+}
+.onboarding-body .field label,
+.onboarding-body .field-label {
+  font-weight: 650;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  display: block;
+  margin-bottom: 0.4rem;
+}
+.onboarding-body .field input,
+.onboarding-body .field textarea {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.65rem 0.8rem;
+  font-size: 0.9rem;
+  width: 100%;
+  color: var(--text);
+}
+.onboarding-days {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.onboarding-day {
+  flex: 1 1 calc(25% - 0.4rem);
+  min-width: 3.2rem;
+  padding: 8px 0;
+  font-size: 0.78rem;
+  font-weight: 650;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--bg-input);
+  color: var(--text-muted);
+}
+.onboarding-day.on {
+  border-color: var(--accent);
+  background: rgba(59, 130, 246, 0.1);
+  color: #fff;
+}
+.onboarding-hours {
+  gap: 1rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+.onboarding-banner {
+  display: flex;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: rgba(16, 185, 129, 0.05);
+  border-radius: 12px;
+  border: 1px solid rgba(16, 185, 129, 0.15);
+}
+.onboarding-banner h3 {
+  margin: 0 0 0.2rem;
+  font-size: 0.88rem;
+  font-weight: 750;
+  color: #34d399;
+}
+.onboarding-banner p {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+.onboarding-actions {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  gap: 0.75rem;
+  padding-top: 0.75rem;
+  margin-top: 0.25rem;
+  background: linear-gradient(180deg, transparent, #0c0e14 28%);
+  z-index: 2;
+}
+.onboarding-actions .btn {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  font-weight: 650;
+  justify-content: center;
+}
+.onboarding-actions .btn:not(.btn-primary) {
+  flex: 0 0 auto;
+  min-width: 5.5rem;
+}
+.animate-fade-in {
+  animation: onboarding-fade-in 0.35s ease-out;
+}
+@keyframes onboarding-fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 
 .toggle-row {
   display: flex;
@@ -1552,7 +1708,14 @@ select:focus-visible,
   .composer-fields { grid-template-columns: 1fr; }
   .updater-container { grid-template-columns: 1fr; }
   .analytics-metric-grid { grid-template-columns: repeat(3, 1fr); }
+  .topbar { padding: 0.55rem 0.75rem; gap: 0.65rem; flex-wrap: wrap; }
+  .nav-links { width: 100%; }
+  .page { padding: 1rem 1rem 2rem; }
+  .main { padding: 0.75rem; }
+  .onboarding-hours { grid-template-columns: 1fr; }
 }
 @media (max-width: 600px) {
   .analytics-metric-grid { grid-template-columns: repeat(2, 1fr); }
+  .onboarding-card { padding: 1rem 0.9rem 0.85rem; }
+  .onboarding-day { flex: 1 1 calc(33.33% - 0.4rem); }
 }

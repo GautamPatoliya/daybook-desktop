@@ -4,7 +4,7 @@ Guide for distributing the unsigned (then signed) desktop app to the CEO’s off
 
 ## What employees get
 
-- One Windows installer: `Daybook-Setup-1.0.1.exe` (NSIS)
+- One Windows installer: `Daybook-Setup-1.0.2.exe` (NSIS)
 - Or one macOS disk image: `Daybook-*-arm64.dmg` (+ `.zip` for auto-update)
 - No OpenClaw, no terminal, no system Ollama
 - Data stays on each PC under the OS app data folder

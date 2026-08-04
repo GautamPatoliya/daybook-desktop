@@ -7,6 +7,7 @@ import {
   nativeImage,
   powerMonitor,
 } from 'electron';
+import fs from 'node:fs';
 import path from 'node:path';
 import AutoLaunch from 'auto-launch';
 import { autoUpdater } from 'electron-updater';
@@ -23,8 +24,19 @@ let lastEodKey: string | null = null;
 let reminderTimer: NodeJS.Timeout | null = null;
 let staticBaseUrl: string | null = null;
 let closeStaticServer: (() => void) | null = null;
+let isQuitting = false;
 
 const isDev = process.env.ELECTRON_DEV === '1';
+
+/** Only one Daybook process — prevents duplicate windows + tray icons on Windows. */
+const gotSingleInstanceLock = app.requestSingleInstanceLock();
+if (!gotSingleInstanceLock) {
+  app.quit();
+} else {
+  app.on('second-instance', (_event, _argv) => {
+    void focusMainWindow();
+  });
+}
 
 function getDataRoot(): DataRoot {
   const root = new DataRoot(path.join(app.getPath('userData')));
@@ -40,6 +52,81 @@ function rendererUrl(route = '/') {
   if (isDev) return `http://127.0.0.1:${WTT_UI_PORT}${route}`;
   if (!staticBaseUrl) throw new Error('Static server not started');
   return `${staticBaseUrl}${route.startsWith('/') ? route : `/${route}`}`;
+}
+
+function resolveIconPath(): string | null {
+  const candidates = [
+    path.join(__dirname, 'assets', 'app-icon.png'),
+    path.join(__dirname, 'assets', 'tray-32.png'),
+    path.join(process.cwd(), 'electron', 'assets', 'app-icon.png'),
+    path.join(process.cwd(), 'build', 'icon.png'),
+    path.join(app.getAppPath(), 'dist-electron', 'electron', 'assets', 'app-icon.png'),
+    path.join(app.getAppPath(), 'build', 'icon.png'),
+    path.join(__dirname, '..', '..', 'build', 'icon.png'),
+    path.join(process.resourcesPath || '', 'build', 'icon.png'),
+  ];
+  for (const candidate of candidates) {
+    try {
+      if (candidate && fs.existsSync(candidate)) return candidate;
+    } catch {
+      /* ignore */
+    }
+  }
+  return null;
+}
+
+function loadAppIcon(): Electron.NativeImage | undefined {
+  const candidates = [
+    path.join(__dirname, 'assets', 'app-icon.png'),
+    path.join(process.cwd(), 'electron', 'assets', 'app-icon.png'),
+    path.join(app.getAppPath(), 'dist-electron', 'electron', 'assets', 'app-icon.png'),
+    resolveIconPath(),
+  ].filter(Boolean) as string[];
+  for (const candidate of candidates) {
+    try {
+      if (!fs.existsSync(candidate)) continue;
+      const img = nativeImage.createFromPath(candidate);
+      if (!img.isEmpty()) return img;
+    } catch {
+      /* ignore */
+    }
+  }
+  return undefined;
+}
+
+/** Windows tray needs a small opaque icon; empty/transparent icons look missing. */
+function loadTrayIcon(): Electron.NativeImage {
+  const trayFile = process.platform === 'win32' ? 'tray-16.png' : 'tray-32.png';
+  const candidates = [
+    path.join(__dirname, 'assets', trayFile),
+    path.join(__dirname, 'assets', 'tray-16.png'),
+    path.join(__dirname, 'assets', 'tray-32.png'),
+    path.join(process.cwd(), 'electron', 'assets', trayFile),
+    path.join(app.getAppPath(), 'dist-electron', 'electron', 'assets', trayFile),
+  ];
+  for (const candidate of candidates) {
+    try {
+      if (!fs.existsSync(candidate)) continue;
+      const img = nativeImage.createFromPath(candidate);
+      if (!img.isEmpty()) return img;
+    } catch {
+      /* ignore */
+    }
+  }
+
+  const iconPath = resolveIconPath();
+  if (iconPath) {
+    let img = nativeImage.createFromPath(iconPath);
+    if (!img.isEmpty()) {
+      const size = process.platform === 'win32' ? 16 : 22;
+      img = img.resize({ width: size, height: size, quality: 'best' });
+      if (!img.isEmpty()) return img;
+    }
+  }
+
+  return nativeImage.createFromDataURL(
+    'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAANUlEQVQ4T2NkYGD4z0ABYBzVMKoGAmA0jKoBA0bDYDQMRsNgNAxGw2A0DEbDYDQMRsNgNAxGwwAA0gQEAf2v+6YAAAAASUVORK5CYII=',
+  );
 }
 
 function deliverReminder(mode: string) {
@@ -58,11 +145,32 @@ function isBoardUrl(url: string) {
   }
 }
 
-async function createWindow(mode?: string) {
+async function focusMainWindow(mode?: string): Promise<BrowserWindow> {
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    return createWindow(mode);
+  }
+  if (mainWindow.isMinimized()) mainWindow.restore();
+  mainWindow.show();
+  mainWindow.focus();
+  if (mode === 'hourly' || mode === 'eod') {
+    queueReminder(mode);
+    if (!isBoardUrl(mainWindow.webContents.getURL())) {
+      await new Promise<void>((resolve) => {
+        mainWindow!.webContents.once('did-finish-load', () => resolve());
+        void mainWindow!.loadURL(rendererUrl('/'));
+      });
+    }
+    setTimeout(() => deliverReminder(mode), 150);
+  }
+  return mainWindow;
+}
+
+async function createWindow(mode?: string): Promise<BrowserWindow> {
   const isReminder = mode === 'hourly' || mode === 'eod';
   if (isReminder) queueReminder(mode);
 
   if (mainWindow && !mainWindow.isDestroyed()) {
+    if (mainWindow.isMinimized()) mainWindow.restore();
     mainWindow.show();
     mainWindow.focus();
     if (mode === 'onboarding') {
@@ -70,28 +178,27 @@ async function createWindow(mode?: string) {
       return mainWindow;
     }
     if (isReminder) {
-      const current = mainWindow.webContents.getURL();
-      if (!isBoardUrl(current)) {
+      if (!isBoardUrl(mainWindow.webContents.getURL())) {
         await new Promise<void>((resolve) => {
           mainWindow!.webContents.once('did-finish-load', () => resolve());
           void mainWindow!.loadURL(rendererUrl('/'));
         });
       }
-      // Give React a tick to subscribe, then deliver (also available via reminder:consume)
       setTimeout(() => deliverReminder(mode!), 150);
-      return mainWindow;
     }
     return mainWindow;
   }
 
+  const appIcon = loadAppIcon();
   mainWindow = new BrowserWindow({
-    width: 1280,
-    height: 840,
-    minWidth: 960,
-    minHeight: 640,
+    width: 1100,
+    height: 720,
+    minWidth: 720,
+    minHeight: 520,
     show: false,
-    backgroundColor: '#000000',
+    backgroundColor: '#07080c',
     title: 'Daybook',
+    ...(appIcon ? { icon: appIcon } : {}),
     webPreferences: {
       preload: preloadPath(),
       contextIsolation: true,
@@ -117,6 +224,14 @@ async function createWindow(mode?: string) {
   const startRoute = mode === 'onboarding' ? '/onboarding/' : '/';
   await mainWindow.loadURL(rendererUrl(startRoute));
 
+  mainWindow.on('close', (e) => {
+    // Keep running in tray for reminders (unless quitting)
+    if (!isQuitting && process.platform === 'win32') {
+      e.preventDefault();
+      mainWindow?.hide();
+    }
+  });
+
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
@@ -125,41 +240,60 @@ async function createWindow(mode?: string) {
 }
 
 function setupTray() {
-  const img = nativeImage.createEmpty();
-  tray = new Tray(
-    img.isEmpty()
-      ? nativeImage.createFromDataURL(
-          'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAFElEQVQ4T2NkYGD4z0ABYBzVMKoaBgYA4gIBoH8p5m0AAAAASUVORK5CYII=',
-        )
-      : img,
-  );
+  if (tray) {
+    try {
+      tray.destroy();
+    } catch {
+      /* ignore */
+    }
+    tray = null;
+  }
+
+  tray = new Tray(loadTrayIcon());
   tray.setToolTip('Daybook');
   tray.setContextMenu(
     Menu.buildFromTemplate([
-      { label: 'Open board', click: () => void createWindow() },
+      { label: 'Open board', click: () => void focusMainWindow() },
       { label: 'Hourly reminder now', click: () => void createWindow('hourly') },
       { label: 'EOD email now', click: () => void createWindow('eod') },
       { type: 'separator' },
-      { label: 'Quit', click: () => app.quit() },
+      {
+        label: 'Quit Daybook',
+        click: () => {
+          isQuitting = true;
+          app.quit();
+        },
+      },
     ]),
   );
-  tray.on('double-click', () => void createWindow());
+  tray.on('double-click', () => void focusMainWindow());
+  tray.on('click', () => {
+    if (process.platform === 'win32') void focusMainWindow();
+  });
 }
 
+/**
+ * Use Electron login items only. Previously AutoLaunch + setLoginItemSettings
+ * both registered, which launched two Daybook processes on Windows login.
+ */
 function applyAutostart(enabled: boolean) {
-  const launcher = new AutoLaunch({
-    name: 'Daybook',
-    path: app.getPath('exe'),
-    isHidden: false,
-  });
-  if (enabled) void launcher.enable();
-  else void launcher.disable();
+  try {
+    const legacy = new AutoLaunch({
+      name: 'Daybook',
+      path: app.getPath('exe'),
+      isHidden: false,
+    });
+    void legacy.disable();
+  } catch {
+    /* ignore */
+  }
 
   try {
     app.setLoginItemSettings({
       openAtLogin: enabled,
       openAsHidden: false,
       path: process.execPath,
+      args: [],
     });
   } catch {
     /* ignore on unsupported platforms during dev */
@@ -200,9 +334,6 @@ function startReminderLoop() {
 }
 
 function setupUpdater() {
-  // Dev builds are unpackaged; force the GitHub feed via dev-app-update.yml so
-  // "Check for updates" can be verified without a full installer each time.
-  // Do not auto-download/install from `npm run dev` — that path is for detection only.
   autoUpdater.logger = console;
   autoUpdater.autoDownload = !isDev;
   autoUpdater.autoInstallOnAppQuit = !isDev;
@@ -242,42 +373,54 @@ function setupUpdater() {
   }
 }
 
-app.whenReady().then(async () => {
-  Menu.setApplicationMenu(null);
-  dataRoot = getDataRoot();
-  const settings = readSettings(dataRoot);
-  applyAutostart(settings.autostart);
+if (gotSingleInstanceLock) {
+  app.whenReady().then(async () => {
+    Menu.setApplicationMenu(null);
+    dataRoot = getDataRoot();
+    const settings = readSettings(dataRoot);
+    applyAutostart(settings.autostart);
 
-  if (!isDev) {
-    const outDir = rendererOutDir();
-    const server = await startStaticServer(outDir);
-    staticBaseUrl = `http://127.0.0.1:${server.port}`;
-    closeStaticServer = server.close;
-    console.log('Serving UI from', outDir, 'at', staticBaseUrl);
-  }
+    if (!isDev) {
+      const outDir = rendererOutDir();
+      const server = await startStaticServer(outDir);
+      staticBaseUrl = `http://127.0.0.1:${server.port}`;
+      closeStaticServer = server.close;
+      console.log('Serving UI from', outDir, 'at', staticBaseUrl);
+    }
 
-  registerIpc({
-    getRoot: () => dataRoot,
-    getWindow: () => mainWindow,
-    applyAutostart,
-    createWindow,
+    registerIpc({
+      getRoot: () => dataRoot,
+      getWindow: () => mainWindow,
+      applyAutostart,
+      createWindow,
+    });
+
+    setupTray();
+    startReminderLoop();
+    setupUpdater();
+    await createWindow(settings.onboardingComplete ? undefined : 'onboarding');
+
+    app.on('activate', () => {
+      if (BrowserWindow.getAllWindows().length === 0) void createWindow();
+      else void focusMainWindow();
+    });
   });
 
-  setupTray();
-  startReminderLoop();
-  setupUpdater();
-  await createWindow(settings.onboardingComplete ? undefined : 'onboarding');
-
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) void createWindow();
+  app.on('window-all-closed', () => {
+    // Keep running in tray on both platforms for reminders
   });
-});
 
-app.on('window-all-closed', () => {
-  // Keep running in tray on both platforms for reminders
-});
-
-app.on('before-quit', () => {
-  if (reminderTimer) clearInterval(reminderTimer);
-  closeStaticServer?.();
-});
+  app.on('before-quit', () => {
+    isQuitting = true;
+    if (reminderTimer) clearInterval(reminderTimer);
+    closeStaticServer?.();
+    if (tray) {
+      try {
+        tray.destroy();
+      } catch {
+        /* ignore */
+      }
+      tray = null;
+    }
+  });
+}

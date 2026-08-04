@@ -1,6 +1,6 @@
 {
   "name": "daybook",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Daybook — offline daily work tracker for office teams",
   "author": "Gautam Patoliya",
   "license": "UNLICENSED",
@@ -11,7 +11,7 @@
     "dev:electron": "tsc -p electron/tsconfig.json && electron .",
     "dev": "npm run build:electron && concurrently -k \"next dev renderer -p 41763\" \"wait-on http://127.0.0.1:41763 && cross-env ELECTRON_DEV=1 electron .\"",
     "build:renderer": "next build renderer",
-    "build:electron": "tsc -p electron/tsconfig.json",
+    "build:electron": "tsc -p electron/tsconfig.json && node -e \"require('fs').cpSync('electron/assets','dist-electron/electron/assets',{recursive:true})\"",
     "build": "npm run build:renderer && npm run build:electron",
     "dist": "npm run build && electron-builder --publish never",
     "dist:win": "npm run build && electron-builder --win --publish never",
@@ -56,7 +56,8 @@
       "dist-electron/**/*",
       "renderer/out/**/*",
       "package.json",
-      "CHANGELOG.md"
+      "CHANGELOG.md",
+      "build/icon.png"
     ],
     "extraResources": [
       {

@@ -2,6 +2,14 @@
 
 All notable changes to Daybook will be documented in this file.
 
+## 1.0.2 — 2026-08-04
+
+### Fixes
+* **Small screens / onboarding:** Onboarding and app shell now scroll so Next / Submit stay reachable on short laptop displays; sticky action buttons; lower minimum window size.
+* **Windows double app:** Enforce a single running instance so opening Daybook no longer spawns two windows and two tray entries.
+* **Windows autostart:** Stop registering both AutoLaunch and Electron login items (that combo launched Daybook twice at sign-in).
+* **Tray icon:** Show a real Daybook tray icon on Windows instead of a blank/missing icon.
+
 ## 1.0.1 — 2026-08-03
 
 ### Fixes

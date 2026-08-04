@@ -23,7 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body>
-        <div className="app-shell">
+        <div className={`app-shell${hideChrome ? ' app-shell--onboarding' : ''}`}>
           {!hideChrome && (
             <header className="topbar">
               <div className="brand">

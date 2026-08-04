@@ -242,7 +242,7 @@ export default function UpdatesPage() {
           <div className="version-badge-container">
             <div className="version-badge-pulse" style={{ backgroundColor: getStatusColor() }} />
             <div className="version-badge-main" style={{ background: `linear-gradient(135deg, ${getStatusColor()}, #38bdf8)` }}>
-              {version || '1.0.1'}
+              {version || '1.0.2'}
             </div>
           </div>
           
