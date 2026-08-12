@@ -598,35 +598,118 @@ export function downloadModel(
   });
 }
 
-/** Optional LLM polish — falls back to rule-based if node-llama-cpp unavailable. */
+/** Pick a GGUF to use for polish: settings selection, else any installed catalog model. */
+export function resolvePolishModelId(root: DataRoot, preferredId: string | null | undefined): string | null {
+  const tryId = (id: string | null | undefined) => {
+    if (!id) return null;
+    const item = MODEL_CATALOG.find((m) => m.id === id);
+    if (!item) return null;
+    return fs.existsSync(destPath(root, item.filename)) ? id : null;
+  };
+  const preferred = tryId(preferredId);
+  if (preferred) return preferred;
+  for (const m of MODEL_CATALOG) {
+    if (fs.existsSync(destPath(root, m.filename))) return m.id;
+  }
+  return null;
+}
 export async function polishText(root: DataRoot, modelId: string | null, raw: string): Promise<string> {
-  const cleaned = raw.trim();
-  if (!cleaned) return cleaned;
-  if (!modelId) return ruleBasedPolish(cleaned);
+  const { texts } = await polishTexts(root, modelId, [raw]);
+  return texts[0];
+}
 
+export type PolishBatchResult = {
+  texts: string[];
+  /** Whether the local LLM actually ran (vs rule-based fallback). */
+  mode: 'llm' | 'rule';
+};
+
+/**
+ * Polish many strings with a single model load (EOD drafts polish every bullet).
+ * Falls back to rule-based when engine/model unavailable.
+ */
+export async function polishTexts(
+  root: DataRoot,
+  modelId: string | null,
+  raws: string[],
+): Promise<PolishBatchResult> {
+  if (!raws.length) return { texts: [], mode: 'rule' };
+
+  const cleaned = raws.map((r) => r.trim());
+  const ruleOnly = (): PolishBatchResult => ({
+    texts: cleaned.map((c) => (c ? ruleBasedPolish(c) : c)),
+    mode: 'rule',
+  });
+
+  if (!modelId) return ruleOnly();
   const item = MODEL_CATALOG.find((m) => m.id === modelId);
-  if (!item) return ruleBasedPolish(cleaned);
+  if (!item) return ruleOnly();
   const modelPath = destPath(root, item.filename);
-  if (!fs.existsSync(modelPath)) return ruleBasedPolish(cleaned);
+  if (!fs.existsSync(modelPath)) return ruleOnly();
 
   try {
-    const mod = await import('node-llama-cpp');
-    const llama = await mod.getLlama();
-    const model = await llama.loadModel({ modelPath });
-    const context = await model.createContext();
+    const { loadLlamaModule } = await import('./engine');
+    const mod = await loadLlamaModule(root);
+    if (!mod) return ruleOnly();
+
+    const llama = await mod.getLlama({
+      gpu: false,
+      build: 'never',
+      skipDownload: true,
+      progressLogs: false,
+    });
+    const model = await (llama as { loadModel: (o: { modelPath: string }) => Promise<unknown> }).loadModel({
+      modelPath,
+    });
+    const context = await (
+      model as { createContext: () => Promise<{ getSequence: () => unknown }> }
+    ).createContext();
     const session = new mod.LlamaChatSession({ contextSequence: context.getSequence() });
-    const result = await session.prompt(
-      `Rewrite this work-log bullet to be concise and professional. Keep meaning. One line only. No quotes.\n\n${cleaned}`,
-      { maxTokens: 80 },
-    );
-    const text = String(result || '')
-      .trim()
-      .replace(/^["']|["']$/g, '');
-    if (!text || text.length > Math.max(cleaned.length * 1.4, cleaned.length + 40)) {
-      return ruleBasedPolish(cleaned);
+
+    const out: string[] = [];
+    for (const text of cleaned) {
+      if (!text) {
+        out.push(text);
+        continue;
+      }
+      try {
+        const result = await session.prompt(
+          [
+            'Fix spelling and grammar in this work-update bullet for a professional email.',
+            'Keep the same meaning. Output ONLY the corrected bullet as one line.',
+            'No quotes, no bullets, no explanation.',
+            '',
+            `Text: ${text}`,
+          ].join('\n'),
+          { maxTokens: 120 },
+        );
+        let polished = String(result || '')
+          .trim()
+          .replace(/^["'`]+|["'`]+$/g, '')
+          .replace(/^[-•*]\s*/, '')
+          .replace(/\s+/g, ' ');
+        if (/^you polish|rewrite this|one line only|fix spelling/i.test(polished)) {
+          polished = '';
+        }
+        if (!polished || polished.length > Math.max(text.length * 1.5, text.length + 60)) {
+          out.push(ruleBasedPolish(text));
+        } else {
+          out.push(polished);
+        }
+      } catch {
+        out.push(ruleBasedPolish(text));
+      }
     }
-    return text;
+
+    try {
+      const dispose = (model as { dispose?: () => Promise<void> }).dispose;
+      if (typeof dispose === 'function') await dispose.call(model);
+    } catch {
+      /* ignore */
+    }
+
+    return { texts: out, mode: 'llm' };
   } catch {
-    return ruleBasedPolish(cleaned);
+    return ruleOnly();
   }
 }

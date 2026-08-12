@@ -1,8 +1,7 @@
 'use client';
 
-import { Icon } from '@iconify/react';
+import { Icon, I } from '../lib/icons';
 import { useEffect, useRef, useState } from 'react';
-import { I } from '../lib/icons';
 
 export function Select({
   value,

@@ -14,6 +14,7 @@ import { autoUpdater } from 'electron-updater';
 import { DataRoot, readSettings } from '../shared/store';
 import { shouldFireReminder } from './scheduler/reminders';
 import { markUpdateError, markUpdateReady, queueReminder, registerIpc } from './ipc/handlers';
+import { adoptExistingEngine } from './llm/engine';
 import { rendererOutDir, startStaticServer, WTT_UI_PORT } from './static-server';
 
 let mainWindow: BrowserWindow | null = null;
@@ -22,11 +23,19 @@ let dataRoot: DataRoot;
 let lastHourlyKey: string | null = null;
 let lastEodKey: string | null = null;
 let reminderTimer: NodeJS.Timeout | null = null;
+let powerMonitorBound = false;
 let staticBaseUrl: string | null = null;
 let closeStaticServer: (() => void) | null = null;
 let isQuitting = false;
 
 const isDev = process.env.ELECTRON_DEV === '1';
+const APP_USER_MODEL_ID = 'com.bcreative.worktasktracker';
+
+/** Windows toast header + icon — must run before app.ready. */
+if (process.platform === 'win32') {
+  app.setAppUserModelId(APP_USER_MODEL_ID);
+}
+app.setName('Daybook');
 
 /** Only one Daybook process — prevents duplicate windows + tray icons on Windows. */
 const gotSingleInstanceLock = app.requestSingleInstanceLock();
@@ -37,6 +46,9 @@ if (!gotSingleInstanceLock) {
     void focusMainWindow();
   });
 }
+
+// Keep Chromium defaults for background throttling (better for low-end PCs).
+// Avoid aggressive disableHardwareAcceleration — it helps some GPUs and hurts others.
 
 function getDataRoot(): DataRoot {
   const root = new DataRoot(path.join(app.getPath('userData')));
@@ -204,6 +216,8 @@ async function createWindow(mode?: string): Promise<BrowserWindow> {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,
+      spellcheck: false,
+      backgroundThrottling: true,
     },
   });
 
@@ -300,37 +314,48 @@ function applyAutostart(enabled: boolean) {
   }
 }
 
+function showReminderNotification(body: string) {
+  if (!Notification.isSupported()) return;
+  const icon = loadAppIcon();
+  const notification = new Notification({
+    title: 'Daybook',
+    body,
+    silent: false,
+    ...(icon ? { icon } : {}),
+  });
+  notification.show();
+}
+
 function tickReminders() {
   const settings = readSettings(dataRoot);
   const hourly = shouldFireReminder(settings, 'hourly', lastHourlyKey);
   if (hourly.fire) {
     lastHourlyKey = hourly.key;
     void createWindow('hourly');
-    if (Notification.isSupported()) {
-      new Notification({
-        title: 'Daybook',
-        body: 'Hourly check-in — update your tasks.',
-      }).show();
-    }
+    showReminderNotification('Hourly check-in — update your tasks.');
   }
   const eod = shouldFireReminder(settings, 'eod', lastEodKey);
   if (eod.fire) {
     lastEodKey = eod.key;
     void createWindow('eod');
-    if (Notification.isSupported()) {
-      new Notification({
-        title: 'Daybook',
-        body: 'End of day — review and send your email draft.',
-      }).show();
-    }
+    showReminderNotification('End of day — review and send your email draft.');
   }
 }
 
-function startReminderLoop() {
+function startReminderLoop(delayMs = 12_000) {
   if (reminderTimer) clearInterval(reminderTimer);
-  reminderTimer = setInterval(tickReminders, 30_000);
-  powerMonitor.on('resume', () => tickReminders());
-  powerMonitor.on('unlock-screen', () => tickReminders());
+  // Delay after login/startup so low-end PCs finish boot before timers wake the UI
+  const begin = () => {
+    if (reminderTimer) clearInterval(reminderTimer);
+    reminderTimer = setInterval(tickReminders, 30_000);
+    tickReminders();
+  };
+  setTimeout(begin, Math.max(0, delayMs));
+  if (!powerMonitorBound) {
+    powerMonitorBound = true;
+    powerMonitor.on('resume', () => tickReminders());
+    powerMonitor.on('unlock-screen', () => tickReminders());
+  }
 }
 
 function setupUpdater() {
@@ -395,8 +420,12 @@ if (gotSingleInstanceLock) {
       createWindow,
     });
 
+    // One-shot: adopt leftover engine packages after a failed verify (never on every status poll)
+    void adoptExistingEngine(dataRoot).catch(() => undefined);
+
     setupTray();
-    startReminderLoop();
+    // Defer reminder engine so first paint / login stay snappy on low-end PCs
+    startReminderLoop(12_000);
     setupUpdater();
     await createWindow(settings.onboardingComplete ? undefined : 'onboarding');
 

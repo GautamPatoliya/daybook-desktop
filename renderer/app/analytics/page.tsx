@@ -1,9 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Icon } from '@iconify/react';
+import { Icon, I } from '../../lib/icons';
 import { api } from '../../lib/api';
-import { I } from '../../lib/icons';
 import type { AnalyticsSummary } from '../../../shared/types';
 
 const GRADIENTS = [

@@ -4,7 +4,7 @@ Guide for distributing the unsigned (then signed) desktop app to the CEO’s off
 
 ## What employees get
 
-- One Windows installer: `Daybook-Setup-1.0.2.exe` (NSIS)
+- One Windows installer: `Daybook-Setup-1.1.0.exe` (NSIS)
 - Or one macOS disk image: `Daybook-*-arm64.dmg` (+ `.zip` for auto-update)
 - No OpenClaw, no terminal, no system Ollama
 - Data stays on each PC under the OS app data folder
@@ -16,7 +16,7 @@ Guide for distributing the unsigned (then signed) desktop app to the CEO’s off
 3. Employees run the installer (choose install path, desktop shortcut)
 4. On first launch, complete onboarding (name, email To, working hours)
 5. Autostart is on by default so hourly / EOD reminders work after login
-6. Optional: Models tab → download a small GGUF for AI email polish
+6. Optional Local AI: Models tab → Install AI engine → download a small GGUF → enable polish in Settings (off by default)
 
 **Expect SmartScreen / Gatekeeper warnings** on unsigned builds. Tell staff to choose “More info → Run anyway” (Windows) or right-click → Open (macOS).
 

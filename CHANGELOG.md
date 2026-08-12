@@ -2,6 +2,22 @@
 
 All notable changes to Daybook will be documented in this file.
 
+## 1.1.0 — 2026-08-11
+
+### What's new
+* **Smaller, faster install** — Daybook takes less space and runs better on everyday office laptops.
+* **Local AI is optional** — Install the AI engine and a model only when you want on-device wording polish for email drafts.
+* **Clearer Settings** — Side tabs (Profile, Schedule, Projects, Behavior, Data) so you can find options quickly.
+* **Better Updates screen** — Each version has its own release card; easier to see what changed.
+* **Smarter task bullets** — Paste several lines at once and Daybook splits them into separate bullet points automatically.
+* **Cleaner daily email** — Backlog tasks are left out of end-of-day drafts by default. Turn on **Include Backlog in EOD email** in Settings if you want them.
+
+### Improvements
+* **Polish wording** — Email drafts show polished titles and details more reliably, with clearer feedback when Local AI is used.
+* **Faster, offline-ready UI** — Icons and fonts load instantly without waiting on the internet.
+* **Reminders** — Wait a few seconds after startup before nudging you, so login stays smooth on slow PCs.
+* **Windows notifications** — Reminders now show the Daybook name and icon instead of a generic Electron label.
+
 ## 1.0.2 — 2026-08-04
 
 ### Fixes

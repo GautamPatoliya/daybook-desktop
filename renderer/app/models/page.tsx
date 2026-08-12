@@ -1,9 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Icon } from '@iconify/react';
+import { Icon, I } from '../../lib/icons';
 import { api } from '../../lib/api';
-import { I } from '../../lib/icons';
 import type { AppSettings, ModelCatalogItem } from '../../../shared/types';
 
 type ModelRow = ModelCatalogItem & {
@@ -42,12 +41,21 @@ export default function ModelsPage() {
   const [progress, setProgress] = useState<Record<string, LiveProgress>>({});
   const [toast, setToast] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [engine, setEngine] = useState<{
+    installed: boolean;
+    version: string | null;
+    installing: boolean;
+    platformPackage: string | null;
+  } | null>(null);
+  const [enginePct, setEnginePct] = useState(0);
+  const [engineBusy, setEngineBusy] = useState(false);
   const smoothRef = useRef<Record<string, number>>({});
 
   const refresh = useCallback(async () => {
     const list = await api.listModels();
     setModels(list);
     setSettings(await api.getSettings());
+    setEngine(await api.engineStatus());
     setProgress((prev) => {
       const next = { ...prev };
       for (const m of list) {
@@ -79,7 +87,7 @@ export default function ModelsPage() {
 
   useEffect(() => {
     void refresh();
-    const off = window.wtt?.on('models:progress', (p) => {
+    const offModels = window.wtt?.on('models:progress', (p) => {
       const prog = p as {
         id: string;
         received: number;
@@ -161,30 +169,122 @@ export default function ModelsPage() {
       }));
       smoothRef.current[prog.id] = pct;
     });
-    const poll = window.setInterval(() => void refresh(), 5000);
+
+    const offEngine = window.wtt?.on('engine:progress', (p) => {
+      const prog = p as { phase: string; percent?: number; error?: string; packageName?: string };
+      setEnginePct(Math.round(prog.percent || 0));
+      if (prog.phase === 'done') {
+        setEngineBusy(false);
+        setToast('AI engine installed. You can download a model below.');
+        void refresh();
+      }
+      if (prog.phase === 'error') {
+        setEngineBusy(false);
+        setToast(prog.error || 'AI engine install failed');
+        void refresh();
+      }
+    });
+
     return () => {
-      off?.();
-      window.clearInterval(poll);
+      offModels?.();
+      offEngine?.();
     };
   }, [refresh]);
+
+  // Poll only while a download/install is active — not every 5s forever
+  const anyDownloading = models.some((m) => m.downloading) || Object.keys(progress).length > 0;
+  useEffect(() => {
+    if (!engineBusy && !engine?.installing && !anyDownloading) return;
+    const poll = window.setInterval(() => void refresh(), 1500);
+    return () => window.clearInterval(poll);
+  }, [engineBusy, engine?.installing, anyDownloading, refresh]);
 
   return (
     <div className="page">
       <div className="page-header">
         <h1>Local AI</h1>
         <p className="page-sub">
-          Download an optional on-device LLM to polish your daily email wording.
-          Runs offline after download — no account required. Skip this if you don’t need it.
+          Optional. Daybook stays light by default — install the AI engine only if you want on-device
+          wording polish. Models download separately and stay on this PC.
         </p>
+      </div>
+
+      <div className={`status-banner ${engine?.installed ? 'ok' : 'info'}`} style={{ marginBottom: '1rem' }}>
+        <Icon icon={engine?.installed ? I.success : I.cpu} width={20} />
+        <div style={{ flex: 1 }}>
+          <h3>{engine?.installed ? 'AI engine ready' : 'AI engine not installed'}</h3>
+          <p>
+            {engine?.installed
+              ? `CPU engine v${engine.version || '?'} is installed in your app data (not in the Daybook installer).`
+              : 'The base Daybook installer does not include Local AI. Install a small CPU engine (~45–100 MB) when you want polish. If a previous install failed, click Install again — it will replace the broken files.'}
+          </p>
+          {(engineBusy || engine?.installing) && (
+            <div style={{ marginTop: '0.6rem' }}>
+              <div className="progress" style={{ margin: 0 }}>
+                <span style={{ width: `${enginePct}%` }} />
+              </div>
+              <p style={{ margin: '0.35rem 0 0', fontSize: '0.78rem' }}>Installing… {enginePct}%</p>
+            </div>
+          )}
+        </div>
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+          {!engine?.installed ? (
+            <>
+              <button
+                type="button"
+                className="btn btn-primary"
+                disabled={engineBusy || !engine?.platformPackage}
+                onClick={async () => {
+                  setEngineBusy(true);
+                  setEnginePct(0);
+                  try {
+                    const res = await api.installEngine();
+                    if (!res.ok) {
+                      setToast(res.error || 'Install failed');
+                    }
+                  } finally {
+                    setEngineBusy(false);
+                    await refresh();
+                  }
+                }}
+              >
+                Install AI engine
+              </button>
+              {engineBusy && (
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={() => void api.cancelEngineInstall().then(refresh)}
+                >
+                  Cancel
+                </button>
+              )}
+            </>
+          ) : (
+            <button
+              type="button"
+              className="btn"
+              onClick={async () => {
+                if (!confirm('Remove the Local AI engine from this PC? Downloaded models are kept.')) return;
+                await api.uninstallEngine();
+                await api.saveSettings({ aiEnhanceEnabled: false, selectedModelId: null });
+                setToast('AI engine removed');
+                await refresh();
+              }}
+            >
+              Remove engine
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="status-banner info">
         <Icon icon={I.info} width={20} />
         <div>
-          <h3>Pick one and leave it running</h3>
+          <h3>Models (optional)</h3>
           <p>
-            Downloads continue in the background. Pause or cancel anytime. If the app closes or the
-            network drops, open this page again and hit Resume.
+            Download a GGUF model after the engine is installed. Pause/cancel anytime. Enable “Polish
+            Drafts with Local AI” in Settings when ready.
           </p>
         </div>
       </div>
@@ -377,8 +477,21 @@ export default function ModelsPage() {
                         type="button"
                         className={`btn ${selected ? 'btn-primary' : ''}`}
                         style={{ padding: '0.55rem 1.25rem', borderRadius: '8px', fontSize: '0.85rem' }}
+                        disabled={!engine?.installed}
+                        title={
+                          engine?.installed
+                            ? undefined
+                            : 'Install the AI engine first (banner above)'
+                        }
                         onClick={async () => {
-                          const next = await api.saveSettings({ selectedModelId: m.id });
+                          if (!engine?.installed) {
+                            setToast('Install the AI engine first, then choose a model.');
+                            return;
+                          }
+                          const next = await api.saveSettings({
+                            selectedModelId: m.id,
+                            aiEnhanceEnabled: true,
+                          });
                           setSettings(next);
                           setToast(`${m.name} is now your active LLM`);
                         }}

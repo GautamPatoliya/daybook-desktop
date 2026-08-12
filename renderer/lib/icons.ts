@@ -1,3 +1,10 @@
+/**
+ * Offline icons — bundled at build time. Never fetch api.iconify.design at runtime.
+ * Uses a trimmed Solar subset (see solar-used.json), not the full icon pack.
+ */
+import { addCollection, Icon } from '@iconify/react/offline';
+import solarUsed from './solar-used.json';
+
 export const I = {
   logo: 'solar:widget-5-bold-duotone',
   chevronLeft: 'solar:alt-arrow-left-bold',
@@ -44,3 +51,7 @@ export const I = {
   info: 'solar:info-circle-bold-duotone',
   pause: 'solar:pause-circle-bold-duotone',
 } as const;
+
+addCollection(solarUsed);
+
+export { Icon };

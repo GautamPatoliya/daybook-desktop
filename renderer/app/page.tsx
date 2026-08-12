@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Icon } from "@iconify/react";
+import { Icon, I } from "../lib/icons";
 import {
   DndContext,
   DragOverlay,
@@ -21,9 +21,9 @@ import {
   formatShortDate,
   formatTime12h,
 } from "../lib/format";
-import { I } from "../lib/icons";
 import { Select } from "../components/Select";
 import { DatePicker } from "../components/DatePicker";
+import { handleBulletPaste, MAX_BULLET_ROWS, PASTE_BULLET_LIMIT } from "../lib/bulletPaste";
 import type {
   DayPayload,
   EmailDraft,
@@ -235,6 +235,36 @@ export default function BoardPage() {
     window.setTimeout(() => setToast(null), 2800);
   }, []);
 
+  const onBulletPaste = useCallback(
+    (
+      e: React.ClipboardEvent<HTMLInputElement>,
+      items: string[],
+      index: number,
+      setItems: (items: string[]) => void,
+      idPrefix: string,
+    ) => {
+      const text = e.clipboardData.getData("text/plain");
+      if (!text) return;
+      const result = handleBulletPaste(items, index, text);
+      if (result.kind === "default") return;
+      e.preventDefault();
+      setItems(result.items);
+      if (result.truncated) {
+        showToast(
+          `Added ${PASTE_BULLET_LIMIT} bullet points (paste limit — split large lists)`,
+        );
+      } else if (result.rowCapHit) {
+        showToast(`Bullet list capped at ${MAX_BULLET_ROWS} lines`);
+      } else if (result.lineCount > 1) {
+        showToast(`Added ${result.lineCount} bullet points`);
+      }
+      window.setTimeout(() => {
+        document.getElementById(`${idPrefix}-${result.focusIndex}`)?.focus();
+      }, 10);
+    },
+    [showToast],
+  );
+
   const reminderLock = useRef(false);
 
   const load = useCallback(async (date?: string) => {
@@ -325,7 +355,8 @@ export default function BoardPage() {
 
   useEffect(() => {
     if (editing) {
-      setDrawerSubItems(editing.subItems.map((s) => s.text));
+      const texts = editing.subItems.map((s) => s.text);
+      setDrawerSubItems(texts.length ? texts : [""]);
     } else {
       setDrawerSubItems([]);
     }
@@ -449,7 +480,10 @@ export default function BoardPage() {
     try {
       const d = await api.emailDraft(day.date, enhance);
       setDraft(d);
-      if (enhance) showToast("Draft polished");
+      if (enhance) {
+        if (d.enhanceMode === 'llm') showToast('Draft polished with Local AI');
+        else showToast('Draft polished (basic wording)');
+      }
     } catch (err) {
       showToast((err as Error).message);
     } finally {
@@ -820,6 +854,15 @@ export default function BoardPage() {
                           copy[index] = e.target.value;
                           setComposerSubItems(copy);
                         }}
+                        onPaste={(e) =>
+                          onBulletPaste(
+                            e,
+                            composerSubItems,
+                            index,
+                            setComposerSubItems,
+                            "composer-bullet",
+                          )
+                        }
                         onKeyDown={(e) => {
                           if (e.key === "Enter") {
                             e.preventDefault();
@@ -1050,6 +1093,15 @@ export default function BoardPage() {
                           copy[index] = e.target.value;
                           setDrawerSubItems(copy);
                         }}
+                        onPaste={(e) =>
+                          onBulletPaste(
+                            e,
+                            drawerSubItems,
+                            index,
+                            setDrawerSubItems,
+                            "drawer-bullet",
+                          )
+                        }
                         onKeyDown={(e) => {
                           if (e.key === "Enter") {
                             e.preventDefault();

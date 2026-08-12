@@ -21,15 +21,21 @@ function statusSuffixHtml(status: TaskStatus): string {
 }
 
 function lineText(task: Task, sub?: { text: string; enhanced?: string }): string {
+  /** Accept polished text unless it ballooned (aligned with LLM polish limits). */
+  const accept = (enh: string, raw: string) => {
+    if (!enh || enh === raw) return false;
+    return enh.length <= Math.max(raw.length * 1.5, raw.length + 60);
+  };
+
   if (sub) {
     const enh = (sub.enhanced || '').trim();
     const raw = (sub.text || '').trim();
-    if (enh && enh !== raw && enh.length <= Math.max(raw.length * 1.25, raw.length + 30)) return enh;
+    if (accept(enh, raw)) return enh;
     return raw;
   }
   const enh = (task.titleEnhanced || '').trim();
   const raw = task.title.trim();
-  if (enh && enh !== raw) return enh;
+  if (accept(enh, raw)) return enh;
   return raw;
 }
 
@@ -47,8 +53,10 @@ function buildTaskBullets(tasks: Task[]): { plain: string; html: string } {
   const plainParts: string[] = [];
   const htmlParts: string[] = ['<ul style="margin-top:4px;margin-bottom:12px;">'];
   for (const task of tasks) {
-    const label = task.title.trim();
+    // Must use polished title when present (title-only tasks were ignoring titleEnhanced before)
+    const label = lineText(task);
     if (!label) continue;
+    const rawTitle = task.title.trim();
     const allDone = task.status === 'done';
     const suffix = allDone ? statusSuffix('done') : '';
     const subs = task.subItems || [];
@@ -61,7 +69,9 @@ function buildTaskBullets(tasks: Task[]): { plain: string; html: string } {
     htmlParts.push('<ul style="margin-top:4px;margin-bottom:4px;">');
     for (const sub of subs) {
       const text = lineText(task, sub);
-      if (!text || text.toLowerCase() === label.toLowerCase()) continue;
+      if (!text || text.toLowerCase() === rawTitle.toLowerCase() || text.toLowerCase() === label.toLowerCase()) {
+        continue;
+      }
       plainParts.push(`    - ${text}${statusSuffix(task.status)}`);
       htmlParts.push(`<li>${escapeHtml(text)}${statusSuffixHtml(task.status)}</li>`);
     }
@@ -93,29 +103,42 @@ export function buildEmailDraft(
   const signOff = [...settings.signOff, settings.authorName].filter(Boolean).join('\n');
   const mode = settings.emailDefaultProject || 'master';
 
+  // Default: exclude backlog (status `none`) from EOD email — WIP + Done only
+  const emailTasks =
+    settings.includeBacklogInEmail === true ? tasks : tasks.filter((t) => t.status !== 'none');
+
   let bodyCore = '';
   let htmlCore = '';
 
   if (mode === 'master') {
-    const projects = orderedProjects(tasks, settings);
+    const projects = orderedProjects(emailTasks, settings);
     const plainBlocks: string[] = [];
     const htmlBlocks: string[] = [];
     for (const p of projects) {
-      const bullets = buildTaskBullets(tasksForProject(tasks, p));
+      const projectTasks = tasksForProject(emailTasks, p);
+      if (!projectTasks.length) continue;
+      const bullets = buildTaskBullets(projectTasks);
       plainBlocks.push(`*Project:* ${p}\n\n*Tasks:*\n\n${bullets.plain}`);
       htmlBlocks.push(
         `<p style="margin:0 0 10px 0;"><b>Project:</b> ${escapeHtml(p)}</p>` +
           `<p style="margin:0 0 6px 0;"><b>Tasks:</b></p>${bullets.html}`,
       );
     }
-    bodyCore = plainBlocks.join('\n\n');
-    htmlCore = htmlBlocks.join('\n');
+    if (!plainBlocks.length) {
+      bodyCore = '*Tasks:*\n\n- (No in-progress or completed tasks today)';
+      htmlCore =
+        '<p style="margin:0 0 6px 0;"><b>Tasks:</b></p><ul style="margin-top:4px;margin-bottom:12px;"><li>(No in-progress or completed tasks today)</li></ul>';
+    } else {
+      bodyCore = plainBlocks.join('\n\n');
+      htmlCore = htmlBlocks.join('\n');
+    }
   } else {
     const project =
-      [...new Set(tasks.map((t) => t.project))].length === 1
-        ? tasks[0]?.project || settings.defaultProject
+      [...new Set(emailTasks.map((t) => t.project))].length === 1
+        ? emailTasks[0]?.project || settings.defaultProject
         : mode || settings.defaultProject;
-    const bullets = buildTaskBullets(tasksForProject(tasks, project).length ? tasksForProject(tasks, project) : tasks);
+    const scoped = tasksForProject(emailTasks, project);
+    const bullets = buildTaskBullets(scoped.length ? scoped : emailTasks);
     bodyCore = `*Project:* ${project}\n\n*Tasks:*\n\n${bullets.plain}`;
     htmlCore =
       `<p style="margin:0 0 10px 0;"><b>Project:</b> ${escapeHtml(project)}</p>` +
@@ -142,7 +165,50 @@ ${signOffHtml}
 }
 
 export function ruleBasedPolish(raw: string): string {
-  let t = raw.trim().replace(/\s+/g, ' ').replace(/\s*:\s*$/, '').replace(/\s*>>\s*/g, ' - ');
+  let t = raw.trim().replace(/\s+/g, ' ');
   if (!t) return t;
-  return t.charAt(0).toUpperCase() + t.slice(1);
+
+  // Normalize casual separators used in Indian office notes
+  t = t.replace(/\s*>>\s*/g, ' — ').replace(/\s*->\s*/g, ' — ').replace(/\s*:\s*$/, '');
+
+  // Common spelling / wording fixes (case-insensitive whole words)
+  const fixes: Array<[RegExp, string]> = [
+    [/\bteh\b/gi, 'the'],
+    [/\brecieve\b/gi, 'receive'],
+    [/\brecieved\b/gi, 'received'],
+    [/\boccurence\b/gi, 'occurrence'],
+    [/\bseperate\b/gi, 'separate'],
+    [/\bdefinately\b/gi, 'definitely'],
+    [/\btommorow\b/gi, 'tomorrow'],
+    [/\btommorrow\b/gi, 'tomorrow'],
+    [/\buntill\b/gi, 'until'],
+    [/\bwrok\b/gi, 'work'],
+    [/\budpate\b/gi, 'update'],
+    [/\bupadte\b/gi, 'update'],
+    [/\bcompletition\b/gi, 'completion'],
+    [/\bimplemetation\b/gi, 'implementation'],
+    [/\bimplementaion\b/gi, 'implementation'],
+    [/\brequirment\b/gi, 'requirement'],
+    [/\brequirments\b/gi, 'requirements'],
+    [/\bdiscusion\b/gi, 'discussion'],
+    [/\bmetting\b/gi, 'meeting'],
+    [/\bfolow\b/gi, 'follow'],
+    [/\bfolow[- ]?up\b/gi, 'follow-up'],
+    [/\bfixd\b/gi, 'fixed'],
+    [/\bcheked\b/gi, 'checked'],
+    [/\btestng\b/gi, 'testing'],
+    [/\bdb\b/gi, 'DB'],
+    [/\bapi\b/gi, 'API'],
+    [/\bui\b/gi, 'UI'],
+  ];
+  for (const [re, replacement] of fixes) {
+    t = t.replace(re, replacement);
+  }
+
+  // Sentence-style capitalisation
+  t = t.charAt(0).toUpperCase() + t.slice(1);
+  // Capitalise after . ! ?
+  t = t.replace(/([.!?]\s+)([a-z])/g, (_, a: string, b: string) => a + b.toUpperCase());
+
+  return t;
 }

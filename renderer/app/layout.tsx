@@ -4,8 +4,7 @@ import './globals.css';
 import '../lib/bridge';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Icon } from '@iconify/react';
-import { I } from '../lib/icons';
+import { Icon, I } from '../lib/icons';
 
 const LINKS = [
   { href: '/', label: 'Board', icon: I.list },

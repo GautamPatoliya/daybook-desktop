@@ -1,6 +1,6 @@
 {
   "name": "daybook",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "description": "Daybook — offline daily work tracker for office teams",
   "author": "Gautam Patoliya",
   "license": "UNLICENSED",
@@ -20,29 +20,31 @@
     "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
-    "@dnd-kit/core": "^6.3.1",
-    "@dnd-kit/utilities": "^3.2.2",
-    "@iconify/react": "^6.0.2",
     "auto-launch": "^5.0.6",
     "electron-updater": "^6.6.2",
-    "next": "^15.3.4",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "tar": "^7.5.22"
   },
   "devDependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/utilities": "^3.2.2",
+    "@fontsource/dm-sans": "^5.3.0",
+    "@fontsource/source-serif-4": "^5.3.0",
+    "@iconify-json/solar": "^1.2.6",
+    "@iconify/react": "^6.0.2",
     "@types/auto-launch": "^5.0.5",
     "@types/node": "^22.15.30",
     "@types/react": "^19.1.6",
     "@types/react-dom": "^19.1.6",
+    "@types/tar": "^6.1.13",
     "concurrently": "^9.1.2",
     "cross-env": "^7.0.3",
     "electron": "^35.5.1",
     "electron-builder": "^26.0.12",
+    "next": "15.5.22",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
     "typescript": "^5.8.3",
     "wait-on": "^8.0.3"
-  },
-  "optionalDependencies": {
-    "node-llama-cpp": "^3.10.0"
   },
   "build": {
     "appId": "com.bcreative.worktasktracker",
@@ -57,16 +59,23 @@
       "renderer/out/**/*",
       "package.json",
       "CHANGELOG.md",
-      "build/icon.png"
+      "build/icon.png",
+      "!**/node_modules/next/**/*",
+      "!**/node_modules/@next/**/*",
+      "!**/node_modules/sharp/**/*",
+      "!**/node_modules/@img/**/*",
+      "!**/node_modules/node-llama-cpp/**/*",
+      "!**/node_modules/@node-llama-cpp/**/*",
+      "!**/node_modules/react/**/*",
+      "!**/node_modules/react-dom/**/*",
+      "!**/node_modules/@dnd-kit/**/*",
+      "!**/node_modules/@iconify/**/*"
     ],
     "extraResources": [
       {
         "from": "CHANGELOG.md",
         "to": "CHANGELOG.md"
       }
-    ],
-    "asarUnpack": [
-      "**/node_modules/node-llama-cpp/**/*"
     ],
     "publish": [
       {
@@ -84,7 +93,8 @@
           ]
         }
       ],
-      "artifactName": "${productName}-Setup-${version}.${ext}"
+      "artifactName": "${productName}-Setup-${version}.${ext}",
+      "executableName": "Daybook"
     },
     "nsis": {
       "oneClick": false,

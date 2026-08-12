@@ -52,6 +52,8 @@ export interface AppSettings {
   gmailComposeUrl: string;
   aiEnhanceEnabled: boolean;
   selectedModelId: string | null;
+  /** When false (default), backlog (`none`) tasks are omitted from EOD email drafts. */
+  includeBacklogInEmail: boolean;
   autostart: boolean;
   onboardingComplete: boolean;
 }
@@ -81,6 +83,8 @@ export interface EmailDraft {
   body: string;
   htmlBody: string;
   gmailUrl: string;
+  /** Present when draft was built via Polish — llm | rule | none */
+  enhanceMode?: 'none' | 'rule' | 'llm';
 }
 
 export interface ModelCatalogItem {
@@ -174,8 +178,9 @@ export const DEFAULT_SETTINGS: AppSettings = {
   reminderIntervalMinutes: 60,
   emailTo: '',
   gmailComposeUrl: 'https://mail.google.com/mail/?view=cm&fs=1',
-  aiEnhanceEnabled: true,
+  aiEnhanceEnabled: false,
   selectedModelId: null,
+  includeBacklogInEmail: false,
   autostart: true,
   onboardingComplete: false,
 };

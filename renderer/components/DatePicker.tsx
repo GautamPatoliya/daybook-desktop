@@ -1,6 +1,6 @@
 'use client';
 
-import { Icon } from '@iconify/react';
+import { Icon, I } from '../lib/icons';
 import { useEffect, useRef, useState } from 'react';
 import {
   daysInMonth,
@@ -10,7 +10,6 @@ import {
   startOfMonth,
   toIsoDate,
 } from '../lib/format';
-import { I } from '../lib/icons';
 
 const WEEKDAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 

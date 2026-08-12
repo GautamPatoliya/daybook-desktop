@@ -1,9 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Icon } from '@iconify/react';
+import { Icon, I } from '../../lib/icons';
 import { api } from '../../lib/api';
-import { I } from '../../lib/icons';
 import { PROJECT_COLORS, type ProjectMeta } from '../../../shared/types';
 
 export default function ProjectsPage() {

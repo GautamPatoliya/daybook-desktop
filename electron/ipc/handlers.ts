@@ -32,9 +32,17 @@ import {
   deleteModel,
   listLocalModels,
   pauseDownload,
-  polishText,
+  polishTexts,
+  resolvePolishModelId,
   startDownload,
 } from '../llm/models';
+import {
+  cancelEngineInstall,
+  getEngineStatus,
+  installEngine,
+  uninstallEngine,
+  clearLlamaModuleCache,
+} from '../llm/engine';
 import type { AppSettings, SubItem, Task, TaskPriority, TaskStatus } from '../../shared/types';
 
 type Deps = {
@@ -262,22 +270,51 @@ export function registerIpc(deps: Deps) {
     const root = deps.getRoot();
     const settings = readSettings(root);
     let store = readStore(root, payload.date);
-    if (payload.enhance && settings.aiEnhanceEnabled) {
-      for (const task of store.tasks) {
-        if (!task.subItems.length) {
-          task.titleEnhanced = await polishText(root, settings.selectedModelId, task.title);
+    let enhanceMode: 'none' | 'rule' | 'llm' = 'none';
+
+    if (payload.enhance) {
+      const engineOk = getEngineStatus(root).installed;
+      // Polish button uses Local AI whenever engine + a GGUF are available.
+      // Do not require the Settings toggle — "Use for Polish" / any installed model is enough.
+      const modelId = engineOk ? resolvePolishModelId(root, settings.selectedModelId) : null;
+      const useLlm = Boolean(modelId);
+
+      type Target =
+        | { kind: 'title'; taskIdx: number }
+        | { kind: 'sub'; taskIdx: number; subIdx: number };
+      const targets: Target[] = [];
+      const inputs: string[] = [];
+
+      store.tasks.forEach((task, taskIdx) => {
+        targets.push({ kind: 'title', taskIdx });
+        inputs.push(task.title);
+        task.subItems.forEach((sub, subIdx) => {
+          targets.push({ kind: 'sub', taskIdx, subIdx });
+          inputs.push(sub.text);
+        });
+      });
+
+      const { texts: polished, mode } = await polishTexts(root, useLlm ? modelId : null, inputs);
+      targets.forEach((t, i) => {
+        if (t.kind === 'title') {
+          store.tasks[t.taskIdx].titleEnhanced = polished[i];
         } else {
-          for (const sub of task.subItems) {
-            sub.enhanced = await polishText(root, settings.selectedModelId, sub.text);
-          }
+          store.tasks[t.taskIdx].subItems[t.subIdx].enhanced = polished[i];
         }
-      }
+      });
       writeStore(root, payload.date, store);
       store = readStore(root, payload.date);
+      enhanceMode = useLlm && mode === 'llm' ? 'llm' : 'rule';
+
+      // Persist selection so next polish / Settings stay in sync
+      if (useLlm && modelId && (settings.selectedModelId !== modelId || !settings.aiEnhanceEnabled)) {
+        writeSettings(root, { ...settings, selectedModelId: modelId, aiEnhanceEnabled: true });
+      }
     }
+
     const draft = buildEmailDraft(payload.date, displayDate(payload.date), store.tasks, settings);
     writeEmailArtifacts(root, payload.date, draft);
-    return draft;
+    return { ...draft, enhanceMode };
   });
 
   ipcMain.handle('email:copy', (_e, draft: { htmlBody: string; body: string; subject: string }) => {
@@ -311,6 +348,14 @@ export function registerIpc(deps: Deps) {
     const result = startDownload(deps.getRoot(), id);
     if (!result.ok) throw new Error(result.error);
     return { started: true };
+  });
+
+  ipcMain.handle('engine:status', () => getEngineStatus(deps.getRoot()));
+  ipcMain.handle('engine:install', async () => installEngine(deps.getRoot()));
+  ipcMain.handle('engine:cancel', () => cancelEngineInstall());
+  ipcMain.handle('engine:uninstall', () => {
+    clearLlamaModuleCache();
+    return { ok: uninstallEngine(deps.getRoot()) };
   });
 
   ipcMain.handle('reminder:consume', () => {

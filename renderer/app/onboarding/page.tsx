@@ -2,10 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Icon } from '@iconify/react';
+import { Icon, I } from '../../lib/icons';
 import { api } from '../../lib/api';
 import { TimePicker } from '../../components/TimePicker';
-import { I } from '../../lib/icons';
 import { formatHourLabel } from '../../lib/time';
 import type { AppSettings } from '../../../shared/types';
 

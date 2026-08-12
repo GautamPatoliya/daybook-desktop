@@ -82,6 +82,18 @@ export const api = {
       >
     >('models:list'),
   consumeReminder: () => invoke<{ mode: string | null }>('reminder:consume'),
+  engineStatus: () =>
+    invoke<{
+      installed: boolean;
+      version: string | null;
+      platformPackage: string | null;
+      installing: boolean;
+      path: string;
+      supported?: boolean;
+    }>('engine:status'),
+  installEngine: () => invoke<{ ok: boolean; error?: string }>('engine:install'),
+  cancelEngineInstall: () => invoke<{ ok: boolean }>('engine:cancel'),
+  uninstallEngine: () => invoke<{ ok: boolean }>('engine:uninstall'),
   analytics: () => invoke<AnalyticsSummary>('analytics:get'),
   analyticsCsv: () => invoke<string>('analytics:csv'),
   changelog: () => invoke<string>('changelog:get'),
