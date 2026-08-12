@@ -5,6 +5,10 @@ on:
     tags:
       - 'v*'
 
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 permissions:
   contents: write
 
@@ -30,7 +34,6 @@ jobs:
       - run: npm ci
       - name: Build installers (no code signing)
         env:
-          # No Apple Developer ID / Windows cert required — unsigned builds only
           CSC_IDENTITY_AUTO_DISCOVERY: false
         run: npm run build && npx electron-builder --${{ matrix.platform }} --publish never
       - uses: actions/upload-artifact@v4
@@ -47,9 +50,23 @@ jobs:
         with:
           path: dist
           merge-multiple: true
-      - uses: softprops/action-gh-release@v2
-        with:
-          files: dist/**
-          generate_release_notes: true
+      - name: Publish to GitHub Releases
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF_NAME}"
+          echo "Publishing ${tag}..."
+          find dist -type f | sort
+          mapfile -t files < <(find dist -type f)
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "No release files found under dist/"
+            exit 1
+          fi
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "Release exists — uploading assets"
+            gh release upload "$tag" "${files[@]}" --clobber
+          else
+            echo "Creating release ${tag}"
+            gh release create "$tag" "${files[@]}" --generate-notes
+          fi
