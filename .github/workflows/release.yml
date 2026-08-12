@@ -45,28 +45,37 @@ jobs:
   publish:
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
-          path: dist
-          merge-multiple: true
-      - name: Publish to GitHub Releases
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          path: artifacts
+      - name: Flatten release assets
+        shell: bash
         run: |
           set -euo pipefail
-          tag="${GITHUB_REF_NAME}"
-          echo "Publishing ${tag}..."
-          find dist -type f | sort
-          mapfile -t files < <(find dist -type f)
-          if [ "${#files[@]}" -eq 0 ]; then
-            echo "No release files found under dist/"
+          mkdir -p release-assets
+          find artifacts -type f | while IFS= read -r file; do
+            cp -f "$file" "release-assets/$(basename "$file")"
+          done
+          count="$(find release-assets -type f | wc -l | tr -d ' ')"
+          echo "Prepared ${count} files:"
+          ls -la release-assets/
+          if [ "$count" = "0" ]; then
+            echo "No release assets found"
             exit 1
           fi
-          if gh release view "$tag" >/dev/null 2>&1; then
-            echo "Release exists — uploading assets"
-            gh release upload "$tag" "${files[@]}" --clobber
-          else
-            echo "Creating release ${tag}"
-            gh release create "$tag" "${files[@]}" --generate-notes
-          fi
+      - name: Create GitHub Release
+        uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ github.ref_name }}
+          name: Daybook ${{ github.ref_name }}
+          generateReleaseNotes: true
+          artifacts: release-assets/*
+          allowUpdates: true
+          artifactErrorsFailBuild: true
+          makeLatest: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
