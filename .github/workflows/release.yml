@@ -20,10 +20,10 @@ jobs:
         include:
           - os: windows-latest
             platform: win
-            artifact: windows
+            publish: true
           - os: macos-latest
             platform: mac
-            artifact: macos
+            publish: false
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -32,50 +32,75 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Build installers (no code signing)
+      - name: Build Windows installer and publish release
+        if: matrix.publish
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
-        run: npm run build && npx electron-builder --${{ matrix.platform }} --publish never
-      - uses: actions/upload-artifact@v4
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm run build && npx electron-builder --win --publish always
+      - name: Build macOS installers (unsigned, no publish)
+        if: ${{ !matrix.publish }}
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+        run: npm run build && npx electron-builder --mac --publish never
+      - name: Stage macOS release files only
+        if: ${{ !matrix.publish }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p staged
+          shopt -s nullglob
+          for pattern in '*.dmg' '*.zip' '*.yml' '*.blockmap'; do
+            for file in release/${pattern}; do
+              cp -f "$file" staged/
+            done
+          done
+          echo "Staged files:"
+          ls -la staged/
+          count="$(find staged -type f | wc -l | tr -d ' ')"
+          if [ "$count" = "0" ]; then
+            echo "No macOS release files found"
+            exit 1
+          fi
+      - name: Upload macOS release files
+        if: ${{ !matrix.publish }}
+        uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.artifact }}
-          path: release/*
+          name: macos
+          path: staged/*
           if-no-files-found: error
 
-  publish:
+  publish-mac:
     needs: build
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
-          path: artifacts
-      - name: Flatten release assets
+          name: macos
+          path: macos
+      - name: Upload macOS assets to release
         shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          mkdir -p release-assets
-          find artifacts -type f | while IFS= read -r file; do
-            cp -f "$file" "release-assets/$(basename "$file")"
-          done
-          count="$(find release-assets -type f | wc -l | tr -d ' ')"
-          echo "Prepared ${count} files:"
-          ls -la release-assets/
-          if [ "$count" = "0" ]; then
-            echo "No release assets found"
+          tag="${GITHUB_REF_NAME}"
+          echo "Uploading macOS assets to ${tag}..."
+          ls -la macos/
+          mapfile -t files < <(find macos -maxdepth 1 -type f | sort)
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "No macOS files found"
             exit 1
           fi
-      - name: Create GitHub Release
-        uses: ncipollo/release-action@v1
-        with:
-          tag: ${{ github.ref_name }}
-          name: Daybook ${{ github.ref_name }}
-          generateReleaseNotes: true
-          artifacts: release-assets/*
-          allowUpdates: true
-          artifactErrorsFailBuild: true
-          makeLatest: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          for attempt in 1 2 3 4 5; do
+            if gh release upload "$tag" "${files[@]}" --clobber; then
+              echo "Upload succeeded"
+              exit 0
+            fi
+            echo "Upload attempt ${attempt} failed — retrying in 60s..."
+            sleep 60
+          done
+          echo "Failed to upload macOS assets after 5 attempts"
+          exit 1
