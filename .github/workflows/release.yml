@@ -1,3 +1,13 @@
+# Production release pipeline for Daybook
+#
+# Design (industry standard for electron-builder + electron-updater):
+# 1) Build Windows + macOS with --publish never (no Apple/Windows signing required)
+# 2) Upload ONLY distributable files (never unpacked app folders)
+# 3) One publish job creates/replaces the GitHub Release and attaches assets
+#
+# electron-builder --publish is intentionally NOT used in CI — it is fragile
+# under rate limits, TLS issues on macOS runners, and partial release conflicts.
+
 name: Release
 
 on:
@@ -7,7 +17,7 @@ on:
 
 concurrency:
   group: release-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 permissions:
   contents: write
@@ -19,88 +29,105 @@ jobs:
       matrix:
         include:
           - os: windows-latest
-            platform: win
-            publish: true
+            artifact: windows
+            builder_args: --win
+            paths: |
+              release/Daybook*.exe
+              release/Daybook*.blockmap
+              release/latest.yml
           - os: macos-latest
-            platform: mac
-            publish: false
+            artifact: macos
+            builder_args: --mac
+            paths: |
+              release/Daybook*.dmg
+              release/Daybook*.zip
+              release/Daybook*.blockmap
+              release/latest-mac.yml
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
+
       - run: npm ci
-      - name: Build Windows installer and publish release
-        if: matrix.publish
+
+      - name: Build installer (unsigned, no publish)
         env:
-          CSC_IDENTITY_AUTO_DISCOVERY: false
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npm run build && npx electron-builder --win --publish always
-      - name: Build macOS installers (unsigned, no publish)
-        if: ${{ !matrix.publish }}
-        env:
-          CSC_IDENTITY_AUTO_DISCOVERY: false
-        run: npm run build && npx electron-builder --mac --publish never
-      - name: Stage macOS release files only
-        if: ${{ !matrix.publish }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p staged
-          shopt -s nullglob
-          for pattern in '*.dmg' '*.zip' '*.yml' '*.blockmap'; do
-            for file in release/${pattern}; do
-              cp -f "$file" staged/
-            done
-          done
-          echo "Staged files:"
-          ls -la staged/
-          count="$(find staged -type f | wc -l | tr -d ' ')"
-          if [ "$count" = "0" ]; then
-            echo "No macOS release files found"
-            exit 1
-          fi
-      - name: Upload macOS release files
-        if: ${{ !matrix.publish }}
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: npm run build && npx electron-builder ${{ matrix.builder_args }} --publish never
+
+      - name: Upload release files
         uses: actions/upload-artifact@v4
         with:
-          name: macos
-          path: staged/*
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.paths }}
           if-no-files-found: error
+          retention-days: 7
 
-  publish-mac:
+  publish:
     needs: build
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
-      - uses: actions/download-artifact@v4
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
         with:
-          name: macos
-          path: macos
-      - name: Upload macOS assets to release
-        shell: bash
+          path: artifacts
+          merge-multiple: true
+
+      - name: Create GitHub Release and upload assets
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
         run: |
           set -euo pipefail
           tag="${GITHUB_REF_NAME}"
-          echo "Uploading macOS assets to ${tag}..."
-          ls -la macos/
-          mapfile -t files < <(find macos -maxdepth 1 -type f | sort)
-          if [ "${#files[@]}" -eq 0 ]; then
-            echo "No macOS files found"
+          version="${tag#v}"
+
+          mkdir -p upload
+          # Keep only updater-relevant distributables (never unpacked app trees)
+          find artifacts -type f \( \
+            -name 'Daybook*.exe' -o \
+            -name 'Daybook*.dmg' -o \
+            -name 'Daybook*.zip' -o \
+            -name 'Daybook*.blockmap' -o \
+            -name 'latest.yml' -o \
+            -name 'latest-mac.yml' \
+          \) -exec cp -f {} upload/ \;
+
+          echo "Release files:"
+          ls -lah upload/
+          count="$(find upload -type f | wc -l | tr -d ' ')"
+          if [ "$count" -lt 2 ]; then
+            echo "Expected Windows + macOS assets; found ${count} file(s)"
             exit 1
           fi
-          for attempt in 1 2 3 4 5; do
-            if gh release upload "$tag" "${files[@]}" --clobber; then
-              echo "Upload succeeded"
+
+          mapfile -t files < <(find upload -type f | sort)
+
+          # Remove any broken/partial release left by earlier failed runs
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "Deleting existing release ${tag} so assets can be recreated cleanly"
+            gh release delete "$tag" --yes
+            sleep 8
+          fi
+
+          # Retry create for transient GitHub secondary rate limits
+          for attempt in 1 2 3 4 5 6; do
+            echo "Creating release ${tag} (attempt ${attempt})..."
+            if gh release create "$tag" "${files[@]}" \
+              --title "Daybook ${version}" \
+              --generate-notes \
+              --latest; then
+              echo "Release ${tag} published with ${#files[@]} assets"
               exit 0
             fi
-            echo "Upload attempt ${attempt} failed — retrying in 60s..."
-            sleep 60
+            wait=$((attempt * 45))
+            echo "Publish failed — waiting ${wait}s before retry..."
+            sleep "$wait"
           done
-          echo "Failed to upload macOS assets after 5 attempts"
+
+          echo "Failed to publish release after retries"
           exit 1
