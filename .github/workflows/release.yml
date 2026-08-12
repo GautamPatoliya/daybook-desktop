@@ -71,6 +71,11 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
+      # gh release create requires a git checkout (it shells out to git)
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
@@ -85,6 +90,7 @@ jobs:
           set -euo pipefail
           tag="${GITHUB_REF_NAME}"
           version="${tag#v}"
+          repo="${GITHUB_REPOSITORY}"
 
           mkdir -p upload
           # Keep only updater-relevant distributables (never unpacked app trees)
@@ -108,9 +114,9 @@ jobs:
           mapfile -t files < <(find upload -type f | sort)
 
           # Remove any broken/partial release left by earlier failed runs
-          if gh release view "$tag" >/dev/null 2>&1; then
+          if gh release view "$tag" --repo "$repo" >/dev/null 2>&1; then
             echo "Deleting existing release ${tag} so assets can be recreated cleanly"
-            gh release delete "$tag" --yes
+            gh release delete "$tag" --repo "$repo" --yes
             sleep 8
           fi
 
@@ -118,6 +124,7 @@ jobs:
           for attempt in 1 2 3 4 5 6; do
             echo "Creating release ${tag} (attempt ${attempt})..."
             if gh release create "$tag" "${files[@]}" \
+              --repo "$repo" \
               --title "Daybook ${version}" \
               --generate-notes \
               --latest; then
