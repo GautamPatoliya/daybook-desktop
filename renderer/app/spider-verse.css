@@ -1,66 +1,88 @@
 /* ============================================================
-   SPIDER-VERSE THEME — spider-verse.css v3
-   Reference: Spidey Tracker game HUD aesthetic.
-   Thick frames. Chunky buttons. Monospace everywhere. No blur.
+   SPIDER-VERSE THEME v4 — Spidey Tracker pixel HUD
+   Reference: chunky black outlines, blue CRT frame, cream CTAs.
+   No dashed borders. One font. One border language.
    ============================================================ */
 
-/* ── 1. DESIGN TOKENS ──────────────────────────────────────── */
+@import '@fontsource/vt323/400.css';
+
+/* ── 1. TOKENS ─────────────────────────────────────────────── */
 [data-theme='spider-verse'] {
-  --bg-base:        #010410;
-  --bg-surface:     #060e1c;
-  --bg-raised:      #0b1624;
-  --bg-overlay:     #0e1e34;
-  --bg-input:       #040b14;
-  --bg-hover:       #101e30;
-  --border:         rgba(223,42,47,0.35);
-  --border-strong:  rgba(223,42,47,0.75);
-  --text:           #dce8f8;
-  --text-secondary: #8fa8c8;
-  --text-muted:     #4a6080;
-  --text-dim:       #2a3850;
-  --accent:         #df2a2f;
-  --accent-soft:    #ff5054;
-  --accent-dim:     rgba(223,42,47,0.12);
-  --accent-glow:    rgba(223,42,47,0.30);
-  --status-none:    #4a6080;
-  --status-wip:     #c8960e;
-  --status-done:    #1670b0;
-  --priority-high:  #df2a2f;
-  --priority-medium:#c8960e;
-  --priority-low:   #4a6080;
-  --danger:         #df2a2f;
-  --success:        #1670b0;
-  --warning:        #c8960e;
-  --radius:         0px;
-  --radius-sm:      0px;
-  --radius-lg:      0px;
-  --ease:           steps(4, end);
-  --shadow-card:    4px 4px 0 #000;
-  --shadow-float:   5px 5px 0 #000, 10px 10px 0 rgba(0,0,0,0.4);
+  /* Spidey Tracker palette */
+  --sv-black: #000000;
+  --sv-frame: #1a7fc4;
+  --sv-frame-dark: #0d5088;
+  --sv-frame-light: #4aa8e8;
+  --sv-panel: #0a1628;
+  --sv-panel-raised: #122038;
+  --sv-panel-inset: #060e1a;
+  --sv-cream: #f0dfa8;
+  --sv-cream-dark: #c9a84a;
+  --sv-mint: #7ecdb8;
+  --sv-mint-dark: #4a9a88;
+  --sv-red: #df2a2f;
+  --sv-red-bright: #ff5054;
+
+  /* Mapped to app vars */
+  --bg-base: #050a14;
+  --bg-surface: var(--sv-panel);
+  --bg-raised: var(--sv-panel-raised);
+  --bg-overlay: #162840;
+  --bg-input: var(--sv-panel-inset);
+  --bg-hover: #1a3050;
+  --border: #000;
+  --border-strong: var(--sv-frame);
+  --text: #dce8f8;
+  --text-secondary: #a0b8d0;
+  --text-muted: #6a88a8;
+  --text-dim: #3a5070;
+  --accent: var(--sv-red);
+  --accent-soft: var(--sv-red-bright);
+  --accent-dim: rgba(223, 42, 47, 0.15);
+  --accent-glow: rgba(26, 127, 196, 0.25);
+  --status-none: #6a88a8;
+  --status-wip: #d4a017;
+  --status-done: #1a7fc4;
+  --priority-high: var(--sv-red);
+  --priority-medium: #d4a017;
+  --priority-low: #6a88a8;
+  --danger: var(--sv-red);
+  --success: var(--sv-mint);
+  --warning: #d4a017;
+  --radius: 0;
+  --radius-sm: 0;
+  --radius-lg: 0;
+  --font: 'VT323', monospace;
+  --font-display: 'VT323', monospace;
+  --ease: steps(2, end);
+  --shadow-card: 4px 4px 0 var(--sv-black);
+  --shadow-float: 6px 6px 0 var(--sv-black);
+
+  font-size: 18px;
+  -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: unset;
+  text-rendering: geometricPrecision;
 }
 
-/* ── 2. SCOPED RESETS — no wildcard ────────────────────────── */
-/* Font: apply at body level, not * */
-[data-theme='spider-verse'],
-[data-theme='spider-verse'] .topbar,
-[data-theme='spider-verse'] .filters,
-[data-theme='spider-verse'] .nav-link,
-[data-theme='spider-verse'] .btn,
-[data-theme='spider-verse'] .chip,
-[data-theme='spider-verse'] .card,
-[data-theme='spider-verse'] .column-header,
-[data-theme='spider-verse'] .composer,
-[data-theme='spider-verse'] .drawer,
-[data-theme='spider-verse'] .tag,
-[data-theme='spider-verse'] .toast,
-[data-theme='spider-verse'] .page-header,
-[data-theme='spider-verse'] th,
-[data-theme='spider-verse'] .settings-nav-item,
-[data-theme='spider-verse'] .settings-panel-header {
-  font-family: 'Courier New', 'Courier', monospace !important;
+/* ── 2. PIXEL BORDER PRIMITIVES ────────────────────────────── */
+[data-theme='spider-verse'] .pixel-outline {
+  border: 3px solid var(--sv-black);
+  box-shadow:
+    inset -3px -3px 0 0 rgba(0, 0, 0, 0.45),
+    inset 3px 3px 0 0 rgba(255, 255, 255, 0.06);
 }
 
-/* image-rendering ONLY on SVG/images — never text */
+/* ── 3. GLOBAL RESETS ──────────────────────────────────────── */
+[data-theme='spider-verse'] body {
+  background: var(--bg-base);
+  font-family: var(--font);
+}
+
+[data-theme='spider-verse'] *:not(svg):not(g):not(path):not(rect):not(circle):not(line):not(polyline):not(polygon):not(defs):not(use) {
+  border-radius: 0 !important;
+  font-family: var(--font) !important;
+}
+
 [data-theme='spider-verse'] svg,
 [data-theme='spider-verse'] img,
 [data-theme='spider-verse'] canvas {
@@ -68,361 +90,279 @@
   image-rendering: crisp-edges;
 }
 
-/* border-radius: 0 — target specific UI shapes, NOT * */
-[data-theme='spider-verse'] .btn,
-[data-theme='spider-verse'] .card,
-[data-theme='spider-verse'] .column,
-[data-theme='spider-verse'] .column-header,
-[data-theme='spider-verse'] .chip,
-[data-theme='spider-verse'] .tag,
-[data-theme='spider-verse'] .date-pill,
-[data-theme='spider-verse'] .stat-pill,
-[data-theme='spider-verse'] .composer,
-[data-theme='spider-verse'] .composer-header,
-[data-theme='spider-verse'] .composer-footer,
-[data-theme='spider-verse'] .drawer,
-[data-theme='spider-verse'] .drawer-header,
-[data-theme='spider-verse'] .toast,
-[data-theme='spider-verse'] .settings-panel,
-[data-theme='spider-verse'] .settings-sidebar,
-[data-theme='spider-verse'] .theme-card,
-[data-theme='spider-verse'] .release-card,
-[data-theme='spider-verse'] .model-card,
-[data-theme='spider-verse'] .chart-card,
-[data-theme='spider-verse'] .premium-metric-card,
-[data-theme='spider-verse'] .update-status-card,
-[data-theme='spider-verse'] .updater-releases,
-[data-theme='spider-verse'] input,
-[data-theme='spider-verse'] textarea,
-[data-theme='spider-verse'] select,
-[data-theme='spider-verse'] .filters,
-[data-theme='spider-verse'] .page {
-  border-radius: 0 !important;
-}
-
-[data-theme='spider-verse'] body {
-  background: #010410;
-}
-
-/* App shell above the skyline background */
+/* CRT monitor frame around the whole app */
 [data-theme='spider-verse'] .app-shell {
   position: relative;
   z-index: 1;
-  background: transparent !important;
+  background: var(--sv-panel-inset) !important;
+  margin: 8px;
+  height: calc(100vh - 16px) !important;
+  border: 4px solid var(--sv-black);
+  box-shadow:
+    inset 0 0 0 4px var(--sv-frame),
+    inset 0 0 0 8px var(--sv-black),
+    inset 0 0 0 12px var(--sv-frame-dark),
+    0 0 0 2px var(--sv-frame-light);
+  overflow: hidden;
 }
 
-/* ── 3. ANIMATIONS ──────────────────────────────────────────── */
-@keyframes sv-blink {
-  0%, 49%  { opacity: 0.85; }
-  50%, 100% { opacity: 0.05; }
-}
-@keyframes sv-blink-slow {
-  0%, 72%  { opacity: 0.9; }
-  73%, 100% { opacity: 0.15; }
-}
-.sv-blink      { animation: sv-blink      2.6s steps(1) infinite; }
-.sv-blink-slow { animation: sv-blink-slow 5s   steps(1) infinite; }
-
-@keyframes sv-sway {
-  0%, 100% { transform: rotate(-2deg) translateX(-1px); }
-  50%      { transform: rotate(2deg)  translateX(1px);  }
-}
-@keyframes sv-pulse-scale {
-  0%, 100% { opacity: 1;   transform: scale(1);    }
-  50%      { opacity: 0.65; transform: scale(0.94); }
-}
-.sv-empty-sway  { animation: sv-sway         3.5s steps(6) infinite; transform-origin: 50% 0; }
-.sv-empty-pulse { animation: sv-pulse-scale  1.6s steps(3) infinite; }
-
-@keyframes sv-cursor-blink {
-  0%, 49%  { opacity: 1; }
-  50%, 100% { opacity: 0; }
-}
-
-/* Show/hide background skyline */
 .sv-bg { display: none; }
 [data-theme='spider-verse'] .sv-bg { display: block; }
 
-/* ── 4. TOPBAR — GAME HUD BAR ──────────────────────────────── */
-[data-theme='spider-verse'] .topbar {
-  background: #060e1c;
-  border-bottom: 3px solid #df2a2f;
-  box-shadow: 0 3px 0 #000, 0 6px 0 rgba(223,42,47,0.2);
-  backdrop-filter: none;
-  position: relative;
-  z-index: 100;
-  /* top accent line */
-  outline: 1px solid rgba(255,255,255,0.05);
-  outline-offset: -1px;
+/* ── 4. ANIMATIONS (minimal) ───────────────────────────────── */
+@keyframes sv-blink {
+  0%, 49% { opacity: 0.85; }
+  50%, 100% { opacity: 0.2; }
 }
-/* ruler tick marks along the bottom edge */
+.sv-blink { animation: sv-blink 3s steps(1) infinite; }
+
+/* ── 5. TOPBAR — HUD TITLE BAR ─────────────────────────────── */
+[data-theme='spider-verse'] .topbar {
+  background: var(--sv-frame-dark) !important;
+  border-bottom: 4px solid var(--sv-black) !important;
+  box-shadow: inset 0 -4px 0 0 var(--sv-frame), inset 0 4px 0 0 var(--sv-frame-light);
+  backdrop-filter: none;
+  padding: 0.55rem 1rem;
+}
 [data-theme='spider-verse'] .topbar::after {
-  content: '';
-  position: absolute;
-  bottom: -6px; left: 0; right: 0;
-  height: 3px;
-  background: repeating-linear-gradient(
-    90deg,
-    rgba(223,42,47,0.6) 0px, rgba(223,42,47,0.6) 4px,
-    transparent 4px, transparent 8px
-  );
-  pointer-events: none;
+  display: none;
 }
 
-/* ── 5. BRAND MARK ─────────────────────────────────────────── */
 .brand-mark-spider { display: none; }
 [data-theme='spider-verse'] .brand-mark-default { display: none !important; }
-[data-theme='spider-verse'] .brand-mark-spider  { display: flex !important; }
+[data-theme='spider-verse'] .brand-mark-spider { display: flex !important; }
 
 [data-theme='spider-verse'] .brand-mark {
-  background: #df2a2f;
-  box-shadow: 2px 2px 0 #000, 4px 4px 0 rgba(0,0,0,0.6);
-  outline: 1px solid rgba(255,100,100,0.4);
+  background: var(--sv-red);
+  border: 3px solid var(--sv-black);
+  box-shadow: 3px 3px 0 var(--sv-black);
 }
 [data-theme='spider-verse'] .brand-name {
   text-transform: uppercase;
-  letter-spacing: 3px;
-  color: #df2a2f;
-  text-shadow: 1px 1px 0 #000, 2px 2px 0 rgba(0,0,0,0.5);
-  font-weight: 700;
-  font-size: 0.75rem;
+  letter-spacing: 2px;
+  color: var(--sv-cream);
+  text-shadow: 2px 2px 0 var(--sv-black);
+  font-size: 1.15rem;
+  font-weight: 400;
 }
 
-/* ── 6. NAV LINKS ──────────────────────────────────────────── */
+/* ── 6. NAV — PIXEL TABS ───────────────────────────────────── */
 [data-theme='spider-verse'] .nav-link {
-  position: relative;
   text-transform: uppercase;
   letter-spacing: 1px;
-  font-size: 0.68rem;
-  font-weight: 700;
-  color: var(--text-muted);
+  font-size: 1rem;
+  color: var(--sv-cream);
+  opacity: 0.65;
+  border: 3px solid transparent;
+  padding: 0.35rem 0.7rem;
   transition: none;
-  border: 1px solid transparent;
 }
 [data-theme='spider-verse'] .nav-link:hover {
-  background: rgba(223,42,47,0.1);
-  color: #ff5054;
-  border-color: rgba(223,42,47,0.35);
-  box-shadow: 2px 2px 0 #000;
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.25);
+  border-color: var(--sv-black);
 }
 [data-theme='spider-verse'] .nav-link.active {
-  background: rgba(223,42,47,0.18);
-  color: #ff5054;
-  border: 2px solid rgba(223,42,47,0.7);
-  box-shadow: 2px 2px 0 #000;
+  opacity: 1;
+  background: var(--sv-cream);
+  color: var(--sv-black);
+  border: 3px solid var(--sv-black);
+  box-shadow: 3px 3px 0 var(--sv-black);
 }
 [data-theme='spider-verse'] .nav-link.active::after {
-  content: '';
-  position: absolute;
-  bottom: -3px; left: 0; right: 0; height: 3px;
-  background: repeating-linear-gradient(
-    90deg, #df2a2f 0px, #df2a2f 4px, transparent 4px, transparent 8px
-  );
+  display: none;
 }
 
-/* ── 7. BUTTONS — CHUNKY GAME BUTTONS ──────────────────────── */
+/* ── 7. BUTTONS — BEVELED GAME BUTTONS ─────────────────────── */
 [data-theme='spider-verse'] .btn {
-  background: #0b1624 !important;
-  border: 2px solid rgba(223,42,47,0.5) !important;
-  color: #8fa8c8;
-  box-shadow: 3px 3px 0 #000 !important;
+  background: var(--sv-panel-raised) !important;
+  border: 3px solid var(--sv-black) !important;
+  color: var(--sv-cream) !important;
+  box-shadow:
+    inset 0 -4px 0 0 rgba(0, 0, 0, 0.5),
+    4px 4px 0 0 var(--sv-black) !important;
   text-transform: uppercase;
   letter-spacing: 1px;
-  font-size: 0.7rem;
-  font-weight: 700;
+  font-size: 1rem;
+  padding: 0.45rem 0.9rem;
   transition: transform 60ms steps(1), box-shadow 60ms steps(1) !important;
-  position: relative;
-  outline: 1px solid rgba(255,255,255,0.04);
-  outline-offset: -1px;
   filter: none !important;
 }
 [data-theme='spider-verse'] .btn:hover:not(:disabled) {
-  background: rgba(223,42,47,0.12) !important;
-  border-color: rgba(223,42,47,0.85) !important;
-  color: #dce8f8;
-  box-shadow: 4px 4px 0 #000 !important;
   transform: translate(-1px, -1px);
+  box-shadow:
+    inset 0 -4px 0 0 rgba(0, 0, 0, 0.5),
+    5px 5px 0 0 var(--sv-black) !important;
   filter: none !important;
 }
 [data-theme='spider-verse'] .btn:active:not(:disabled) {
   transform: translate(3px, 3px) !important;
-  box-shadow: 1px 1px 0 #000 !important;
-  filter: none !important;
+  box-shadow:
+    inset 0 -2px 0 0 rgba(0, 0, 0, 0.5),
+    1px 1px 0 0 var(--sv-black) !important;
 }
-/* Primary: solid red game button */
+
+/* Primary = cream CTA like "GET TICKETS" in reference */
 [data-theme='spider-verse'] .btn-primary {
-  background: #df2a2f !important;
-  border-color: #ff7070 !important;
-  color: #fff !important;
-  box-shadow: 3px 3px 0 #000, 0 1px 0 rgba(255,255,255,0.2) inset !important;
-  text-shadow: 1px 1px 0 rgba(0,0,0,0.7);
+  background: var(--sv-cream) !important;
+  color: var(--sv-black) !important;
+  border-color: var(--sv-black) !important;
+  box-shadow:
+    inset 0 -5px 0 0 var(--sv-cream-dark),
+    4px 4px 0 0 var(--sv-black) !important;
+  text-shadow: none;
 }
 [data-theme='spider-verse'] .btn-primary:hover:not(:disabled) {
-  background: #ee3a3f !important;
-  box-shadow: 4px 4px 0 #000, 0 1px 0 rgba(255,255,255,0.2) inset !important;
+  background: #f5e8b8 !important;
   filter: none !important;
 }
-/* Override the default btn-primary ::before from prev pass */
 [data-theme='spider-verse'] .btn-primary::before { display: none !important; }
 
 [data-theme='spider-verse'] .icon-btn {
-  background: rgba(6,14,28,0.9) !important;
-  border: 2px solid rgba(223,42,47,0.28) !important;
-  color: var(--text-muted);
-  box-shadow: 2px 2px 0 #000 !important;
+  background: var(--sv-panel-raised) !important;
+  border: 3px solid var(--sv-black) !important;
+  color: var(--sv-cream) !important;
+  box-shadow: 2px 2px 0 var(--sv-black) !important;
 }
 [data-theme='spider-verse'] .icon-btn:hover {
-  background: rgba(223,42,47,0.1) !important;
-  border-color: rgba(223,42,47,0.65) !important;
-  color: #ff5054;
+  background: var(--sv-panel) !important;
+  color: var(--sv-cream) !important;
 }
 
 /* ── 8. FILTERS BAR ────────────────────────────────────────── */
 [data-theme='spider-verse'] .filters {
-  background: #060e1c;
-  border-bottom: 2px solid rgba(223,42,47,0.28);
-  box-shadow: 0 2px 0 #000;
+  background: var(--sv-panel) !important;
+  border-bottom: 4px solid var(--sv-black) !important;
+  box-shadow: inset 0 4px 0 0 rgba(255, 255, 255, 0.03);
+  overflow: visible !important;
   position: relative;
-  z-index: 10;
+  z-index: 2;
+}
+[data-theme='spider-verse'] .date-nav,
+[data-theme='spider-verse'] .date-picker-anchor {
+  overflow: visible;
+}
+[data-theme='spider-verse'] .date-picker {
+  z-index: 200 !important;
 }
 [data-theme='spider-verse'] .chip {
-  border: 2px solid rgba(223,42,47,0.25) !important;
-  background: #0b1624 !important;
+  border: 3px solid var(--sv-black) !important;
+  background: var(--sv-panel-inset) !important;
   color: var(--text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.6px;
-  font-size: 0.65rem;
-  font-weight: 700;
-  box-shadow: 2px 2px 0 #000;
+  font-size: 0.95rem;
+  box-shadow: 2px 2px 0 var(--sv-black);
 }
 [data-theme='spider-verse'] .chip.active,
 [data-theme='spider-verse'] .chip:hover {
-  background: rgba(223,42,47,0.15) !important;
-  border-color: rgba(223,42,47,0.7) !important;
-  color: #ff5054;
-  box-shadow: 2px 2px 0 #000;
+  background: var(--sv-frame-dark) !important;
+  color: var(--sv-cream) !important;
+  border-color: var(--sv-black) !important;
 }
 [data-theme='spider-verse'] .stat-pill {
-  border: 2px solid rgba(223,42,47,0.22) !important;
-  background: #060e1c !important;
-  font-size: 0.65rem;
+  border: 3px solid var(--sv-black) !important;
+  background: var(--sv-panel-inset) !important;
+  font-size: 0.95rem;
   text-transform: uppercase;
-  letter-spacing: 0.6px;
-  font-weight: 700;
-  box-shadow: 2px 2px 0 rgba(0,0,0,0.5);
+  box-shadow: 2px 2px 0 var(--sv-black);
 }
 [data-theme='spider-verse'] .date-pill {
-  border: 2px solid rgba(223,42,47,0.45) !important;
-  background: #0b1624 !important;
-  box-shadow: 3px 3px 0 #000;
+  border: 3px solid var(--sv-black) !important;
+  background: var(--sv-panel-raised) !important;
+  box-shadow: 3px 3px 0 var(--sv-black);
   text-transform: uppercase;
-  letter-spacing: 1px;
-  font-size: 0.68rem;
-  font-weight: 700;
-}
-[data-theme='spider-verse'] .date-pill:hover {
-  border-color: rgba(223,42,47,0.85) !important;
-  background: rgba(223,42,47,0.08) !important;
+  font-size: 1rem;
+  color: var(--sv-cream);
 }
 
-/* ── 9. KANBAN BOARD ───────────────────────────────────────── */
+/* ── 9. KANBAN COLUMNS — GAME PANELS ───────────────────────── */
 [data-theme='spider-verse'] .main,
 [data-theme='spider-verse'] .board {
   background: transparent;
 }
 
-/* Column outer frame — game panel style */
 [data-theme='spider-verse'] .column {
-  background: rgba(4,8,20,0.78) !important;
-  border: 3px solid rgba(223,42,47,0.38) !important;
-  box-shadow: 5px 5px 0 #000, 1px 1px 0 rgba(255,255,255,0.04) inset !important;
-  overflow: visible;
+  background: var(--sv-panel) !important;
+  border: 4px solid var(--sv-black) !important;
+  box-shadow:
+    inset 0 0 0 3px var(--sv-frame-dark),
+    6px 6px 0 var(--sv-black) !important;
   backdrop-filter: none;
-  position: relative;
 }
-[data-theme='spider-verse'] .column:hover {
-  border-color: rgba(223,42,47,0.6) !important;
-}
-/* Per-status left accent stripe */
-[data-theme='spider-verse'] .col-none { border-left-color: rgba(74,96,128,0.7) !important; }
-[data-theme='spider-verse'] .col-wip  { border-left-color: rgba(200,150,14,0.7) !important; }
-[data-theme='spider-verse'] .col-done { border-left-color: rgba(22,112,176,0.7) !important; }
+[data-theme='spider-verse'] .col-none { box-shadow: inset 0 0 0 3px #3a5070, 6px 6px 0 var(--sv-black) !important; }
+[data-theme='spider-verse'] .col-wip  { box-shadow: inset 0 0 0 3px #a07818, 6px 6px 0 var(--sv-black) !important; }
+[data-theme='spider-verse'] .col-done { box-shadow: inset 0 0 0 3px var(--sv-frame), 6px 6px 0 var(--sv-black) !important; }
 
-/* Column header — column layout, pixel art stacks on top */
 [data-theme='spider-verse'] .column-header {
-  border-bottom: 2px solid rgba(223,42,47,0.35) !important;
-  background: transparent !important;
+  border-bottom: 4px solid var(--sv-black) !important;
+  background: var(--sv-frame-dark) !important;
   padding: 0 !important;
-  overflow: hidden;
 }
 [data-theme='spider-verse'] .column-header-inner {
-  padding: 8px 12px !important;
+  padding: 10px 12px !important;
   text-transform: uppercase;
-  letter-spacing: 1px;
-  font-size: 0.7rem;
-  font-weight: 700;
+  letter-spacing: 2px;
+  font-size: 1.1rem;
+  color: var(--sv-cream);
+  text-shadow: 2px 2px 0 var(--sv-black);
 }
-[data-theme='spider-verse'] .col-none .column-header { border-bottom-color: rgba(74,96,128,0.5) !important; }
-[data-theme='spider-verse'] .col-wip  .column-header { border-bottom-color: rgba(200,150,14,0.5) !important; }
-[data-theme='spider-verse'] .col-done .column-header { border-bottom-color: rgba(22,112,176,0.5) !important; }
-
 [data-theme='spider-verse'] .column-count {
-  border: 2px solid rgba(223,42,47,0.28) !important;
-  background: rgba(223,42,47,0.08) !important;
-  font-size: 0.65rem;
-  font-weight: 700;
+  border: 2px solid var(--sv-black) !important;
+  background: var(--sv-cream) !important;
+  color: var(--sv-black) !important;
+  font-size: 0.95rem;
+  min-width: 1.5rem;
+  text-align: center;
+  font-weight: 400;
 }
 [data-theme='spider-verse'] .column-body {
-  background: transparent;
+  background: rgba(6, 14, 26, 0.55);
 }
 [data-theme='spider-verse'] .column-body.drag-over {
-  background: rgba(223,42,47,0.06);
-  outline: 2px dashed rgba(223,42,47,0.4);
-  outline-offset: -4px;
-}
-
-/* Pixel art column header */
-.pixel-col-header-art { display: none; }
-[data-theme='spider-verse'] .pixel-col-header-art {
-  display: block;
-  width: 100%;
-  overflow: hidden;
-  line-height: 0;
+  background: rgba(26, 127, 196, 0.08) !important;
+  outline: 4px solid var(--sv-frame) !important;
+  outline-offset: -6px;
 }
 
 /* ── 10. TASK CARDS ────────────────────────────────────────── */
 [data-theme='spider-verse'] .card {
-  background: #0b1624 !important;
-  border: 2px solid rgba(223,42,47,0.25) !important;
-  border-left: 4px solid rgba(223,42,47,0.6) !important;
-  box-shadow: 4px 4px 0 #000 !important;
+  background: var(--sv-panel-raised) !important;
+  border: 3px solid var(--sv-black) !important;
+  box-shadow: 4px 4px 0 var(--sv-black) !important;
   transition: transform 60ms steps(1), box-shadow 60ms steps(1) !important;
-  position: relative;
 }
-[data-theme='spider-verse'] .col-wip .card  { border-left-color: rgba(200,150,14,0.7) !important; }
-[data-theme='spider-verse'] .col-done .card { border-left-color: rgba(22,112,176,0.7) !important; }
-
 [data-theme='spider-verse'] .card:hover {
   transform: translate(-2px, -2px) !important;
-  box-shadow: 6px 6px 0 #000 !important;
-  border-color: rgba(223,42,47,0.6) !important;
+  box-shadow: 6px 6px 0 var(--sv-black) !important;
 }
 [data-theme='spider-verse'] .card-title {
-  font-weight: 700;
-  font-size: 0.88rem;
+  font-family: var(--font) !important;
+  font-size: 1.15rem;
+  letter-spacing: 0.5px;
+  text-transform: none;
 }
 [data-theme='spider-verse'] .card-foot {
-  background: rgba(0,0,0,0.35);
-  border-top: 1px solid rgba(223,42,47,0.16);
-  font-size: 0.68rem;
+  background: rgba(0, 0, 0, 0.3);
+  border-top: 3px solid var(--sv-black);
+  font-size: 0.95rem;
   text-transform: uppercase;
-  letter-spacing: 0.4px;
+  color: #a0b8d0 !important;
+}
+[data-theme='spider-verse'] .card-foot .card-time,
+[data-theme='spider-verse'] .card-foot .card-priority-label,
+[data-theme='spider-verse'] .card-foot .carried {
+  color: #b8cce0 !important;
 }
 [data-theme='spider-verse'] .tag {
-  border: 1px solid rgba(223,42,47,0.2) !important;
-  background: rgba(223,42,47,0.07) !important;
-  font-size: 0.65rem;
+  border: 2px solid var(--sv-black) !important;
+  background: var(--sv-panel-inset) !important;
+  font-size: 0.9rem;
   text-transform: uppercase;
+}
+[data-theme='spider-verse'] .tag .dot {
+  border-radius: 0 !important;
+  width: 8px;
+  height: 8px;
 }
 
 /* ── 11. EMPTY STATES ──────────────────────────────────────── */
@@ -432,767 +372,629 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 16px;
-  padding: 32px 16px;
+  gap: 14px;
+  padding: 20px 12px 28px;
+  flex: 1;
+}
+[data-theme='spider-verse'] .sv-empty-art {
+  padding: 10px;
+  border: 3px solid var(--sv-black);
+  background: linear-gradient(180deg, #0a1628 0%, #060e1a 100%);
+  box-shadow:
+    inset 0 0 0 3px var(--sv-frame-dark),
+    4px 4px 0 var(--sv-black);
 }
 [data-theme='spider-verse'] .empty-default { display: none !important; }
-
 .sv-empty-label {
-  font-family: 'Courier New', monospace;
-  font-size: 0.72rem;
-  font-weight: 700;
+  font-size: 1rem;
   text-transform: uppercase;
   letter-spacing: 3px;
-  color: rgba(223,42,47,0.5);
+  color: var(--text-muted);
 }
 [data-theme='spider-verse'] .sv-empty-label {
-  color: rgba(223,42,47,0.65);
-  text-shadow: 0 0 8px rgba(223,42,47,0.3);
+  color: var(--sv-frame-light);
+  text-shadow: 2px 2px 0 var(--sv-black);
 }
 
 /* ── 12. OVERLAY / COMPOSER / DRAWER ───────────────────────── */
+/* Preserve fixed positioning — never inherit app-shell relative stacking */
 [data-theme='spider-verse'] .overlay {
-  background: rgba(1,4,16,0.85) !important;
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 40 !important;
+  background: rgba(5, 10, 20, 0.88) !important;
   backdrop-filter: none !important;
+  animation: none !important;
 }
-/* Composer: game terminal window. Position kept as fixed from globals.css */
+
 [data-theme='spider-verse'] .composer {
-  background: #071220;
-  border: 3px solid rgba(223,42,47,0.65);
-  box-shadow: 6px 6px 0 #000;
-  /* NO position:relative — must stay position:fixed from globals.css */
+  position: fixed !important;
+  top: 10% !important;
+  left: 50% !important;
+  right: auto !important;
+  bottom: auto !important;
+  transform: translateX(-50%) !important;
+  width: min(640px, calc(100vw - 2rem)) !important;
+  max-height: min(85vh, calc(100vh - 2rem)) !important;
+  z-index: 42 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  background: var(--sv-panel) !important;
+  border: 4px solid var(--sv-black) !important;
+  box-shadow:
+    inset 0 0 0 4px var(--sv-frame),
+    8px 8px 0 var(--sv-black) !important;
+  overflow: hidden !important;
 }
 [data-theme='spider-verse'] .composer-header {
-  border-bottom: 2px solid rgba(223,42,47,0.35);
-  background: rgba(223,42,47,0.08);
+  flex-shrink: 0;
+  background: var(--sv-frame-dark) !important;
+  border-bottom: 4px solid var(--sv-black) !important;
   text-transform: uppercase;
   letter-spacing: 2px;
-  font-size: 0.7rem;
-  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--sv-cream);
+  text-shadow: 2px 2px 0 var(--sv-black);
+}
+[data-theme='spider-verse'] .composer-body {
+  background: var(--sv-panel) !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch;
 }
 [data-theme='spider-verse'] .composer-footer {
-  border-top: 2px solid rgba(223,42,47,0.28);
-  background: rgba(0,0,0,0.3);
+  flex-shrink: 0;
+  background: var(--sv-panel-inset) !important;
+  border-top: 4px solid var(--sv-black) !important;
 }
+[data-theme='spider-verse'] .composer label,
+[data-theme='spider-verse'] .composer-fields label,
+[data-theme='spider-verse'] .field label {
+  text-transform: uppercase !important;
+  letter-spacing: 2px !important;
+  font-size: 0.95rem !important;
+  color: var(--sv-frame-light) !important;
+}
+
 [data-theme='spider-verse'] .drawer {
-  background: #060e1c !important;
-  border-left: 3px solid rgba(223,42,47,0.65) !important;
-  box-shadow: -5px 0 0 #000 !important;
+  position: fixed !important;
+  top: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  left: auto !important;
+  width: min(440px, 100%) !important;
+  z-index: 41 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  background: var(--sv-panel) !important;
+  border-left: 4px solid var(--sv-black) !important;
+  box-shadow: -6px 0 0 var(--sv-black) !important;
   backdrop-filter: none !important;
 }
 [data-theme='spider-verse'] .drawer-header {
-  border-bottom: 2px solid rgba(223,42,47,0.3);
-  background: rgba(223,42,47,0.07);
+  flex-shrink: 0;
+  background: var(--sv-frame-dark) !important;
+  border-bottom: 4px solid var(--sv-black) !important;
   text-transform: uppercase;
-  letter-spacing: 1.5px;
-  font-size: 0.7rem;
-  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--sv-cream);
+}
+[data-theme='spider-verse'] .drawer-body {
+  background: var(--sv-panel) !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+}
+[data-theme='spider-verse'] .drawer-footer {
+  flex-shrink: 0;
+  background: var(--sv-panel-inset) !important;
+  border-top: 4px solid var(--sv-black) !important;
 }
 
 /* ── 13. FORM INPUTS ───────────────────────────────────────── */
 [data-theme='spider-verse'] input,
 [data-theme='spider-verse'] textarea,
 [data-theme='spider-verse'] select {
-  border: 2px solid rgba(223,42,47,0.3) !important;
-  background: #040b14 !important;
-  box-shadow: inset 2px 2px 0 rgba(0,0,0,0.7) !important;
-  font-family: 'Courier New', monospace !important;
-  outline: none !important;
+  background: var(--sv-panel-inset) !important;
+  border: 3px solid var(--sv-black) !important;
+  color: var(--text) !important;
+  font-size: 1.05rem !important;
+  box-shadow: inset 3px 3px 0 rgba(0, 0, 0, 0.5) !important;
+  caret-color: var(--sv-cream);
 }
 [data-theme='spider-verse'] input:focus,
 [data-theme='spider-verse'] textarea:focus,
 [data-theme='spider-verse'] select:focus {
-  border-color: rgba(223,42,47,0.8) !important;
-  box-shadow: inset 2px 2px 0 rgba(0,0,0,0.7),
-              0 0 0 2px rgba(223,42,47,0.15) !important;
+  outline: 3px solid var(--sv-frame) !important;
+  outline-offset: 0;
+  border-color: var(--sv-black) !important;
 }
-[data-theme='spider-verse'] .field label,
-[data-theme='spider-verse'] .settings-label {
-  text-transform: uppercase;
-  letter-spacing: 1.5px;
-  font-size: 0.65rem;
-  color: rgba(223,42,47,0.75);
-  font-weight: 700;
-  font-family: 'Courier New', monospace !important;
-}
-[data-theme='spider-verse'] .divider {
-  border-color: rgba(223,42,47,0.15) !important;
+[data-theme='spider-verse'] input::placeholder,
+[data-theme='spider-verse'] textarea::placeholder {
+  color: var(--text-dim) !important;
 }
 
-/* ── 14. SETTINGS ──────────────────────────────────────────── */
-[data-theme='spider-verse'] .settings-sidebar {
-  border-right: 3px solid rgba(223,42,47,0.25) !important;
-  background: rgba(6,14,28,0.98) !important;
+/* ── 14. SELECT / TOGGLE / DATE PICKER ─────────────────────── */
+[data-theme='spider-verse'] .select-trigger {
+  background: var(--sv-panel-inset) !important;
+  border: 3px solid var(--sv-black) !important;
+  box-shadow: 3px 3px 0 var(--sv-black) !important;
+  font-size: 1.05rem !important;
+  color: var(--text) !important;
+}
+[data-theme='spider-verse'] .select-list {
+  background: var(--sv-panel) !important;
+  border: 3px solid var(--sv-black) !important;
+  box-shadow: 4px 4px 0 var(--sv-black) !important;
+}
+[data-theme='spider-verse'] .select-option:hover,
+[data-theme='spider-verse'] .select-option[aria-selected='true'] {
+  background: var(--sv-frame-dark) !important;
+  color: var(--sv-cream) !important;
+}
+
+[data-theme='spider-verse'] .toggle-track {
+  background: var(--sv-panel-inset) !important;
+  border: 3px solid var(--sv-black) !important;
+}
+[data-theme='spider-verse'] .toggle-track.on {
+  background: var(--sv-mint-dark) !important;
+}
+[data-theme='spider-verse'] .toggle-thumb {
+  background: var(--sv-cream) !important;
+  border: 2px solid var(--sv-black);
+  border-radius: 0 !important;
+}
+
+[data-theme='spider-verse'] .date-picker {
+  background: var(--sv-panel) !important;
+  border: 4px solid var(--sv-black) !important;
+  box-shadow: inset 0 0 0 3px var(--sv-frame), 6px 6px 0 var(--sv-black) !important;
+}
+[data-theme='spider-verse'] .date-picker-header {
+  background: var(--sv-frame-dark) !important;
+  border-bottom: 3px solid var(--sv-black) !important;
+}
+[data-theme='spider-verse'] .date-picker-day {
+  color: #d4e4f8 !important;
+  font-size: 1.05rem !important;
+  font-weight: 600 !important;
+}
+[data-theme='spider-verse'] .date-picker-day:hover:not(.selected):not(:disabled) {
+  color: var(--sv-cream) !important;
+  background: rgba(26, 127, 196, 0.22) !important;
+  border-color: var(--sv-frame) !important;
+}
+[data-theme='spider-verse'] .date-picker-weekdays span {
+  color: var(--sv-frame-light) !important;
+  font-size: 0.85rem !important;
+}
+[data-theme='spider-verse'] .date-picker-month,
+[data-theme='spider-verse'] .date-picker-selected {
+  color: var(--sv-cream) !important;
+}
+[data-theme='spider-verse'] .date-picker-day:disabled {
+  opacity: 0.3 !important;
+  color: #5a7090 !important;
+}
+[data-theme='spider-verse'] .date-picker-day.selected {
+  background: var(--sv-cream) !important;
+  color: var(--sv-black) !important;
+  border: 2px solid var(--sv-black) !important;
+}
+[data-theme='spider-verse'] .date-picker-day.today {
+  border: 2px solid var(--sv-frame-light) !important;
+  color: var(--sv-cream) !important;
+}
+
+/* ── 15. SETTINGS ──────────────────────────────────────────── */
+[data-theme='spider-verse'] .settings-sidebar,
+[data-theme='spider-verse'] .settings-nav {
+  background: var(--sv-panel-inset) !important;
+  border-right: 4px solid var(--sv-black) !important;
 }
 [data-theme='spider-verse'] .settings-nav-item {
   text-transform: uppercase;
-  letter-spacing: 0.6px;
-  font-size: 0.68rem;
-  font-weight: 700;
+  font-size: 1rem;
+  border: 3px solid transparent !important;
   transition: none;
-  border: 2px solid transparent !important;
 }
 [data-theme='spider-verse'] .settings-nav-item:hover {
-  background: rgba(223,42,47,0.1);
-  border-color: rgba(223,42,47,0.35) !important;
-  color: #ff5054;
+  background: rgba(0, 0, 0, 0.25);
+  border-color: var(--sv-black) !important;
 }
 [data-theme='spider-verse'] .settings-nav-item.is-active {
-  background: rgba(223,42,47,0.16);
-  border-color: rgba(223,42,47,0.6) !important;
-  color: #ff5054;
-  box-shadow: 2px 2px 0 #000;
+  background: var(--sv-cream);
+  color: var(--sv-black);
+  border-color: var(--sv-black) !important;
+  box-shadow: 3px 3px 0 var(--sv-black);
 }
 [data-theme='spider-verse'] .settings-panel {
-  border: 3px solid rgba(223,42,47,0.35) !important;
-  box-shadow: 5px 5px 0 #000;
-  background: rgba(6,14,28,0.99) !important;
+  background: var(--sv-panel) !important;
+  border: 4px solid var(--sv-black) !important;
+  box-shadow: inset 0 0 0 3px var(--sv-frame-dark), 6px 6px 0 var(--sv-black) !important;
 }
 [data-theme='spider-verse'] .settings-panel-header {
-  border-bottom: 2px solid rgba(223,42,47,0.28);
-  background: rgba(223,42,47,0.06);
+  background: var(--sv-frame-dark) !important;
+  border-bottom: 4px solid var(--sv-black) !important;
   text-transform: uppercase;
-  letter-spacing: 1.5px;
-  font-size: 0.7rem;
-  font-weight: 700;
+  color: var(--sv-cream);
 }
-/* Theme cards */
 [data-theme='spider-verse'] .theme-card {
-  border: 2px solid rgba(223,42,47,0.28) !important;
-  background: #0b1624;
-  box-shadow: 3px 3px 0 #000;
-  transition: transform 60ms steps(1), box-shadow 60ms steps(1) !important;
-}
-[data-theme='spider-verse'] .theme-card:hover {
-  transform: translate(-2px,-2px);
-  box-shadow: 5px 5px 0 #000;
-  border-color: rgba(223,42,47,0.65) !important;
+  border: 3px solid var(--sv-black) !important;
+  background: var(--sv-panel-raised);
+  box-shadow: 4px 4px 0 var(--sv-black);
 }
 [data-theme='spider-verse'] .theme-card.theme-active {
-  border-color: #df2a2f !important;
-  box-shadow: 4px 4px 0 #000;
-}
-[data-theme='spider-verse'] .theme-card.theme-active .theme-check {
-  background: #df2a2f;
-  border-color: #ff7070;
-  color: #fff;
+  box-shadow: inset 0 0 0 3px var(--sv-frame), 4px 4px 0 var(--sv-black);
 }
 
-/* ── 15. TOAST ─────────────────────────────────────────────── */
-[data-theme='spider-verse'] .toast {
-  border: 2px solid rgba(223,42,47,0.65) !important;
-  background: #060e1c !important;
-  box-shadow: 4px 4px 0 #000 !important;
-  font-size: 0.72rem;
+/* ── 16. PAGES — TYPOGRAPHY ────────────────────────────────── */
+[data-theme='spider-verse'] .page h1,
+[data-theme='spider-verse'] .page h2,
+[data-theme='spider-verse'] .page h3,
+[data-theme='spider-verse'] .page-header h1 {
+  font-family: var(--font) !important;
   text-transform: uppercase;
-  letter-spacing: 1px;
-  color: #dce8f8 !important;
+  letter-spacing: 2px;
+  text-shadow: 2px 2px 0 var(--sv-black);
+  color: var(--sv-cream);
+}
+[data-theme='spider-verse'] .page-sub {
+  font-size: 1.05rem;
+  color: var(--text-muted);
 }
 
-/* ── 16. ANALYTICS ─────────────────────────────────────────── */
-[data-theme='spider-verse'] .premium-metric-card {
-  background: #0b1624 !important;
-  border: 2px solid rgba(223,42,47,0.28) !important;
-  box-shadow: 4px 4px 0 #000 !important;
+/* ── 17. ANALYTICS / UPDATES / MODELS / PROJECTS ───────────── */
+[data-theme='spider-verse'] .premium-metric-card,
+[data-theme='spider-verse'] .chart-card,
+[data-theme='spider-verse'] .update-status-card,
+[data-theme='spider-verse'] .release-card,
+[data-theme='spider-verse'] .model-card {
+  background: var(--sv-panel) !important;
+  border: 3px solid var(--sv-black) !important;
+  box-shadow: 4px 4px 0 var(--sv-black) !important;
 }
 [data-theme='spider-verse'] .premium-metric-val {
   background: none !important;
   -webkit-background-clip: unset !important;
   -webkit-text-fill-color: unset !important;
-  color: #df2a2f !important;
-  font-weight: 700;
+  color: var(--sv-cream) !important;
+  text-shadow: 2px 2px 0 var(--sv-black);
 }
 [data-theme='spider-verse'] .premium-bar-fill {
-  background: linear-gradient(90deg, #df2a2f, rgba(223,42,47,0.4)) !important;
-  box-shadow: none !important;
+  background: var(--sv-frame) !important;
   border-radius: 0 !important;
+  box-shadow: none !important;
 }
 [data-theme='spider-verse'] .premium-bar-track {
-  background: rgba(223,42,47,0.08) !important;
-  border-radius: 0 !important;
-}
-[data-theme='spider-verse'] .chart-card {
-  background: #060e1c !important;
-  border: 2px solid rgba(223,42,47,0.28) !important;
-  box-shadow: 4px 4px 0 #000 !important;
-}
-[data-theme='spider-verse'] .premium-hour-bar {
-  background: rgba(223,42,47,0.12) !important;
-  border-radius: 0 !important;
-  box-shadow: none !important;
+  background: var(--sv-panel-inset) !important;
+  border: 2px solid var(--sv-black);
 }
 [data-theme='spider-verse'] .premium-hour-bar.has-data {
-  background: linear-gradient(180deg, #df2a2f, rgba(223,42,47,0.25)) !important;
+  background: var(--sv-frame) !important;
 }
 [data-theme='spider-verse'] .table th {
-  background: rgba(223,42,47,0.06);
-  color: rgba(223,42,47,0.8);
+  background: var(--sv-frame-dark);
+  color: var(--sv-cream);
   text-transform: uppercase;
-  letter-spacing: 1px;
-  font-size: 0.65rem;
-  border-bottom: 2px solid rgba(223,42,47,0.25) !important;
+  border-bottom: 3px solid var(--sv-black) !important;
+  font-size: 0.95rem;
 }
 [data-theme='spider-verse'] .table tr {
-  border-bottom: 1px solid rgba(223,42,47,0.1) !important;
+  border-bottom: 2px solid rgba(0, 0, 0, 0.4) !important;
 }
 
-/* ── 17. UPDATES PAGE ──────────────────────────────────────── */
-[data-theme='spider-verse'] .version-badge-main {
-  background: linear-gradient(135deg, #df2a2f, #8a1020) !important;
-  box-shadow: 3px 3px 0 #000;
+/* ── 18. TOAST / SCROLLBAR / MISC ──────────────────────────── */
+[data-theme='spider-verse'] .toast {
+  background: var(--sv-panel-raised) !important;
+  border: 3px solid var(--sv-black) !important;
+  box-shadow: 4px 4px 0 var(--sv-black) !important;
+  text-transform: uppercase;
+  font-size: 1rem;
+  color: var(--sv-cream) !important;
 }
-[data-theme='spider-verse'] .update-status-card {
-  background: #0b1624 !important;
-  border: 2px solid rgba(223,42,47,0.35) !important;
-  box-shadow: 4px 4px 0 #000 !important;
+[data-theme='spider-verse'] ::-webkit-scrollbar { width: 8px; height: 8px; }
+[data-theme='spider-verse'] ::-webkit-scrollbar-track { background: var(--sv-panel-inset); }
+[data-theme='spider-verse'] ::-webkit-scrollbar-thumb {
+  background: var(--sv-frame);
+  border: 2px solid var(--sv-black);
 }
-[data-theme='spider-verse'] .release-card {
-  background: #060e1c !important;
-  border: 2px solid rgba(223,42,47,0.22) !important;
-  box-shadow: 3px 3px 0 #000 !important;
+[data-theme='spider-verse'] .empty {
+  border: 3px solid var(--sv-black) !important;
+  background: var(--sv-panel-inset);
+  box-shadow: inset 3px 3px 0 rgba(0, 0, 0, 0.4);
 }
-[data-theme='spider-verse'] .release-card--current {
-  border-color: rgba(223,42,47,0.65) !important;
-  box-shadow: 4px 4px 0 #000 !important;
-}
-[data-theme='spider-verse'] .release-badge {
-  background: rgba(223,42,47,0.15) !important;
-  border-color: rgba(223,42,47,0.4) !important;
-  color: #ff5054 !important;
-}
-[data-theme='spider-verse'] .release-badge--new {
-  background: rgba(200,150,14,0.15) !important;
-  border-color: rgba(200,150,14,0.4) !important;
-  color: #c8960e !important;
+[data-theme='spider-verse'] .bullet-row-dot,
+[data-theme='spider-verse'] .bullet-dot {
+  background: var(--sv-red) !important;
+  border-radius: 0 !important;
+  box-shadow: 1px 1px 0 var(--sv-black) !important;
 }
 [data-theme='spider-verse'] .progress span {
-  background: linear-gradient(90deg, #df2a2f, rgba(223,42,47,0.5)) !important;
+  background: var(--sv-frame) !important;
   border-radius: 0 !important;
 }
+[data-theme='spider-verse'] .version-badge-main {
+  background: var(--sv-red) !important;
+  border: 3px solid var(--sv-black);
+  box-shadow: 3px 3px 0 var(--sv-black);
+}
 
-/* ── 18. LOCAL AI PAGE ─────────────────────────────────────── */
+/* ── 19. ONBOARDING ─────────────────────────────────────────── */
+[data-theme='spider-verse'] .onboarding-shell {
+  background: var(--bg-base);
+}
+[data-theme='spider-verse'] .onboarding-card {
+  background: var(--sv-panel) !important;
+  border: 4px solid var(--sv-black) !important;
+  box-shadow: inset 0 0 0 4px var(--sv-frame), 8px 8px 0 var(--sv-black) !important;
+}
+[data-theme='spider-verse'] .onboarding-brand h1,
+[data-theme='spider-verse'] .onboarding-body h2 {
+  font-family: var(--font) !important;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--sv-cream);
+  text-shadow: 2px 2px 0 var(--sv-black);
+}
+[data-theme='spider-verse'] .onboarding-brand-mark {
+  border: 3px solid var(--sv-black);
+  box-shadow: 3px 3px 0 var(--sv-black);
+}
+[data-theme='spider-verse'] .onboarding-day {
+  border: 3px solid var(--sv-black) !important;
+  box-shadow: 2px 2px 0 var(--sv-black);
+}
+[data-theme='spider-verse'] .onboarding-day.on {
+  background: var(--sv-cream) !important;
+  color: var(--sv-black) !important;
+}
+[data-theme='spider-verse'] .onboarding-steps span.on {
+  background: var(--sv-frame) !important;
+}
+[data-theme='spider-verse'] .onboarding-steps span {
+  border-radius: 0 !important;
+  height: 6px;
+  border: 2px solid var(--sv-black);
+}
+[data-theme='spider-verse'] .onboarding-banner {
+  background: var(--sv-panel-inset) !important;
+  border: 3px solid var(--sv-black) !important;
+  box-shadow: 3px 3px 0 var(--sv-black);
+}
+[data-theme='spider-verse'] .onboarding-banner h3 {
+  color: var(--sv-mint) !important;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+[data-theme='spider-verse'] .onboarding-actions {
+  background: var(--sv-panel) !important;
+  border-top: 4px solid var(--sv-black);
+}
+
+/* ── 20. SETTINGS SHELL / NAV ──────────────────────────────── */
+[data-theme='spider-verse'] .settings-nav {
+  background: var(--sv-panel-inset) !important;
+  border: 3px solid var(--sv-black) !important;
+  box-shadow: 4px 4px 0 var(--sv-black);
+  padding: 0.35rem !important;
+}
+[data-theme='spider-verse'] .settings-nav-item--danger.is-active {
+  background: rgba(223, 42, 47, 0.2) !important;
+  color: var(--sv-red-bright) !important;
+}
+
+/* ── 21. PROJECTS / TIME / STATUS ───────────────────────────── */
+[data-theme='spider-verse'] .project-row {
+  border-bottom: 3px solid var(--sv-black) !important;
+  padding: 0.85rem 0;
+}
+[data-theme='spider-verse'] .project-swatch,
+[data-theme='spider-verse'] .color-swatch {
+  border-radius: 0 !important;
+  border: 2px solid var(--sv-black) !important;
+}
+[data-theme='spider-verse'] .color-swatch.selected {
+  box-shadow: 0 0 0 2px var(--sv-cream) !important;
+}
+[data-theme='spider-verse'] .time-picker-sep {
+  color: var(--sv-cream);
+  font-size: 1.2rem;
+}
+[data-theme='spider-verse'] .status-banner {
+  border: 3px solid var(--sv-black) !important;
+  box-shadow: 3px 3px 0 var(--sv-black);
+}
+[data-theme='spider-verse'] .status-banner.ok {
+  background: rgba(126, 205, 184, 0.1) !important;
+  border-color: var(--sv-black) !important;
+}
+[data-theme='spider-verse'] .status-banner.warn {
+  background: rgba(212, 160, 23, 0.1) !important;
+}
+[data-theme='spider-verse'] .status-banner.error {
+  background: rgba(223, 42, 47, 0.1) !important;
+}
+[data-theme='spider-verse'] .status-banner.info {
+  background: rgba(26, 127, 196, 0.12) !important;
+}
+
+/* ── 22. AI / RELEASES / ANALYTICS EXTRAS ──────────────────── */
 [data-theme='spider-verse'] .ai-badge.active {
-  color: #df2a2f !important;
-  background: rgba(223,42,47,0.08) !important;
-  border-color: rgba(223,42,47,0.25) !important;
+  color: var(--sv-cream) !important;
+  background: var(--sv-frame-dark) !important;
+  border: 2px solid var(--sv-black) !important;
 }
 [data-theme='spider-verse'] .ai-badge.ready {
-  color: var(--status-done) !important;
-  background: rgba(22,112,176,0.08) !important;
-  border-color: rgba(22,112,176,0.2) !important;
+  color: var(--sv-mint) !important;
+  background: rgba(126, 205, 184, 0.1) !important;
+  border: 2px solid var(--sv-black) !important;
 }
 [data-theme='spider-verse'] .ai-progress-fill,
 [data-theme='spider-verse'] .model-progress-bar {
-  background: linear-gradient(90deg, #df2a2f, rgba(223,42,47,0.4)) !important;
+  background: var(--sv-frame) !important;
   border-radius: 0 !important;
 }
-
-/* ── 19. PROJECTS PAGE ─────────────────────────────────────── */
-[data-theme='spider-verse'] .project-status-badge {
-  background: rgba(223,42,47,0.12) !important;
-  border-color: rgba(223,42,47,0.3) !important;
-  color: #df2a2f !important;
+[data-theme='spider-verse'] .ai-progress-track {
+  background: var(--sv-panel-inset) !important;
+  border: 2px solid var(--sv-black);
+  border-radius: 0 !important;
 }
+[data-theme='spider-verse'] .release-card-icon {
+  background: var(--sv-panel-inset) !important;
+  color: var(--sv-cream) !important;
+  border: 2px solid var(--sv-black);
+}
+[data-theme='spider-verse'] .release-badge,
+[data-theme='spider-verse'] .release-badge--new {
+  border: 2px solid var(--sv-black) !important;
+  text-transform: uppercase;
+}
+[data-theme='spider-verse'] .streak-value {
+  color: var(--sv-cream) !important;
+  text-shadow: 2px 2px 0 var(--sv-black);
+}
+[data-theme='spider-verse'] .project-status-badge,
 [data-theme='spider-verse'] .project-active-badge {
-  background: rgba(22,112,176,0.1) !important;
-  border-color: rgba(22,112,176,0.25) !important;
-  color: var(--status-done) !important;
-}
-[data-theme='spider-verse'] .project-archive-badge {
-  color: var(--text-dim) !important;
-  background: rgba(255,255,255,0.03) !important;
-}
-
-/* ── 20. PAGE HEADERS ──────────────────────────────────────── */
-[data-theme='spider-verse'] .page-header h1 {
+  border: 2px solid var(--sv-black) !important;
   text-transform: uppercase;
-  letter-spacing: 2px;
-  font-family: 'Courier New', monospace !important;
 }
 
-/* ── 21. DATE PICKER ───────────────────────────────────────── */
-[data-theme='spider-verse'] .date-picker-popup {
-  background: #060e1c !important;
-  border: 3px solid rgba(223,42,47,0.55) !important;
-  box-shadow: 5px 5px 0 #000 !important;
+/* ── 23. MISC CONTROLS ─────────────────────────────────────── */
+[data-theme='spider-verse'] .btn-add-line {
+  border: 3px solid var(--sv-black) !important;
+  background: var(--sv-panel-inset) !important;
+  color: var(--sv-frame-light) !important;
+  box-shadow: 2px 2px 0 var(--sv-black) !important;
+  font-size: 0.95rem !important;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
-/* Calendar grid cells stay readable — no border-radius override on individual cells */
-[data-theme='spider-verse'] .day-cell {
-  font-family: 'Courier New', monospace !important;
-  font-size: 0.75rem !important;
-  font-weight: 600;
+[data-theme='spider-verse'] .btn-add-line:hover {
+  background: var(--sv-panel-raised) !important;
+  color: var(--sv-cream) !important;
 }
-[data-theme='spider-verse'] .day-cell.today {
-  background: rgba(223,42,47,0.18) !important;
-  outline: 2px solid rgba(223,42,47,0.55);
-  outline-offset: -1px;
-  color: #ff5054 !important;
+[data-theme='spider-verse'] .btn-danger {
+  color: var(--sv-red-bright) !important;
+  border-color: var(--sv-black) !important;
 }
-[data-theme='spider-verse'] .day-cell.selected {
-  background: #df2a2f !important;
-  color: #fff !important;
+[data-theme='spider-verse'] .btn-ghost {
+  border-color: transparent !important;
+  box-shadow: none !important;
 }
-[data-theme='spider-verse'] .day-cell:hover:not(.selected) {
-  background: rgba(223,42,47,0.12) !important;
+[data-theme='spider-verse'] .field-hint {
+  color: var(--text-muted);
+  font-size: 0.95rem;
 }
-[data-theme='spider-verse'] .cal-header,
-[data-theme='spider-verse'] .cal-nav {
-  border-bottom: 2px solid rgba(223,42,47,0.25);
-  background: rgba(223,42,47,0.06);
+[data-theme='spider-verse'] .divider {
+  border-color: var(--sv-black) !important;
+  border-width: 2px;
 }
-
-/* ── 22. SCROLLBARS ────────────────────────────────────────── */
-[data-theme='spider-verse'] ::-webkit-scrollbar       { width: 6px; height: 6px; }
-[data-theme='spider-verse'] ::-webkit-scrollbar-track  { background: #040b14; }
-[data-theme='spider-verse'] ::-webkit-scrollbar-thumb  { background: rgba(223,42,47,0.45); }
-[data-theme='spider-verse'] ::-webkit-scrollbar-thumb:hover { background: rgba(223,42,47,0.75); }
-
-/* ── 23. TOGGLE / SELECT ───────────────────────────────────── */
-[data-theme='spider-verse'] .toggle-track {
-  background: rgba(223,42,47,0.12) !important;
-  border: 1px solid rgba(223,42,47,0.28) !important;
+[data-theme='spider-verse'] .card-grip {
+  color: var(--text-muted);
 }
-[data-theme='spider-verse'] .toggle-track.on {
-  background: rgba(223,42,47,0.32) !important;
-  border-color: rgba(223,42,47,0.65) !important;
-}
-[data-theme='spider-verse'] .toggle-thumb {
-  background: rgba(223,42,47,0.5) !important;
-}
-[data-theme='spider-verse'] .toggle-track.on .toggle-thumb {
-  background: #df2a2f !important;
-}
-[data-theme='spider-verse'] .select-trigger {
-  background: #040b14 !important;
-  border: 2px solid rgba(223,42,47,0.3) !important;
-  box-shadow: 2px 2px 0 #000;
-  font-family: 'Courier New', monospace !important;
-}
-[data-theme='spider-verse'] .select-list {
-  background: #060e1c !important;
-  border: 2px solid rgba(223,42,47,0.55) !important;
-  box-shadow: 4px 4px 0 #000 !important;
-}
-[data-theme='spider-verse'] .select-option:hover,
-[data-theme='spider-verse'] .select-option[aria-selected='true'] {
-  background: rgba(223,42,47,0.12) !important;
-  color: #ff5054 !important;
+[data-theme='spider-verse'] button:focus-visible,
+[data-theme='spider-verse'] input:focus-visible,
+[data-theme='spider-verse'] textarea:focus-visible,
+[data-theme='spider-verse'] .nav-link:focus-visible {
+  outline: 3px solid var(--sv-cream) !important;
+  outline-offset: 2px;
 }
 
-/* ══════════════════════════════════════════════════════════
-   §24  FINISHING TOUCHES — fonts · corners · dialog · calendar
-   ══════════════════════════════════════════════════════════ */
-
-/* FONT: safe on * — SVG/img elements simply ignore font-family */
-[data-theme='spider-verse'] * { font-family: 'Courier New', 'Courier', monospace; }
-
-/* ZERO CORNERS: safe on non-SVG * — SVGs use rx/ry attributes not border-radius */
-[data-theme='spider-verse'] *:not(svg):not(g):not(path):not(rect):not(circle):not(line):not(polyline):not(polygon):not(defs):not(use) {
+/* ── 24. BLEED FIXES (gradients from default theme) ────────── */
+[data-theme='spider-verse'] .progress span,
+[data-theme='spider-verse'] [class*='progress-fill'],
+[data-theme='spider-verse'] [class*='bar-fill'] {
+  background: var(--sv-frame) !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+[data-theme='spider-verse'] .onboarding-brand-mark {
+  background: var(--sv-red) !important;
   border-radius: 0 !important;
 }
 
-/* ── DIALOG POSITION — keep composer pinned near the top ─── */
-[data-theme='spider-verse'] .composer {
-  top: 5% !important;
-  transform: translateX(-50%) !important;
-  background: #030810 !important;
-  border: 3px solid rgba(223,42,47,0.72) !important;
-  box-shadow: 6px 6px 0 #000, 10px 10px 0 rgba(0,0,0,0.3) !important;
-  overflow: hidden !important;
+/* ── 25. CORNER WEB DECOR ───────────────────────────────────── */
+.sv-decor-layer { display: none; }
+[data-theme='spider-verse'] .sv-decor-layer {
+  display: block;
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
 }
-[data-theme='spider-verse'] .composer-header {
-  background: rgba(223,42,47,0.12) !important;
-  border-bottom: 2px solid rgba(223,42,47,0.45) !important;
-}
-[data-theme='spider-verse'] .composer-body { background: #030810 !important; }
-[data-theme='spider-verse'] .composer-footer {
-  background: rgba(0,0,0,0.45) !important;
-  border-top: 2px solid rgba(223,42,47,0.28) !important;
-}
-/* Labels inside composer */
-[data-theme='spider-verse'] .composer label,
-[data-theme='spider-verse'] .composer-fields label {
-  text-transform: uppercase !important;
-  letter-spacing: 2px !important;
-  font-size: 0.6rem !important;
-  color: rgba(223,42,47,0.72) !important;
-  font-weight: 700 !important;
-}
-/* Composer header title */
-[data-theme='spider-verse'] .composer-header h2,
-[data-theme='spider-verse'] .composer-header span:not(.icon):not([class*='icon']) {
-  text-transform: uppercase !important;
-  letter-spacing: 3px !important;
-  font-size: 0.72rem !important;
-  font-weight: 700 !important;
-  color: #df2a2f !important;
-}
-/* X / close in dialog */
-[data-theme='spider-verse'] .composer .icon-btn,
-[data-theme='spider-verse'] .drawer .icon-btn {
-  background: rgba(223,42,47,0.06) !important;
-  border: 2px solid rgba(223,42,47,0.3) !important;
-  color: rgba(223,42,47,0.75) !important;
-  box-shadow: 2px 2px 0 #000 !important;
-}
-[data-theme='spider-verse'] .composer .icon-btn:hover,
-[data-theme='spider-verse'] .drawer .icon-btn:hover {
-  background: rgba(223,42,47,0.2) !important;
-  border-color: rgba(223,42,47,0.85) !important;
-  color: #ff5054 !important;
-}
-
-/* ── CALENDAR ────────────────────────────────────────────── */
-[data-theme='spider-verse'] .date-picker {
-  background: #030810 !important;
-  border: 3px solid rgba(223,42,47,0.68) !important;
-  box-shadow: 5px 5px 0 #000, 8px 8px 0 rgba(0,0,0,0.4) !important;
-  padding: 0 !important;
-  width: 272px !important;
-}
-[data-theme='spider-verse'] .date-picker-header {
-  background: rgba(223,42,47,0.1) !important;
-  border-bottom: 2px solid rgba(223,42,47,0.35) !important;
-  padding: 0.65rem 0.75rem !important;
-  margin-bottom: 0 !important;
-}
-[data-theme='spider-verse'] .date-picker-month {
-  text-transform: uppercase !important;
-  letter-spacing: 3px !important;
-  font-size: 0.72rem !important;
-  font-weight: 700 !important;
-  color: #dce8f8 !important;
-}
-[data-theme='spider-verse'] .date-picker-header .icon-btn {
-  background: rgba(223,42,47,0.08) !important;
-  border: 2px solid rgba(223,42,47,0.4) !important;
-  color: #df2a2f !important;
-  box-shadow: 2px 2px 0 #000 !important;
-  width: 26px !important; height: 26px !important;
-}
-[data-theme='spider-verse'] .date-picker-header .icon-btn:hover {
-  background: rgba(223,42,47,0.2) !important;
-  border-color: rgba(223,42,47,0.75) !important;
-}
-[data-theme='spider-verse'] .date-picker-weekdays {
-  background: rgba(0,0,0,0.3) !important;
-  padding: 0.4rem 0.75rem 0.2rem !important;
-  margin-bottom: 0 !important;
-}
-[data-theme='spider-verse'] .date-picker-weekdays span {
-  font-size: 0.58rem !important;
-  font-weight: 700 !important;
-  letter-spacing: 1px !important;
-  color: rgba(223,42,47,0.5) !important;
-  text-transform: uppercase !important;
-}
-[data-theme='spider-verse'] .date-picker-grid {
-  padding: 0.45rem 0.75rem !important;
-  gap: 2px !important;
-  background: #030810 !important;
-}
-[data-theme='spider-verse'] .date-picker-day {
-  font-size: 0.68rem !important;
-  font-weight: 700 !important;
-  color: #8fa8c8 !important;
-  border: 1px solid transparent !important;
-  background: transparent !important;
-  transition: none !important;
-}
-[data-theme='spider-verse'] .date-picker-day:hover {
-  background: rgba(223,42,47,0.12) !important;
-  border-color: rgba(223,42,47,0.4) !important;
-  color: #dce8f8 !important;
-}
-[data-theme='spider-verse'] .date-picker-day.today {
-  border: 2px solid #df2a2f !important;
-  color: #ff5054 !important;
-  background: rgba(223,42,47,0.1) !important;
-  font-weight: 700 !important;
-}
-[data-theme='spider-verse'] .date-picker-day.selected {
-  background: #df2a2f !important;
-  border-color: #ff7070 !important;
-  color: #fff !important;
-  box-shadow: 2px 2px 0 #000 !important;
-}
-[data-theme='spider-verse'] .date-picker-day:disabled { opacity: 0.18 !important; }
-[data-theme='spider-verse'] .date-picker-footer {
-  background: rgba(0,0,0,0.38) !important;
-  border-top: 2px solid rgba(223,42,47,0.25) !important;
-  padding: 0.5rem 0.75rem !important;
-  margin-top: 0 !important;
-}
-[data-theme='spider-verse'] .date-picker-selected {
-  color: var(--text-muted) !important;
-  font-size: 0.62rem !important;
-}
-[data-theme='spider-verse'] .btn-today {
-  background: rgba(223,42,47,0.1) !important;
-  border: 2px solid rgba(223,42,47,0.45) !important;
-  color: #ff5054 !important;
-  box-shadow: 2px 2px 0 #000 !important;
-  font-size: 0.62rem !important;
-  letter-spacing: 1px !important;
-  text-transform: uppercase !important;
-  filter: none !important;
-}
-[data-theme='spider-verse'] .btn-today:hover {
-  background: rgba(223,42,47,0.2) !important;
-  border-color: rgba(223,42,47,0.8) !important;
-  filter: none !important;
-}
-
-/* ── SELECT DROPDOWN (override + sharpen) ─────────────────── */
-[data-theme='spider-verse'] .select-trigger {
-  background: #030810 !important;
-  border: 2px solid rgba(223,42,47,0.38) !important;
-  box-shadow: 3px 3px 0 #000 !important;
-  color: #8fa8c8 !important;
-  font-size: 0.72rem !important;
-  font-weight: 600 !important;
-  transition: none !important;
-}
-[data-theme='spider-verse'] .select-trigger:hover,
-[data-theme='spider-verse'] .select-trigger[aria-expanded='true'] {
-  border-color: rgba(223,42,47,0.75) !important;
-  background: rgba(223,42,47,0.06) !important;
+/* Only raise layout chrome — never touch fixed overlays/dialogs */
+[data-theme='spider-verse'] .topbar,
+[data-theme='spider-verse'] .filters,
+[data-theme='spider-verse'] .main,
+[data-theme='spider-verse'] .page {
+  position: relative;
+  z-index: 1;
 }
 [data-theme='spider-verse'] .select-list {
-  background: #030810 !important;
-  border: 2px solid rgba(223,42,47,0.65) !important;
-  box-shadow: 4px 4px 0 #000 !important;
-  padding: 0 !important;
+  z-index: 300 !important;
 }
-[data-theme='spider-verse'] .select-option {
-  font-size: 0.7rem !important;
-  font-weight: 600 !important;
-  color: #8fa8c8 !important;
-  padding: 0.5rem 0.75rem !important;
-  border-bottom: 1px solid rgba(223,42,47,0.08) !important;
-  transition: none !important;
-}
-[data-theme='spider-verse'] .select-option:last-child { border-bottom: none !important; }
-[data-theme='spider-verse'] .select-option:hover,
-[data-theme='spider-verse'] .select-option[aria-selected='true'] {
-  background: rgba(223,42,47,0.14) !important;
-  color: #ff5054 !important;
-  border-left: 3px solid #df2a2f !important;
-}
-
-/* ── ALL INPUTS ──────────────────────────────────────────── */
-[data-theme='spider-verse'] input,
-[data-theme='spider-verse'] textarea {
-  background: #020810 !important;
-  border: 2px solid rgba(223,42,47,0.32) !important;
-  color: #dce8f8 !important;
-  font-size: 0.78rem !important;
-  box-shadow: inset 0 2px 0 rgba(0,0,0,0.5) !important;
-  transition: none !important;
-  caret-color: #df2a2f !important;
-}
-[data-theme='spider-verse'] input:focus,
-[data-theme='spider-verse'] textarea:focus {
-  border-color: rgba(223,42,47,0.82) !important;
-  box-shadow: inset 0 2px 0 rgba(0,0,0,0.5), 0 0 0 2px rgba(223,42,47,0.18) !important;
-  outline: none !important;
-}
-[data-theme='spider-verse'] input::placeholder,
-[data-theme='spider-verse'] textarea::placeholder {
-  color: rgba(143,168,200,0.32) !important;
-  font-style: normal !important;
-}
-
-/* ── PAGE TYPOGRAPHY ─────────────────────────────────────── */
-[data-theme='spider-verse'] h1,
-[data-theme='spider-verse'] h2,
-[data-theme='spider-verse'] h3 {
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-}
-
-/* ── CARD DETAILS ────────────────────────────────────────── */
-[data-theme='spider-verse'] .card-priority-label {
-  font-size: 0.6rem !important;
-  text-transform: uppercase !important;
-  letter-spacing: 1px !important;
-}
-[data-theme='spider-verse'] .carried {
-  color: var(--status-wip) !important;
-  font-size: 0.6rem !important;
-  text-transform: uppercase !important;
-}
-
-/* ── DRAWER ──────────────────────────────────────────────── */
-[data-theme='spider-verse'] .drawer-body { background: #04090f !important; }
-[data-theme='spider-verse'] .drawer-footer {
-  background: rgba(0,0,0,0.38) !important;
-  border-top: 2px solid rgba(223,42,47,0.25) !important;
-}
-
-/* ── BULLET POINTS ───────────────────────────────────────── */
-[data-theme='spider-verse'] .bullet-row-dot,
-[data-theme='spider-verse'] .bullet-dot {
-  background: #df2a2f !important;
-  box-shadow: 1px 1px 0 #000 !important;
-}
-
-/* ── OVERLAY ─────────────────────────────────────────────── */
-[data-theme='spider-verse'] .overlay {
-  background: rgba(1,4,16,0.88) !important;
-  backdrop-filter: none !important;
-  animation: none !important;
-}
-
-/* ── DRAG-OVER ───────────────────────────────────────────── */
-[data-theme='spider-verse'] .column-body.drag-over {
-  background: rgba(223,42,47,0.05) !important;
-  outline: 3px dashed rgba(223,42,47,0.45) !important;
-  outline-offset: -4px !important;
-}
-
-/* ══════════════════════════════════════════════════════════
-   §25  POSITION LOCK + SURFACE BRIGHTNESS
-   ── Ensures dialog matches default theme position exactly
-   ── Lightens surfaces from pitch-black to readable midnight
-   ══════════════════════════════════════════════════════════ */
-
-/* COMPOSER — match default theme: fixed, top:10%, centered
-   Must come LAST so it wins over every earlier rule          */
-[data-theme='spider-verse'] .composer {
-  position: fixed !important;
-  top: 10% !important;
-  left: 50% !important;
-  transform: translateX(-50%) !important;
-  width: min(640px, calc(100vw - 2rem)) !important;
-  z-index: 42 !important;
-}
-
-/* SURFACE BRIGHTNESS SCALE
-   bg-base       #010410  (body — darkest, stays)
-   bg-surface    #071220  (composer / drawer body)
-   bg-panel      #09162a  (composer header/footer, calendar header)
-   bg-field      #060e1e  (inputs, selects, date cells)
-   bg-overlay-dk rgba(1,4,16,0.90)
-*/
-
-/* Dialog (composer) surfaces */
-[data-theme='spider-verse'] .composer {
-  background: #071220 !important;
-}
-[data-theme='spider-verse'] .composer-header {
-  background: #0e1f36 !important;
-  border-bottom: 2px solid rgba(223,42,47,0.5) !important;
-}
-[data-theme='spider-verse'] .composer-body {
-  background: #071220 !important;
-}
-[data-theme='spider-verse'] .composer-footer {
-  background: #09162a !important;
-  border-top: 2px solid rgba(223,42,47,0.32) !important;
-}
-
-/* Drawer surfaces */
-[data-theme='spider-verse'] .drawer {
-  background: #071220 !important;
-}
-[data-theme='spider-verse'] .drawer-header {
-  background: #0e1f36 !important;
-  border-bottom: 2px solid rgba(223,42,47,0.4) !important;
-}
-[data-theme='spider-verse'] .drawer-body {
-  background: #071220 !important;
-}
-[data-theme='spider-verse'] .drawer-footer {
-  background: #09162a !important;
-  border-top: 2px solid rgba(223,42,47,0.28) !important;
-}
-
-/* Calendar surfaces */
-[data-theme='spider-verse'] .date-picker {
-  background: #071220 !important;
-}
-[data-theme='spider-verse'] .date-picker-header {
-  background: #0e1f36 !important;
-  border-bottom: 2px solid rgba(223,42,47,0.4) !important;
-}
-[data-theme='spider-verse'] .date-picker-grid {
-  background: #071220 !important;
-}
-[data-theme='spider-verse'] .date-picker-weekdays {
-  background: #09162a !important;
-}
-[data-theme='spider-verse'] .date-picker-footer {
-  background: #09162a !important;
-}
-
-/* Input / select surfaces */
-[data-theme='spider-verse'] input,
-[data-theme='spider-verse'] textarea {
-  background: #060e1e !important;
-  color: #d0dcf0 !important;
-}
-[data-theme='spider-verse'] .select-trigger {
-  background: #060e1e !important;
-  color: #a0b8d0 !important;
-}
-[data-theme='spider-verse'] .select-list {
-  background: #071220 !important;
-}
-[data-theme='spider-verse'] .select-option {
-  color: #a0b8d0 !important;
-}
-
-/* Column surface */
-[data-theme='spider-verse'] .column {
-  background: rgba(7,18,32,0.82) !important;
-}
-
-/* Settings panels */
-[data-theme='spider-verse'] .settings-panel {
-  background: #071220 !important;
-}
-[data-theme='spider-verse'] .settings-sidebar {
-  background: #060e1c !important;
-}
-[data-theme='spider-verse'] .settings-panel-header {
-  background: #0e1f36 !important;
-}
-
-/* Analytics / chart cards */
-[data-theme='spider-verse'] .chart-card,
-[data-theme='spider-verse'] .premium-metric-card {
-  background: #071220 !important;
-}
-
-/* Model / release cards */
-[data-theme='spider-verse'] .model-card,
-[data-theme='spider-verse'] .release-card,
-[data-theme='spider-verse'] .update-status-card {
-  background: #071220 !important;
-}
-
-/* Task cards — slightly lighter than column bg */
-[data-theme='spider-verse'] .card {
-  background: #0c1e34 !important;
-}
-
-/* Overlay backdrop */
-[data-theme='spider-verse'] .overlay {
-  background: rgba(1,4,16,0.90) !important;
-}
-
-/* Toast */
 [data-theme='spider-verse'] .toast {
-  background: #0e1f36 !important;
+  z-index: 100 !important;
+}
+.sv-decor { position: absolute; pointer-events: none; line-height: 0; }
+.sv-decor-tl { top: 2px; left: 2px; }
+.sv-decor-tr { top: 2px; right: 2px; }
+.sv-decor-bl { bottom: 2px; left: 2px; }
+.sv-decor-br { bottom: 2px; right: 2px; }
+.sv-decor-hero {
+  bottom: 10px;
+  right: 14px;
+  opacity: 0.45;
+  filter: drop-shadow(2px 2px 0 #000);
 }
 
-/* Filters bar */
-[data-theme='spider-verse'] .filters {
-  background: #060e1c !important;
+/* ── 26. TEXT VISIBILITY FIXES ──────────────────────────────── */
+[data-theme='spider-verse'] .stat-pill,
+[data-theme='spider-verse'] .stat-pill span {
+  color: var(--sv-cream) !important;
 }
-
-/* Topbar */
-[data-theme='spider-verse'] .topbar {
-  background: #07111e !important;
+[data-theme='spider-verse'] .chip:not(.active) {
+  color: #b0c8e0 !important;
+}
+[data-theme='spider-verse'] .chip.active {
+  color: var(--sv-black) !important;
+}
+[data-theme='spider-verse'] .settings-nav-hint {
+  color: #7a98b8 !important;
+}
+[data-theme='spider-verse'] .settings-nav-item.is-active .settings-nav-hint {
+  color: rgba(0, 0, 0, 0.58) !important;
+}
+[data-theme='spider-verse'] .settings-nav-item.is-active .settings-nav-label {
+  color: var(--sv-black) !important;
+}
+[data-theme='spider-verse'] .settings-panel-header p {
+  color: var(--sv-frame-light) !important;
+}
+[data-theme='spider-verse'] .settings-panel-lead,
+[data-theme='spider-verse'] .field-hint {
+  color: #8aa8c8 !important;
+}
+[data-theme='spider-verse'] .settings-label {
+  color: var(--sv-frame-light) !important;
+}
+[data-theme='spider-verse'] .page-sub {
+  color: #8aa8c8 !important;
+}
+[data-theme='spider-verse'] .empty-container {
+  min-height: 220px;
+}
+[data-theme='spider-verse'] .col-none .sv-empty-label { color: #8aa8c8; }
+[data-theme='spider-verse'] .col-wip .sv-empty-label { color: #d4a017; }
+[data-theme='spider-verse'] .col-done .sv-empty-label { color: var(--sv-frame-light); }
+[data-theme='spider-verse'] .column-icon {
+  filter: drop-shadow(1px 1px 0 #000);
+}
+[data-theme='spider-verse'] .date-picker-footer .btn-today {
+  color: var(--sv-black) !important;
 }

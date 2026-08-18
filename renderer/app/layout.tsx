@@ -5,6 +5,7 @@ import './spider-verse.css';
 import '../lib/bridge';
 import SpiderLogoPixel from '../components/SpiderLogoPixel';
 import PixelSkylineScene from '../components/PixelSkylineScene';
+import SpiderVerseDecor from '../components/SpiderVerseDecor';
 import Link from 'next/link';
 import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
@@ -54,6 +55,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <PixelSkylineScene />
 
         <div className={`app-shell${hideChrome ? ' app-shell--onboarding' : ''}`}>
+          <SpiderVerseDecor />
           {!hideChrome && (
             <header className="topbar">
               <div className="brand">

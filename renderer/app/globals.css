@@ -173,6 +173,16 @@ select:focus-visible,
 .btn-danger { color: var(--danger); border-color: rgba(248,113,113,0.25); }
 .btn:disabled { opacity: 0.45; cursor: not-allowed; filter: none; }
 
+.btn-add-line {
+  align-self: flex-start;
+  font-size: 0.8rem;
+  padding: 4px 10px;
+  margin-top: 0.6rem;
+  border-radius: var(--radius-sm);
+  border: 1px dashed var(--border);
+  background: transparent;
+}
+
 .filters {
   display: flex;
   flex-wrap: wrap;
@@ -425,6 +435,13 @@ select:focus-visible,
 }
 .empty-icon { opacity: 0.45; }
 .empty p { margin: 0; font-size: 0.85rem; }
+
+.empty-container {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 140px;
+}
 
 .page {
   flex: 1;
@@ -2265,81 +2282,11 @@ select:focus-visible,
 
 /* Spider-Verse theme styles are in spider-verse.css */
 
-/* ── GLOBALS.CSS BLEED OVERRIDES FOR SPIDER-VERSE ──────────
-   These rules neutralize every hardcoded blue/teal/green/purple
-   gradient that would otherwise bleed through when spider-verse
-   is active. spider-verse.css handles the affirmative styling.
-   ─────────────────────────────────────────────────────────── */
-
-/* btn-primary: override #4f8ff7 → pure accent */
-[data-theme='spider-verse'] .btn-primary {
-  background: #df2a2f !important;
-  box-shadow: 3px 3px 0 #000 !important;
-}
-
-/* Progress / status bars that use #22d3ee / #38bdf8 / #60a5fa */
-[data-theme='spider-verse'] .progress span,
-[data-theme='spider-verse'] [class*="progress-fill"],
-[data-theme='spider-verse'] [class*="bar-fill"] {
-  background: linear-gradient(90deg, #df2a2f, rgba(223,42,47,0.45)) !important;
-  box-shadow: none !important;
-}
-
-/* Version badge in updates page */
-[data-theme='spider-verse'] .version-badge-main {
-  background: linear-gradient(135deg, #df2a2f, #8a1020) !important;
-}
-
-/* Onboarding card gradient (#4f8ff7) */
-[data-theme='spider-verse'] .onboarding-submit,
-[data-theme='spider-verse'] .ob-btn-primary {
-  background: #df2a2f !important;
-}
-
-/* Models page: ai-badge overrides */
-[data-theme='spider-verse'] .ai-badge.active {
-  color: #df2a2f !important;
-  background: rgba(223,42,47,0.08) !important;
-  border-color: rgba(223,42,47,0.22) !important;
-}
-[data-theme='spider-verse'] .ai-badge.ready {
-  color: var(--status-done) !important;
-  background: rgba(26,127,196,0.08) !important;
-  border-color: rgba(26,127,196,0.2) !important;
-}
-
-/* Model / analytics gradient bars */
-[data-theme='spider-verse'] .ai-progress-fill,
-[data-theme='spider-verse'] .premium-bar-fill {
-  background: linear-gradient(90deg, #df2a2f, rgba(223,42,47,0.4)) !important;
-  box-shadow: none !important;
-}
-
-/* Streak/day indicator color (#34d399 green) */
-[data-theme='spider-verse'] .streak-value,
-[data-theme='spider-verse'] [class*="streak"] {
-  color: var(--status-wip) !important;
-}
-
-/* Any remaining hardcoded blue text */
+/* Neutralize default-theme gradients that bleed through spider-verse.
+   Affirmative pixel styling lives in spider-verse.css — do not override
+   btn-primary or bar colors here (v4 uses cream CTAs + blue HUD bars). */
 [data-theme='spider-verse'] [style*="#60a5fa"],
 [data-theme='spider-verse'] [style*="#3b82f6"] {
-  color: var(--accent) !important;
-}
-
-/* Release card icon area */
-[data-theme='spider-verse'] .release-card-icon {
-  background: rgba(223,42,47,0.1) !important;
-  color: #df2a2f !important;
-}
-
-/* Hour bar — override the inline gradient */
-[data-theme='spider-verse'] .premium-hour-bar {
-  background: rgba(223,42,47,0.15) !important;
-  border-radius: 0 !important;
-  box-shadow: none !important;
-}
-[data-theme='spider-verse'] .premium-hour-bar.has-data {
-  background: linear-gradient(180deg, #df2a2f, rgba(223,42,47,0.3)) !important;
+  color: var(--sv-frame-light) !important;
 }
 

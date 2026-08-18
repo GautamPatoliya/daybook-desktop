@@ -24,7 +24,6 @@ import {
 import { Select } from "../components/Select";
 import { DatePicker } from "../components/DatePicker";
 import PixelEmptyState from "../components/PixelEmptyState";
-import PixelColumnHeader from "../components/PixelColumnHeader";
 import { handleBulletPaste, MAX_BULLET_ROWS, PASTE_BULLET_LIMIT } from "../lib/bulletPaste";
 import type {
   DayPayload,
@@ -172,8 +171,6 @@ function Column({
   return (
     <section className={`column col-${status}`}>
       <header className="column-header">
-        {/* Pixel-art scene for Spider-Verse theme */}
-        <PixelColumnHeader status={status} />
         <div className="column-header-inner">
           <span className="column-icon" style={{ color: meta.accent }}>
             <Icon icon={meta.icon} width={18} />
@@ -930,18 +927,8 @@ export default function BoardPage() {
                 </div>
                 <button
                   type="button"
-                  className="btn"
+                  className="btn btn-add-line"
                   onClick={() => setComposerSubItems([...composerSubItems, ""])}
-                  style={{
-                    alignSelf: "flex-start",
-                    fontSize: "0.8rem",
-                    padding: "4px 10px",
-                    marginTop: "0.6rem",
-                    borderRadius: "6px",
-                    border: "1px dashed var(--border)",
-                    background: "transparent",
-                    cursor: "pointer",
-                  }}
                 >
                   <Icon icon={I.plus} width={12} /> Add line (Enter)
                 </button>
@@ -1169,18 +1156,8 @@ export default function BoardPage() {
                 </div>
                 <button
                   type="button"
-                  className="btn"
+                  className="btn btn-add-line"
                   onClick={() => setDrawerSubItems([...drawerSubItems, ""])}
-                  style={{
-                    alignSelf: "flex-start",
-                    fontSize: "0.8rem",
-                    padding: "4px 10px",
-                    marginTop: "0.6rem",
-                    borderRadius: "6px",
-                    border: "1px dashed var(--border)",
-                    background: "transparent",
-                    cursor: "pointer",
-                  }}
                 >
                   <Icon icon={I.plus} width={12} /> Add line (Enter)
                 </button>

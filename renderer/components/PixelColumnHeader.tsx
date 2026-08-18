@@ -65,9 +65,9 @@ function makeBacklog() {
   px.push(rect(82, 16, '#060c18', 14, 12));
   px.push(rect(86, 14, '#060c18', 6,  2));
 
-  // ANTENNA on tallest building (bldg 2)
-  px.push(rect(23,  5, '#df2a2f', 2, 3)); // red top
-  px.push(rect(23,  8, '#8a1020', 2, 2)); // dark middle
+  // Antenna on tallest building (bldg 2)
+  px.push(rect(23,  5, '#d4a017', 2, 3));
+  px.push(rect(23,  8, '#8a7010', 2, 2));
 
   // WINDOWS — bright squares against dark buildings
   // Bldg 1 windows
@@ -83,82 +83,50 @@ function makeBacklog() {
   // Bldg 6 windows
   for (const [wx, wy] of [[84,17],[88,17],[84,21],[88,21]]) px.push(rect(wx, wy, '#ffd060', 2, 2));
 
-  // WEB STRAND hanging from top-center
-  for (let y = 0; y <= 10; y++) {
-    const alpha = Math.max(0.2, 0.9 - y * 0.07);
-    px.push(rect(47, y, `rgba(223,42,47,${alpha.toFixed(1)})`, 2, 1));
-  }
-  // Web spread
-  px.push(rect(43, 10, 'rgba(223,42,47,0.4)', 2, 1));
-  px.push(rect(45, 10, 'rgba(223,42,47,0.6)', 4, 1));
-  px.push(rect(49, 10, 'rgba(223,42,47,0.6)', 2, 1));
-  px.push(rect(51, 10, 'rgba(223,42,47,0.4)', 2, 1));
-
   // GROUND LINE
-  px.push(rect(0, 27, '#1a2848', 96, 1));
+  px.push(rect(0, 27, '#000', 96, 1));
 
   return px;
 }
 
-// ── WIP: Spider-Sense Energy Burst ──────────────────────────
+// ── WIP: Static web spinner (calm, not flashing) ────────────
 function makeWIP() {
   const px: Array<{ x: number; y: number; fill: string; w: number; h: number }> = [];
-
-  px.push(rect(0, 0, '#010410', 96, 28));
+  px.push(rect(0, 0, '#0a1628', 96, 28));
 
   const cx = 48, cy = 14;
 
-  // 8 RADIAL RAYS — each clearly visible with 2px width
-  const rays: Array<[number, number, string]> = [
-    [0, -1, '#df2a2f'],   // up
-    [1, -1, '#c8960e'],   // up-right
-    [1,  0, '#df2a2f'],   // right
-    [1,  1, '#c8960e'],   // down-right
-    [0,  1, '#df2a2f'],   // down
-    [-1, 1, '#c8960e'],   // down-left
-    [-1, 0, '#df2a2f'],   // left
-    [-1,-1, '#c8960e'],   // up-left
-  ];
-  rays.forEach(([dx, dy, col]) => {
-    for (let d = 3; d <= 18; d++) {
-      const alpha = Math.max(0.05, 1 - (d - 3) / 18);
-      const hex = Math.round(alpha * 255).toString(16).padStart(2, '0');
-      const x = Math.round(cx + dx * d);
-      const y = Math.round(cy + dy * d);
-      if (x >= 0 && x < 95 && y >= 0 && y < 27) {
-        px.push(rect(x, y, col + hex, 2, 2));
-      }
-    }
-  });
-
-  // CONCENTRIC RECTANGULAR RINGS (stepped, pixel style)
-  [[5,'rgba(223,42,47,0.6)'],[9,'rgba(200,150,14,0.5)'],[13,'rgba(223,42,47,0.35)']].forEach(([r, col]) => {
+  // Web rings
+  [[7, 'rgba(26,127,196,0.55)'], [11, 'rgba(212,160,23,0.35)'], [15, 'rgba(26,127,196,0.25)']].forEach(([r, col]) => {
     const R = r as number;
     const C = col as string;
     for (let i = -R; i <= R; i += 2) {
-      if (cx+i >= 0 && cx+i < 95) {
+      if (cx + i >= 0 && cx + i < 95) {
         px.push(rect(cx + i, cy - R, C, 2, 2));
         px.push(rect(cx + i, cy + R, C, 2, 2));
       }
-      if (cy+i >= 0 && cy+i < 27) {
+      if (cy + i >= 0 && cy + i < 27) {
         px.push(rect(cx - R, cy + i, C, 2, 2));
         px.push(rect(cx + R, cy + i, C, 2, 2));
       }
     }
   });
 
-  // CENTER FLASH — bright white core surrounded by red
-  px.push(rect(cx-2, cy-2, '#df2a2f', 4, 4));
-  px.push(rect(cx-1, cy-1, '#ffffff', 2, 2));
-
-  // SPEED LINES at corners
-  for (let i = 0; i < 6; i++) {
-    px.push(rect(i * 4,     0,  'rgba(200,150,14,0.3)', 3, 1));
-    px.push(rect(94 - i*4,  0,  'rgba(223,42,47,0.3)',  3, 1));
-    px.push(rect(i * 4,     27, 'rgba(200,150,14,0.3)', 3, 1));
-    px.push(rect(94 - i*4,  27, 'rgba(223,42,47,0.3)',  3, 1));
+  // 4 spokes
+  for (let d = 2; d <= 14; d += 2) {
+    const a = Math.max(0.15, 0.45 - d * 0.025).toFixed(2);
+    const col = `rgba(212,160,23,${a})`;
+    if (cx + d < 96) px.push(rect(cx + d, cy, col, 2, 2));
+    if (cx - d >= 0) px.push(rect(cx - d, cy, col, 2, 2));
+    if (cy + d < 28) px.push(rect(cx, cy + d, col, 2, 2));
+    if (cy - d >= 0) px.push(rect(cx, cy - d, col, 2, 2));
   }
 
+  // Center dot
+  px.push(rect(cx - 2, cy - 2, '#d4a017', 4, 4));
+  px.push(rect(cx - 1, cy - 1, '#f0dfa8', 2, 2));
+
+  px.push(rect(0, 27, '#000', 96, 1));
   return px;
 }
 
@@ -206,8 +174,8 @@ function makeDone() {
     px.push(rect(x,   y,   '#4aa8e0', 2, 1)); // highlight top edge
   });
 
-  // CENTER DOT
-  px.push(rect(cx-2, cy-2, '#df2a2f', 4, 4));
+  // Center accent
+  px.push(rect(cx - 2, cy - 2, '#1a7fc4', 4, 4));
 
   // CORNER STARS
   for (const [sx, sy] of [[3,2],[90,2],[3,24],[90,24],[20,2],[74,2]]) {

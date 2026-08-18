@@ -10,6 +10,7 @@ import { ToggleSwitch } from '../../components/ToggleSwitch';
 import { formatClock, formatHourLabel } from '../../lib/time';
 import type { AppSettings } from '../../../shared/types';
 import { activeProjectNames } from '../../../shared/types';
+import SpiderHeroPixel from '../../components/spider/SpiderHeroPixel';
 
 const DAYS = [
   { v: 1, l: 'Mon' },
@@ -38,6 +39,7 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [engineInstalled, setEngineInstalled] = useState<boolean | null>(null);
   const [tab, setTab] = useState<TabId>('profile');
+  const [spiderVerse, setSpiderVerse] = useState(false);
 
   useEffect(() => {
     void api.getSettings().then(setSettings);
@@ -45,6 +47,15 @@ export default function SettingsPage() {
       .engineStatus()
       .then((s) => setEngineInstalled(s.installed))
       .catch(() => setEngineInstalled(false));
+  }, []);
+
+  useEffect(() => {
+    const check = () =>
+      setSpiderVerse(document.documentElement.getAttribute('data-theme') === 'spider-verse');
+    check();
+    const obs = new MutationObserver(check);
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    return () => obs.disconnect();
   }, []);
 
   if (!settings) {
@@ -110,7 +121,11 @@ export default function SettingsPage() {
           <div className="settings-panel">
             <header className="settings-panel-header">
               <div className="settings-panel-icon" aria-hidden>
-                <Icon icon={activeTab.icon} width={18} />
+                {spiderVerse ? (
+                  <SpiderHeroPixel variant="mask" size={24} />
+                ) : (
+                  <Icon icon={activeTab.icon} width={18} />
+                )}
               </div>
               <div>
                 <h2>{activeTab.label}</h2>
@@ -395,19 +410,18 @@ export default function SettingsPage() {
                         }}
                         style={{ padding: '1rem', textAlign: 'left', cursor: 'pointer', opacity: settings.theme === 'spider-verse' ? 1 : 0.6 }}
                       >
-                        <div style={{ height: '80px', background: '#010208', border: '2px solid rgba(223,42,47,0.6)', marginBottom: '12px', position: 'relative', overflow: 'hidden' }}>
-                          <svg width="100%" height="100%" style={{ position: 'absolute', bottom: 0, opacity: 0.8 }} preserveAspectRatio="none" viewBox="0 0 100 80">
-                            <rect x="5" y="40" width="20" height="40" fill="#08101e" stroke="rgba(223,42,47,0.3)" strokeWidth="1" />
-                            <rect x="30" y="25" width="25" height="55" fill="#0d1828" stroke="rgba(223,42,47,0.3)" strokeWidth="1" />
-                            <rect x="65" y="50" width="30" height="30" fill="#08101e" stroke="rgba(223,42,47,0.3)" strokeWidth="1" />
-                            <rect x="35" y="35" width="4" height="4" fill="#FFD700" opacity="0.8" />
-                            <rect x="45" y="45" width="4" height="4" fill="#FF8C00" opacity="0.6" />
-                            <rect x="10" y="55" width="4" height="4" fill="#FFD700" opacity="0.7" />
-                            <line x1="100" y1="0" x2="60" y2="40" stroke="#df2a2f" strokeWidth="1" opacity="0.5" />
+                        <div style={{ height: '80px', background: '#0a1628', border: '3px solid #000', boxShadow: 'inset 0 0 0 3px #1a7fc4', marginBottom: '12px', position: 'relative', overflow: 'hidden' }}>
+                          <svg width="100%" height="100%" style={{ position: 'absolute', bottom: 0, opacity: 0.7 }} preserveAspectRatio="none" viewBox="0 0 100 80">
+                            <rect x="5" y="45" width="18" height="35" fill="#060c18" />
+                            <rect x="28" y="30" width="22" height="50" fill="#070e1e" />
+                            <rect x="60" y="50" width="28" height="30" fill="#060c18" />
+                            <rect x="32" y="38" width="3" height="3" fill="#ffd060" opacity="0.6" />
+                            <rect x="12" y="55" width="3" height="3" fill="#ffd060" opacity="0.5" />
+                            <rect x="8" y="8" width="24" height="10" fill="#f0dfa8" stroke="#000" strokeWidth="2" />
                           </svg>
                         </div>
                         <strong>Spider-Verse</strong>
-                        <p className="field-hint" style={{ marginTop: '0.25rem' }}>Retro 16-bit hero aesthetic.</p>
+                        <p className="field-hint" style={{ marginTop: '0.25rem' }}>Spidey Tracker pixel HUD — blue frame, chunky buttons.</p>
                       </button>
                     </div>
                   </div>
