@@ -369,14 +369,15 @@ export default function ModelsPage() {
                     <div style={{ display: 'flex', gap: '0.4rem' }}>
                       {m.recommended && (
                         <span
+                          className="model-badge model-badge--recommended"
                           style={{
                             fontSize: '0.68rem',
                             fontWeight: 750,
                             textTransform: 'uppercase',
                             letterSpacing: '0.04em',
-                            background: 'rgba(59,130,246,0.15)',
-                            color: '#60a5fa',
-                            border: '1px solid rgba(59,130,246,0.25)',
+                            background: 'rgba(var(--accent-rgb,223,42,47), 0.12)',
+                            color: 'var(--accent)',
+                            border: '1px solid rgba(var(--accent-rgb,223,42,47), 0.25)',
                             padding: '2px 8px',
                             borderRadius: '4px',
                           }}
@@ -386,14 +387,15 @@ export default function ModelsPage() {
                       )}
                       {m.installed && (
                         <span
+                          className="model-badge model-badge--ready"
                           style={{
                             fontSize: '0.68rem',
                             fontWeight: 750,
                             textTransform: 'uppercase',
                             letterSpacing: '0.04em',
-                            background: 'rgba(52,211,153,0.15)',
-                            color: '#34d399',
-                            border: '1px solid rgba(52,211,153,0.25)',
+                            background: 'rgba(var(--success-rgb,26,127,196), 0.12)',
+                            color: 'var(--status-done)',
+                            border: '1px solid rgba(var(--success-rgb,26,127,196), 0.25)',
                             padding: '2px 8px',
                             borderRadius: '4px',
                           }}
@@ -403,14 +405,15 @@ export default function ModelsPage() {
                       )}
                       {selected && (
                         <span
+                          className="model-badge model-badge--active"
                           style={{
                             fontSize: '0.68rem',
                             fontWeight: 750,
                             textTransform: 'uppercase',
                             letterSpacing: '0.04em',
-                            background: 'rgba(139,92,246,0.15)',
-                            color: '#a78bfa',
-                            border: '1px solid rgba(139,92,246,0.25)',
+                            background: 'rgba(223,42,47,0.15)',
+                            color: 'var(--accent-soft)',
+                            border: '1px solid rgba(223,42,47,0.3)',
                             padding: '2px 8px',
                             borderRadius: '4px',
                           }}
@@ -669,16 +672,16 @@ export default function ModelsPage() {
                       overflow: 'hidden',
                     }}
                   >
-                    <div
-                      className="ai-progress-fill"
-                      style={{
-                        width: `${Math.max(0.8, Math.min(100, pct))}%`,
-                        height: '100%',
-                        background: hasError
-                          ? 'linear-gradient(90deg, #f87171, #ef4444)'
-                          : 'linear-gradient(90deg, var(--accent), #3b82f6)',
-                      }}
-                    />
+                     <div
+                       className="ai-progress-fill model-progress-bar"
+                       style={{
+                         width: `${Math.max(0.8, Math.min(100, pct))}%`,
+                         height: '100%',
+                         background: hasError
+                           ? 'linear-gradient(90deg, var(--danger), rgba(223,42,47,0.5))'
+                           : 'linear-gradient(90deg, var(--accent), rgba(223,42,47,0.4))',
+                       }}
+                     />
                   </div>
                 </div>
               )}

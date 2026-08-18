@@ -21,13 +21,14 @@ const DAYS = [
   { v: 0, l: 'Sun' },
 ];
 
-type TabId = 'profile' | 'schedule' | 'projects' | 'behavior' | 'data';
+type TabId = 'profile' | 'schedule' | 'projects' | 'behavior' | 'appearance' | 'data';
 
 const TABS: Array<{ id: TabId; label: string; icon: string; hint: string }> = [
   { id: 'profile', label: 'Profile', icon: I.user, hint: 'Name & email sign-off' },
   { id: 'schedule', label: 'Schedule', icon: I.clock, hint: 'Days & reminders' },
   { id: 'projects', label: 'Projects', icon: I.projects, hint: 'Defaults & categories' },
   { id: 'behavior', label: 'Behavior', icon: I.settings, hint: 'Startup & polish' },
+  { id: 'appearance', label: 'Appearance', icon: I.sparkles, hint: 'Themes & styling' },
   { id: 'data', label: 'Data', icon: I.folder, hint: 'Backup & wipe' },
 ];
 
@@ -359,6 +360,56 @@ export default function SettingsPage() {
                         ) : null
                       }
                     />
+                  </div>
+                </>
+              )}
+
+              {tab === 'appearance' && (
+                <>
+                  <p className="settings-panel-lead">Personalize the visual style of Daybook.</p>
+                  <div className="field">
+                    <label className="settings-label">Application Theme</label>
+                    <div className="grid-2">
+                      <button
+                        type="button"
+                        className={`card theme-card ${settings.theme === 'default' ? 'theme-active' : ''}`}
+                        onClick={() => {
+                          setSettings({ ...settings, theme: 'default' });
+                          document.documentElement.setAttribute('data-theme', 'default');
+                        }}
+                        style={{ padding: '1rem', textAlign: 'left', cursor: 'pointer', opacity: settings.theme === 'default' ? 1 : 0.6 }}
+                      >
+                        <div style={{ height: '80px', background: 'var(--bg-base)', borderRadius: '6px', marginBottom: '12px', border: '1px solid var(--border)', position: 'relative', overflow: 'hidden' }}>
+                          <div style={{ position: 'absolute', top: '10px', left: '10px', right: '10px', height: '12px', background: 'var(--bg-surface)', borderRadius: '4px' }}></div>
+                          <div style={{ position: 'absolute', top: '30px', left: '10px', width: '40px', height: '12px', background: 'var(--accent)', borderRadius: '4px', opacity: 0.8 }}></div>
+                        </div>
+                        <strong>Default</strong>
+                        <p className="field-hint" style={{ marginTop: '0.25rem' }}>The original Daybook experience.</p>
+                      </button>
+                      <button
+                        type="button"
+                        className={`card theme-card ${settings.theme === 'spider-verse' ? 'theme-active' : ''}`}
+                        onClick={() => {
+                          setSettings({ ...settings, theme: 'spider-verse' });
+                          document.documentElement.setAttribute('data-theme', 'spider-verse');
+                        }}
+                        style={{ padding: '1rem', textAlign: 'left', cursor: 'pointer', opacity: settings.theme === 'spider-verse' ? 1 : 0.6 }}
+                      >
+                        <div style={{ height: '80px', background: '#010208', border: '2px solid rgba(223,42,47,0.6)', marginBottom: '12px', position: 'relative', overflow: 'hidden' }}>
+                          <svg width="100%" height="100%" style={{ position: 'absolute', bottom: 0, opacity: 0.8 }} preserveAspectRatio="none" viewBox="0 0 100 80">
+                            <rect x="5" y="40" width="20" height="40" fill="#08101e" stroke="rgba(223,42,47,0.3)" strokeWidth="1" />
+                            <rect x="30" y="25" width="25" height="55" fill="#0d1828" stroke="rgba(223,42,47,0.3)" strokeWidth="1" />
+                            <rect x="65" y="50" width="30" height="30" fill="#08101e" stroke="rgba(223,42,47,0.3)" strokeWidth="1" />
+                            <rect x="35" y="35" width="4" height="4" fill="#FFD700" opacity="0.8" />
+                            <rect x="45" y="45" width="4" height="4" fill="#FF8C00" opacity="0.6" />
+                            <rect x="10" y="55" width="4" height="4" fill="#FFD700" opacity="0.7" />
+                            <line x1="100" y1="0" x2="60" y2="40" stroke="#df2a2f" strokeWidth="1" opacity="0.5" />
+                          </svg>
+                        </div>
+                        <strong>Spider-Verse</strong>
+                        <p className="field-hint" style={{ marginTop: '0.25rem' }}>Retro 16-bit hero aesthetic.</p>
+                      </button>
+                    </div>
                   </div>
                 </>
               )}

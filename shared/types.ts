@@ -56,6 +56,7 @@ export interface AppSettings {
   includeBacklogInEmail: boolean;
   autostart: boolean;
   onboardingComplete: boolean;
+  theme: string;
 }
 
 export interface DayPayload {
@@ -183,6 +184,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   includeBacklogInEmail: false,
   autostart: true,
   onboardingComplete: false,
+  theme: 'default',
 };
 
 export const MODEL_CATALOG: ModelCatalogItem[] = [

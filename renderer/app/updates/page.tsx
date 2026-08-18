@@ -213,7 +213,7 @@ export default function UpdatesPage() {
             <div className="version-badge-pulse" style={{ backgroundColor: getStatusColor() }} />
             <div
               className="version-badge-main"
-              style={{ background: `linear-gradient(135deg, ${getStatusColor()}, #38bdf8)` }}
+              style={{ background: `linear-gradient(135deg, ${getStatusColor()}, var(--status-done))` }}
             >
               {version || '—'}
             </div>
@@ -289,7 +289,7 @@ export default function UpdatesPage() {
                   width: '100%',
                   justifyContent: 'center',
                   padding: '0.65rem',
-                  background: 'linear-gradient(135deg, var(--status-done), #10b981)',
+                  background: 'linear-gradient(135deg, var(--status-done), var(--success))',
                   borderColor: 'rgba(255,255,255,0.1)',
                   color: '#fff',
                 }}

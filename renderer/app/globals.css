@@ -41,6 +41,10 @@
   --shadow-float: 0 24px 64px rgba(0,0,0,0.55);
 }
 
+
+/* Spider-Verse theme styles live in spider-verse.css */
+
+
 * { box-sizing: border-box; }
 html, body { height: 100%; margin: 0; }
 body {
@@ -224,18 +228,25 @@ select:focus-visible,
 }
 .column-header {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.9rem 1rem 0.8rem;
+  flex-direction: column;
+  border-bottom: 1px solid var(--border);
   font-weight: 650;
   letter-spacing: -0.01em;
-  border-bottom: 1px solid var(--border);
 }
 .column-title {
   display: flex;
   align-items: center;
   gap: 0.5rem;
 }
+/* Used in Spider-Verse and default theme alike — wraps icon + label + count */
+.column-header-inner {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.9rem 1rem 0.8rem;
+  width: 100%;
+}
+.column-header-inner .column-count { margin-left: auto; }
 .column-icon { display: grid; place-items: center; }
 .column-count {
   margin-left: auto;
@@ -250,6 +261,7 @@ select:focus-visible,
   color: var(--text-muted);
   background: var(--bg-hover);
 }
+
 .column-body {
   flex: 1;
   min-height: 0;
@@ -2237,3 +2249,97 @@ select:focus-visible,
   .onboarding-card { padding: 1rem 0.9rem 0.85rem; }
   .onboarding-day { flex: 1 1 calc(33.33% - 0.4rem); }
 }
+
+.theme-card {
+  transition: all 0.2s var(--ease);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+}
+
+.theme-card.theme-active {
+  opacity: 1 !important;
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 1px var(--accent) !important;
+}
+
+/* Spider-Verse theme styles are in spider-verse.css */
+
+/* ── GLOBALS.CSS BLEED OVERRIDES FOR SPIDER-VERSE ──────────
+   These rules neutralize every hardcoded blue/teal/green/purple
+   gradient that would otherwise bleed through when spider-verse
+   is active. spider-verse.css handles the affirmative styling.
+   ─────────────────────────────────────────────────────────── */
+
+/* btn-primary: override #4f8ff7 → pure accent */
+[data-theme='spider-verse'] .btn-primary {
+  background: #df2a2f !important;
+  box-shadow: 3px 3px 0 #000 !important;
+}
+
+/* Progress / status bars that use #22d3ee / #38bdf8 / #60a5fa */
+[data-theme='spider-verse'] .progress span,
+[data-theme='spider-verse'] [class*="progress-fill"],
+[data-theme='spider-verse'] [class*="bar-fill"] {
+  background: linear-gradient(90deg, #df2a2f, rgba(223,42,47,0.45)) !important;
+  box-shadow: none !important;
+}
+
+/* Version badge in updates page */
+[data-theme='spider-verse'] .version-badge-main {
+  background: linear-gradient(135deg, #df2a2f, #8a1020) !important;
+}
+
+/* Onboarding card gradient (#4f8ff7) */
+[data-theme='spider-verse'] .onboarding-submit,
+[data-theme='spider-verse'] .ob-btn-primary {
+  background: #df2a2f !important;
+}
+
+/* Models page: ai-badge overrides */
+[data-theme='spider-verse'] .ai-badge.active {
+  color: #df2a2f !important;
+  background: rgba(223,42,47,0.08) !important;
+  border-color: rgba(223,42,47,0.22) !important;
+}
+[data-theme='spider-verse'] .ai-badge.ready {
+  color: var(--status-done) !important;
+  background: rgba(26,127,196,0.08) !important;
+  border-color: rgba(26,127,196,0.2) !important;
+}
+
+/* Model / analytics gradient bars */
+[data-theme='spider-verse'] .ai-progress-fill,
+[data-theme='spider-verse'] .premium-bar-fill {
+  background: linear-gradient(90deg, #df2a2f, rgba(223,42,47,0.4)) !important;
+  box-shadow: none !important;
+}
+
+/* Streak/day indicator color (#34d399 green) */
+[data-theme='spider-verse'] .streak-value,
+[data-theme='spider-verse'] [class*="streak"] {
+  color: var(--status-wip) !important;
+}
+
+/* Any remaining hardcoded blue text */
+[data-theme='spider-verse'] [style*="#60a5fa"],
+[data-theme='spider-verse'] [style*="#3b82f6"] {
+  color: var(--accent) !important;
+}
+
+/* Release card icon area */
+[data-theme='spider-verse'] .release-card-icon {
+  background: rgba(223,42,47,0.1) !important;
+  color: #df2a2f !important;
+}
+
+/* Hour bar — override the inline gradient */
+[data-theme='spider-verse'] .premium-hour-bar {
+  background: rgba(223,42,47,0.15) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+[data-theme='spider-verse'] .premium-hour-bar.has-data {
+  background: linear-gradient(180deg, #df2a2f, rgba(223,42,47,0.3)) !important;
+}
+

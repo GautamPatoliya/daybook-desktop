@@ -23,6 +23,8 @@ import {
 } from "../lib/format";
 import { Select } from "../components/Select";
 import { DatePicker } from "../components/DatePicker";
+import PixelEmptyState from "../components/PixelEmptyState";
+import PixelColumnHeader from "../components/PixelColumnHeader";
 import { handleBulletPaste, MAX_BULLET_ROWS, PASTE_BULLET_LIMIT } from "../lib/bulletPaste";
 import type {
   DayPayload,
@@ -170,22 +172,27 @@ function Column({
   return (
     <section className={`column col-${status}`}>
       <header className="column-header">
-        <div className="column-title">
+        {/* Pixel-art scene for Spider-Verse theme */}
+        <PixelColumnHeader status={status} />
+        <div className="column-header-inner">
           <span className="column-icon" style={{ color: meta.accent }}>
             <Icon icon={meta.icon} width={18} />
           </span>
           <span>{meta.label}</span>
+          <span className="column-count">{tasks.length}</span>
         </div>
-        <span className="column-count">{tasks.length}</span>
       </header>
       <div
         ref={setNodeRef}
         className={`column-body${isOver ? " drag-over" : ""}`}
       >
         {tasks.length === 0 ? (
-          <div className="empty">
-            <Icon icon={I.empty} width={28} className="empty-icon" />
-            <p>Drop tasks here</p>
+          <div className="empty-container">
+            <div className="empty empty-default">
+              <Icon icon={I.empty} width={28} className="empty-icon" />
+              <p>Drop tasks here</p>
+            </div>
+            <PixelEmptyState status={status} />
           </div>
         ) : (
           tasks.map((t) => (

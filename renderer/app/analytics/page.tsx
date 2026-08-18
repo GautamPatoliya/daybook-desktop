@@ -5,16 +5,33 @@ import { Icon, I } from '../../lib/icons';
 import { api } from '../../lib/api';
 import type { AnalyticsSummary } from '../../../shared/types';
 
-const GRADIENTS = [
-  'linear-gradient(90deg, #3b82f6, #60a5fa)', // blue
-  'linear-gradient(90deg, #14b8a6, #2dd4bf)', // teal
-  'linear-gradient(90deg, #8b5cf6, #a78bfa)', // purple
-  'linear-gradient(90deg, #f59e0b, #fbbf24)', // amber
-  'linear-gradient(90deg, #ec4899, #f472b6)', // pink
-  'linear-gradient(90deg, #10b981, #34d399)', // green
-  'linear-gradient(90deg, #ef4444, #f87171)', // red
-  'linear-gradient(90deg, #6366f1, #818cf8)', // indigo
+const SV_GRADIENTS = [
+  'linear-gradient(90deg, var(--accent), rgba(223,42,47,0.5))',
+  'linear-gradient(90deg, rgba(223,42,47,0.8), rgba(212,160,23,0.6))',
+  'linear-gradient(90deg, rgba(212,160,23,0.9), rgba(212,160,23,0.4))',
+  'linear-gradient(90deg, rgba(26,127,196,0.8), rgba(26,127,196,0.4))',
+  'linear-gradient(90deg, var(--accent), rgba(26,127,196,0.5))',
+  'linear-gradient(90deg, rgba(212,160,23,0.7), var(--accent))',
+  'linear-gradient(90deg, var(--accent), rgba(223,42,47,0.3))',
+  'linear-gradient(90deg, rgba(26,127,196,0.6), var(--accent))',
 ];
+const DEFAULT_GRADIENTS = [
+  'linear-gradient(90deg, #3b82f6, #60a5fa)',
+  'linear-gradient(90deg, #14b8a6, #2dd4bf)',
+  'linear-gradient(90deg, #8b5cf6, #a78bfa)',
+  'linear-gradient(90deg, #f59e0b, #fbbf24)',
+  'linear-gradient(90deg, #ec4899, #f472b6)',
+  'linear-gradient(90deg, #10b981, #34d399)',
+  'linear-gradient(90deg, #ef4444, #f87171)',
+  'linear-gradient(90deg, #6366f1, #818cf8)',
+];
+function getGradients(): string[] {
+  if (typeof document !== 'undefined' &&
+      document.documentElement.getAttribute('data-theme') === 'spider-verse') {
+    return SV_GRADIENTS;
+  }
+  return DEFAULT_GRADIENTS;
+}
 
 function formatIndianDate(isoDate: string): string {
   const parts = isoDate.split('-');
@@ -33,6 +50,7 @@ function PremiumBarList({
   empty: string;
 }) {
   const max = Math.max(1, ...data.map(([, v]) => v));
+  const gradients = getGradients();
   if (!data.length) {
     return <p className="page-sub" style={{ margin: 0 }}>{empty}</p>;
   }
@@ -40,7 +58,7 @@ function PremiumBarList({
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
       {data.map(([label, value], i) => {
         const pct = (value / max) * 100;
-        const grad = GRADIENTS[i % GRADIENTS.length];
+        const grad = gradients[i % gradients.length];
         return (
           <div key={label} className="premium-bar-row">
             <div className="premium-bar-info">
@@ -53,7 +71,6 @@ function PremiumBarList({
                 style={{
                   width: `${pct}%`,
                   background: grad,
-                  boxShadow: `0 0 10px ${grad.match(/#[0-9a-fA-F]{6}/)?.[0] || 'var(--accent)'}40`
                 }}
               />
             </div>
@@ -163,7 +180,7 @@ export default function AnalyticsPage() {
       {/* Metrics Row */}
       <div className="analytics-metric-grid">
         <div className="premium-metric-card">
-          <div className="premium-metric-val" style={{ background: 'linear-gradient(135deg, #34d399, #059669)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+          <div className="premium-metric-val">
             {summary.completionRate}%
           </div>
           <div className="premium-metric-lbl">Finished</div>
@@ -183,7 +200,7 @@ export default function AnalyticsPage() {
           <div className="premium-metric-lbl">Active Days</div>
         </div>
         <div className="premium-metric-card">
-          <div className="premium-metric-val" style={{ background: 'linear-gradient(135deg, #60a5fa, #2563eb)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+          <div className="premium-metric-val" style={{ color: 'var(--status-wip)' }}>
             {summary.wip}
           </div>
           <div className="premium-metric-lbl">In Progress</div>
@@ -232,15 +249,16 @@ export default function AnalyticsPage() {
                 return (
                   <div key={h.hour} className="hour-col" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, height: '100%', justifyContent: 'flex-end' }} title={`${formattedTick} — ${h.count} tasks logged`}>
                     <div
-                      className="hour-bar premium-hour-bar"
+                      className={`hour-bar premium-hour-bar${h.count > 0 ? ' has-data' : ''}`}
                       style={{
                         height: `${h.h}%`,
                         minHeight: h.count > 0 ? '6px' : '2px',
-                        background: h.count > 0 ? 'linear-gradient(180deg, var(--accent), #3b82f6)' : 'rgba(255,255,255,0.03)',
+                        background: h.count > 0
+                          ? 'linear-gradient(180deg, var(--accent), rgba(223,42,47,0.3))'
+                          : 'rgba(255,255,255,0.03)',
                         borderRadius: '4px',
                         width: '100%',
                         transition: 'all 0.2s',
-                        boxShadow: h.count > 0 ? '0 0 10px rgba(59, 130, 246, 0.4)' : 'none'
                       }}
                     />
                     <span className="hour-tick" style={{ fontSize: '0.68rem', fontWeight: 600, marginTop: '8px', color: isTick ? 'var(--text-muted)' : 'transparent', whiteSpace: 'nowrap' }}>

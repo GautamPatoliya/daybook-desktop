@@ -96,7 +96,7 @@ export default function ProjectsPage() {
             <Icon icon={showArchived ? I.success : I.archive} width={16} />
             {showArchived ? 'Show active' : 'Show archived'}
           </button>
-          <button type="button" className="btn btn-primary" style={{ borderRadius: '99px', background: 'linear-gradient(135deg, var(--accent), #3b82f6)' }} onClick={openCreate}>
+          <button type="button" className="btn btn-primary" style={{ borderRadius: '99px' }} onClick={openCreate}>
             <Icon icon={I.plus} width={16} /> New project
           </button>
         </div>
@@ -149,31 +149,28 @@ export default function ProjectsPage() {
                     </td>
                     <td style={{ padding: '1.25rem 1rem', textAlign: 'center', verticalAlign: 'middle' }}>
                       {isDefault ? (
-                        <span style={{
+                        <span className="project-status-badge" style={{
                           fontSize: '0.72rem',
                           fontWeight: 750,
                           textTransform: 'uppercase',
                           letterSpacing: '0.05em',
                           padding: '4px 12px',
-                          borderRadius: '99px',
-                          background: 'rgba(59, 130, 246, 0.15)',
-                          color: '#60a5fa',
-                          border: '1px solid rgba(59, 130, 246, 0.25)',
-                          boxShadow: '0 0 6px rgba(59, 130, 246, 0.1)'
+                          background: 'rgba(var(--accent-rgb,223,42,47), 0.12)',
+                          color: 'var(--accent)',
+                          border: '1px solid rgba(var(--accent-rgb,223,42,47), 0.25)',
                         }}>
                           Default
                         </span>
                       ) : (
-                        <span style={{
+                        <span className={p.archived ? 'project-archive-badge' : 'project-active-badge'} style={{
                           fontSize: '0.72rem',
                           fontWeight: 700,
                           textTransform: 'uppercase',
                           letterSpacing: '0.04em',
                           padding: '4px 12px',
-                          borderRadius: '99px',
-                          background: p.archived ? 'rgba(255,255,255,0.03)' : 'rgba(16, 185, 129, 0.08)',
-                          color: p.archived ? 'var(--text-dim)' : '#34d399',
-                          border: p.archived ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(16, 185, 129, 0.15)'
+                          background: p.archived ? 'rgba(255,255,255,0.03)' : 'rgba(var(--success-rgb,26,127,196), 0.1)',
+                          color: p.archived ? 'var(--text-dim)' : 'var(--status-done)',
+                          border: p.archived ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(var(--success-rgb,26,127,196), 0.2)'
                         }}>
                           {p.archived ? 'Archived' : 'Active'}
                         </span>
