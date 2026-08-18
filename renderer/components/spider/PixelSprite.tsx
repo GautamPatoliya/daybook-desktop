@@ -22,7 +22,8 @@ export default function PixelSprite({
       width={displaySize}
       height={displaySize}
       className={className}
-      style={{ imageRendering: 'pixelated' } as React.CSSProperties}
+      shapeRendering="crispEdges"
+      style={{ imageRendering: 'pixelated', display: 'block' } as React.CSSProperties}
       aria-hidden="true"
     >
       {pixels.map((p, i) => (

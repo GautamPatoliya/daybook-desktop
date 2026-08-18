@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { Icon, I } from '../../lib/icons';
+import SpideyLoader from '../../components/SpideyLoader';
 import { api } from '../../lib/api';
 import type { AnalyticsSummary } from '../../../shared/types';
 
@@ -122,8 +123,7 @@ export default function AnalyticsPage() {
   if (!summary) {
     return (
       <div className="page" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: 'calc(100vh - 120px)' }}>
-        <Icon icon={I.dot} width={40} style={{ color: 'var(--accent)', animation: 'pulse 1.5s infinite' }} />
-        <p className="page-sub" style={{ marginTop: '1rem' }}>Loading your local history…</p>
+        <SpideyLoader label="Loading your local history…" />
       </div>
     );
   }

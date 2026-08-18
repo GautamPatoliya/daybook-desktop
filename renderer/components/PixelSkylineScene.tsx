@@ -59,6 +59,7 @@ export default function PixelSkylineScene() {
         zIndex: 0,
         pointerEvents: 'none',
         overflow: 'hidden',
+        contain: 'paint',
         background: 'linear-gradient(180deg, #050a14 0%, #071018 55%, #0a1420 100%)',
         opacity: 0.55,
       }}

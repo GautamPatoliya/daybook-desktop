@@ -6,6 +6,8 @@ import '../lib/bridge';
 import SpiderLogoPixel from '../components/SpiderLogoPixel';
 import PixelSkylineScene from '../components/PixelSkylineScene';
 import SpiderVerseDecor from '../components/SpiderVerseDecor';
+import ScreenWebDecor from '../components/spider/ScreenWebDecor';
+import ActionCast from '../components/spider/ActionCast';
 import Link from 'next/link';
 import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
@@ -37,7 +39,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   }, []);
 
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <script
           dangerouslySetInnerHTML={{
@@ -91,8 +93,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </nav>
             </header>
           )}
-          {children}
+          <div className="sv-stage">
+            <ScreenWebDecor />
+            {children}
+          </div>
         </div>
+        <ActionCast />
       </body>
     </html>
   );

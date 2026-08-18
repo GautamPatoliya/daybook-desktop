@@ -4,13 +4,16 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { api } from '../../lib/api';
 import { Icon, I } from '../../lib/icons';
+import SpideyLoader from '../../components/SpideyLoader';
 import { TimePicker } from '../../components/TimePicker';
 import { Select } from '../../components/Select';
 import { ToggleSwitch } from '../../components/ToggleSwitch';
 import { formatClock, formatHourLabel } from '../../lib/time';
 import type { AppSettings } from '../../../shared/types';
 import { activeProjectNames } from '../../../shared/types';
+import { applyTheme } from '../../lib/theme';
 import SpiderHeroPixel from '../../components/spider/SpiderHeroPixel';
+import Cobweb from '../../components/spider/Cobweb';
 
 const DAYS = [
   { v: 1, l: 'Mon' },
@@ -61,10 +64,7 @@ export default function SettingsPage() {
   if (!settings) {
     return (
       <div className="page settings-loading">
-        <Icon icon={I.dot} width={30} style={{ color: 'var(--accent)', animation: 'pulse 1.5s infinite' }} />
-        <p className="page-sub" style={{ marginTop: '1rem' }}>
-          Loading settings…
-        </p>
+        <SpideyLoader label="Loading settings…" />
       </div>
     );
   }
@@ -381,47 +381,56 @@ export default function SettingsPage() {
 
               {tab === 'appearance' && (
                 <>
+                  <div className="sv-suit-banner" aria-hidden={false}>
+                    <SpiderHeroPixel variant="mask" size={28} />
+                    <div>
+                      <strong>SUIT SELECT</strong>
+                      <p>
+                        {settings.theme === 'spider-verse'
+                          ? 'Spidey Tracker HUD is online — red, blue, cream.'
+                          : 'Classic Daybook look. Pick Spider-Verse to suit up.'}
+                      </p>
+                    </div>
+                  </div>
                   <p className="settings-panel-lead">Personalize the visual style of Daybook.</p>
                   <div className="field">
                     <label className="settings-label">Application Theme</label>
-                    <div className="grid-2">
+                    <div className="grid-2 sv-theme-grid">
                       <button
                         type="button"
                         className={`card theme-card ${settings.theme === 'default' ? 'theme-active' : ''}`}
                         onClick={() => {
                           setSettings({ ...settings, theme: 'default' });
-                          document.documentElement.setAttribute('data-theme', 'default');
+                          applyTheme('default');
                         }}
-                        style={{ padding: '1rem', textAlign: 'left', cursor: 'pointer', opacity: settings.theme === 'default' ? 1 : 0.6 }}
                       >
-                        <div style={{ height: '80px', background: 'var(--bg-base)', borderRadius: '6px', marginBottom: '12px', border: '1px solid var(--border)', position: 'relative', overflow: 'hidden' }}>
-                          <div style={{ position: 'absolute', top: '10px', left: '10px', right: '10px', height: '12px', background: 'var(--bg-surface)', borderRadius: '4px' }}></div>
-                          <div style={{ position: 'absolute', top: '30px', left: '10px', width: '40px', height: '12px', background: 'var(--accent)', borderRadius: '4px', opacity: 0.8 }}></div>
+                        <div className="theme-preview theme-preview-default">
+                          <span className="theme-preview-bar" />
+                          <span className="theme-preview-chip" />
                         </div>
                         <strong>Default</strong>
-                        <p className="field-hint" style={{ marginTop: '0.25rem' }}>The original Daybook experience.</p>
+                        <p className="field-hint">Clean office board. No HUD chrome.</p>
                       </button>
                       <button
                         type="button"
                         className={`card theme-card ${settings.theme === 'spider-verse' ? 'theme-active' : ''}`}
                         onClick={() => {
                           setSettings({ ...settings, theme: 'spider-verse' });
-                          document.documentElement.setAttribute('data-theme', 'spider-verse');
+                          applyTheme('spider-verse');
                         }}
-                        style={{ padding: '1rem', textAlign: 'left', cursor: 'pointer', opacity: settings.theme === 'spider-verse' ? 1 : 0.6 }}
                       >
-                        <div style={{ height: '80px', background: '#0a1628', border: '3px solid #000', boxShadow: 'inset 0 0 0 3px #1a7fc4', marginBottom: '12px', position: 'relative', overflow: 'hidden' }}>
-                          <svg width="100%" height="100%" style={{ position: 'absolute', bottom: 0, opacity: 0.7 }} preserveAspectRatio="none" viewBox="0 0 100 80">
-                            <rect x="5" y="45" width="18" height="35" fill="#060c18" />
-                            <rect x="28" y="30" width="22" height="50" fill="#070e1e" />
-                            <rect x="60" y="50" width="28" height="30" fill="#060c18" />
-                            <rect x="32" y="38" width="3" height="3" fill="#ffd060" opacity="0.6" />
-                            <rect x="12" y="55" width="3" height="3" fill="#ffd060" opacity="0.5" />
-                            <rect x="8" y="8" width="24" height="10" fill="#f0dfa8" stroke="#000" strokeWidth="2" />
-                          </svg>
+                        <div className="theme-preview theme-preview-spidey">
+                          <span className="theme-preview-web">
+                            <Cobweb size={72} corner="top-right" opacity={0.7} />
+                          </span>
+                          <SpiderHeroPixel variant="spider" size={22} />
+                          <span className="theme-preview-hud">DAYBOOK</span>
                         </div>
                         <strong>Spider-Verse</strong>
-                        <p className="field-hint" style={{ marginTop: '0.25rem' }}>Spidey Tracker pixel HUD — blue frame, chunky buttons.</p>
+                        <p className="field-hint">Pixel HUD — webs, cream CTAs, city night.</p>
+                        {settings.theme === 'spider-verse' && (
+                          <span className="theme-live">ACTIVE</span>
+                        )}
                       </button>
                     </div>
                   </div>

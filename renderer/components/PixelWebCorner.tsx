@@ -34,7 +34,7 @@ export default function PixelWebCorner({ position, size = 60 }: { position: Posi
         width: size,
         height: size,
         transform,
-        opacity: 0.55,
+        overflow: 'hidden',
         imageRendering: 'pixelated',
       }}
     >

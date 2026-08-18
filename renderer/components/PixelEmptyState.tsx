@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import HangingSpider from './spider/HangingSpider';
 import SpiderHeroPixel from './spider/SpiderHeroPixel';
 
 const LABELS: Record<string, string> = {
@@ -8,12 +9,6 @@ const LABELS: Record<string, string> = {
   wip: 'SWINGING INTO ACTION',
   done: 'HERO LANDING — NICE!',
 };
-
-const VARIANTS = {
-  none: 'hang',
-  wip: 'swing',
-  done: 'land',
-} as const;
 
 interface Props { status: 'none' | 'wip' | 'done' }
 
@@ -31,12 +26,12 @@ export default function PixelEmptyState({ status }: Props) {
 
   if (!active) return null;
 
-  const variant = VARIANTS[status] ?? 'hang';
-
   return (
     <div className="sv-empty-state">
-      <div className="sv-empty-art">
-        <SpiderHeroPixel variant={variant} size={140} />
+      <div className={`sv-empty-art${status === 'done' ? '' : ' sv-empty-art--open'}`}>
+        {status === 'none' && <HangingSpider place="inline" silk="long" size={56} kind="ink" />}
+        {status === 'wip' && <HangingSpider place="inline" silk="long" size={64} kind="blue" />}
+        {status === 'done' && <SpiderHeroPixel variant="land" size={140} />}
       </div>
       <p className="sv-empty-label">{LABELS[status]}</p>
     </div>

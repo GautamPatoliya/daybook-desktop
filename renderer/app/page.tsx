@@ -15,6 +15,7 @@ import {
 } from "@dnd-kit/core";
 import Link from "next/link";
 import { api } from "../lib/api";
+import { emitSpiderFx } from "../lib/spiderFx";
 import {
   addDays,
   formatDisplayDate,
@@ -24,6 +25,8 @@ import {
 import { Select } from "../components/Select";
 import { DatePicker } from "../components/DatePicker";
 import PixelEmptyState from "../components/PixelEmptyState";
+import SpideyLoader from "../components/SpideyLoader";
+import BoardWebDecor from "../components/spider/BoardWebDecor";
 import { handleBulletPaste, MAX_BULLET_ROWS, PASTE_BULLET_LIMIT } from "../lib/bulletPaste";
 import type {
   DayPayload,
@@ -169,7 +172,7 @@ function Column({
   const meta = STATUS_META[status];
 
   return (
-    <section className={`column col-${status}`}>
+    <section className={`column col-${status}`} data-sv-col={status}>
       <header className="column-header">
         <div className="column-header-inner">
           <span className="column-icon" style={{ color: meta.accent }}>
@@ -233,6 +236,7 @@ export default function BoardPage() {
   );
   const [projectBusy, setProjectBusy] = useState(false);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const addBtnRef = useRef<HTMLButtonElement>(null);
 
   const showToast = useCallback((msg: string) => {
     setToast(msg);
@@ -400,6 +404,9 @@ export default function BoardPage() {
     try {
       const payload = await api.updateTask(day.date, taskId, { status: next });
       setDay(payload);
+      if (next === "done") {
+        emitSpiderFx("land", { toSelector: ".col-done .column-header" });
+      }
     } catch (err) {
       showToast((err as Error).message);
     }
@@ -437,11 +444,20 @@ export default function BoardPage() {
         priority,
         subItems,
       });
+      const fromEl = addBtnRef.current;
       setDay(payload);
       setTaskTitle("");
       setComposerSubItems([""]);
       setComposerOpen(false);
       showToast("Task added");
+      if (status === "done") {
+        emitSpiderFx("land", { fromEl, toSelector: ".col-done .column-header" });
+      } else {
+        emitSpiderFx("thwip", {
+          fromEl,
+          toSelector: `.col-${status} .column-body`,
+        });
+      }
     } catch (err) {
       showToast((err as Error).message);
     } finally {
@@ -458,6 +474,7 @@ export default function BoardPage() {
         .filter(Boolean)
         .map((text) => ({ text }));
 
+      const prevStatus = day.tasks.find((t) => t.id === editing.id)?.status;
       const payload = await api.updateTask(day.date, editing.id, {
         title: editing.title,
         project: editing.project,
@@ -467,9 +484,13 @@ export default function BoardPage() {
         dueDate: null,
         subItems: parsedSubItems,
       });
+      const landed = editing.status === "done" && prevStatus !== "done";
       setDay(payload);
       setEditing(null);
       showToast("Task saved");
+      if (landed) {
+        emitSpiderFx("land", { toSelector: ".col-done .column-header" });
+      }
     } catch (err) {
       showToast((err as Error).message);
     } finally {
@@ -543,7 +564,7 @@ export default function BoardPage() {
   if (!day) {
     return (
       <div className="page">
-        <p className="page-sub">Loading your day…</p>
+        <SpideyLoader label="Loading your day…" />
         {mailOpen && (
           <>
             <div className="overlay" />
@@ -674,6 +695,7 @@ export default function BoardPage() {
       </div>
 
       <div className="main">
+        <BoardWebDecor />
         <DndContext
           sensors={sensors}
           collisionDetection={closestCorners}
@@ -943,6 +965,7 @@ export default function BoardPage() {
                 Cancel
               </button>
               <button
+                ref={addBtnRef}
                 type="button"
                 className="btn btn-primary"
                 disabled={busy || !taskTitle.trim()}

@@ -104,6 +104,19 @@ select:focus-visible,
   flex-direction: column;
   overflow: hidden;
 }
+.sv-stage {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.sv-stage > .page,
+.sv-stage > .main {
+  flex: 1;
+  min-height: 0;
+}
 .app-shell--onboarding {
   overflow-x: hidden;
   overflow-y: auto;
@@ -2272,12 +2285,54 @@ select:focus-visible,
   border-radius: var(--radius-sm);
   background: var(--bg-surface);
   border: 1px solid var(--border);
+  padding: 1rem;
+  text-align: left;
+  cursor: pointer;
+  position: relative;
+  opacity: 0.72;
 }
-
 .theme-card.theme-active {
   opacity: 1 !important;
   border-color: var(--accent) !important;
   box-shadow: 0 0 0 1px var(--accent) !important;
+}
+.theme-preview {
+  height: 88px;
+  margin-bottom: 12px;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--bg-base);
+}
+.theme-preview-default .theme-preview-bar {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  height: 10px;
+  background: var(--bg-surface);
+  border-radius: 4px;
+}
+.theme-preview-default .theme-preview-chip {
+  position: absolute;
+  top: 32px;
+  left: 12px;
+  width: 44px;
+  height: 10px;
+  background: var(--accent);
+  border-radius: 4px;
+  opacity: 0.85;
+}
+.theme-live {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  font-weight: 700;
+  color: var(--accent);
+}
+.sv-suit-banner {
+  display: none;
 }
 
 /* Spider-Verse theme styles are in spider-verse.css */

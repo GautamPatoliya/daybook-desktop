@@ -21,6 +21,22 @@ function px(x: number, y: number, fill: string, w = 1, h = 1): PixelCell {
   return { x, y, fill, w, h };
 }
 
+function parseGrid(
+  grid: string[],
+  map: Record<string, string>,
+  ox = 0,
+  oy = 0,
+): PixelCell[] {
+  const out: PixelCell[] = [];
+  grid.forEach((row, y) => {
+    [...row].forEach((ch, x) => {
+      const fill = map[ch];
+      if (fill) out.push(px(ox + x, oy + y, fill));
+    });
+  });
+  return out;
+}
+
 /** Vertical web strand */
 export function webStrand(x: number, y0: number, y1: number, thick = 1): PixelCell[] {
   const out: PixelCell[] = [];
@@ -53,76 +69,228 @@ export function webFan(ox: number, oy: number, radius: number): PixelCell[] {
 }
 
 /** Spider creature (16×16 grid placed at ox,oy) */
-export function spiderSprite(ox: number, oy: number): PixelCell[] {
-  const grid = [
+export type SpiderKind = 'red' | 'blue' | 'ink' | 'gold' | 'hero';
+
+const SPIDER_MAP: Record<string, string> = {
+  r: C.red,
+  h: C.redHi,
+  d: C.redDk,
+  b: C.blue,
+  c: C.blueHi,
+  n: C.blueDk,
+  k: C.black,
+  w: C.white,
+  g: C.cream,
+  o: C.web,
+  '.': '',
+};
+
+const SPIDER_GRIDS: Record<SpiderKind, string[]> = {
+  red: [
     '................',
-    '...o.......o....',
-    '..o..rrrr..o...',
-    '.o.rrrrrrrr.o..',
-    'o..rhrhrhrh.o.',
-    '..rrwrwrwrwr...',
-    '.drrrrrrrrrd..',
-    'd.rrrrrrrrr.d.',
-    'd..rrrrrrrr.d.',
-    '..d..rrrr..d..',
-    '.d....rr....d..',
-    'd..r....r..d...',
-    'd.r......r.d...',
-    '..r......r.....',
-    '.r........r....',
+    '...o........o...',
+    '..o...rrrr...o..',
+    '.o..rrrrrrrr..o.',
+    'o..rrhrhrhrr..o.',
+    '...rrwwrrwwrr...',
+    '..drrrrrrrrrrd..',
+    '.d.rrrrrrrrrr.d.',
+    '.d..rrrrrrrr..d.',
+    '..d...rrrr...d..',
+    '.d.....rr.....d.',
+    'd...r......r...d',
+    '.d.r........r.d.',
+    '..r..........r..',
+    '.r............r.',
     '................',
-  ];
-  const map: Record<string, string> = {
-    r: C.red,
-    h: C.redHi,
-    d: C.redDk,
-    o: C.web,
-    '.': '',
-  };
-  const out: PixelCell[] = [];
-  grid.forEach((row, y) => {
-    [...row].forEach((ch, x) => {
-      const fill = map[ch];
-      if (fill) out.push(px(ox + x, oy + y, fill));
-    });
-  });
-  return out;
+  ],
+  blue: [
+    '................',
+    '....o......o....',
+    '..o..bbbbbb..o..',
+    '.o.bbbbbbbbbb.o.',
+    'o..bbccbbccbb.o.',
+    '...bbwwbbwwbb...',
+    '..nbbbbbbbbbbn..',
+    '.n.bbbbbbbbbb.n.',
+    '.n..bbbbbbbb..n.',
+    '..n...bbbb...n..',
+    '.n.....bb.....n.',
+    'n...b......b...n',
+    '.n.b........b.n.',
+    '..b..........b..',
+    '.b............b.',
+    '................',
+  ],
+  ink: [
+    '................',
+    '..o..........o..',
+    '.o....kkkk....o.',
+    'o...kkkkkkkk...o',
+    '...kkkwkkwkkk...',
+    '..kkkkkkkkkkkk..',
+    '.o.kkkkkkkkkk.o.',
+    'o...kkkkkkkk...o',
+    '.....kkkkkk.....',
+    '....k......k....',
+    '...k........k...',
+    '..k...k..k...k..',
+    '.k...k....k...k.',
+    'k...k......k...k',
+    '................',
+    '................',
+  ],
+  gold: [
+    '................',
+    '.o............o.',
+    'o....gggggg....o',
+    '....gghgghgg....',
+    '...ggwwggwwgg...',
+    '..dggggggggggd..',
+    '.d..gggggggg..d.',
+    'd....gggggg....d',
+    '......gggg......',
+    'd....g....g....d',
+    '.d..g......g..d.',
+    '..dg........gd..',
+    '.d.g........g.d.',
+    'd.g..........g.d',
+    '.g............g.',
+    '................',
+  ],
+  hero: [
+    '................',
+    '...o........o...',
+    '..o...rrrr...o..',
+    '.o..rrrrrrrr..o.',
+    'o..rrwwrrwwrr.o.',
+    '...rrrrrrrrrr...',
+    '..nbbbbbbbbbbn...',
+    '.n.bbbrrrrrrbb.n',
+    '.n...bbbbbb...n.',
+    '..n...bbbb...n..',
+    '.b.....bb.....b.',
+    'b...r......r...b',
+    '.b.r........r.b.',
+    '..r..........r..',
+    '.r............r.',
+    '................',
+  ],
+};
+
+export function spiderSprite(ox = 0, oy = 0, kind: SpiderKind = 'red'): PixelCell[] {
+  return parseGrid(SPIDER_GRIDS[kind], SPIDER_MAP, ox, oy);
 }
 
-/** Mask + torso — front view (16×16 at ox,oy) */
-export function heroMaskSprite(ox: number, oy: number): PixelCell[] {
-  const grid = [
-    '......bbbb......',
-    '....bbbbbbbb....',
-    '...bbwwbbwwbb...',
-    '...bbwwbbwwbb...',
-    '...bbbbbbbbbb...',
-    '...bbrrrrrrbb...',
-    '...brrrrrrrrb...',
-    '..brrrrrrrrrrb..',
-    '..brrbbbbbbrrb..',
-    '..bbrrrrrrrrbb..',
-    '...bbrrrrrrbb...',
-    '....bbbbbbbb....',
-    '.....bbbbbb.....',
-    '......bbbb......',
-    '................',
-    '................',
-  ];
-  const map: Record<string, string> = {
-    b: C.blue,
-    r: C.red,
-    w: C.white,
-    '.': '',
-  };
-  const out: PixelCell[] = [];
-  grid.forEach((row, y) => {
-    [...row].forEach((ch, x) => {
-      const fill = map[ch];
-      if (fill) out.push(px(ox + x, oy + y, fill));
-    });
+/** 16×16 shooter pose — add-task thwip burst */
+export function thwipSprite(): PixelCell[] {
+  return parseGrid(
+    [
+      '................',
+      '......rrrr......',
+      '.....rhwwr......',
+      '.....rrrrr......',
+      '....bbrrrrbb....',
+      '...bb.rrrr......',
+      '......rr.www....',
+      '.........o.o.o..',
+      '..........o..o..',
+      '...........o....',
+      '.....bb.........',
+      '....bb..........',
+      '...bb...........',
+      '................',
+      '................',
+      '................',
+    ],
+    SPIDER_MAP,
+  );
+}
+
+const MASK_MAP: Record<string, string> = {
+  k: C.black,
+  r: C.red,
+  h: C.redHi,
+  d: C.redDk,
+  w: C.white,
+  b: C.blue,
+  '.': '',
+};
+
+/** Compact mask for HUD chips (16×16). */
+export function heroMaskSprite(ox = 0, oy = 0): PixelCell[] {
+  return parseGrid(
+    [
+      '....kkkkkkkk....',
+      '..kkrrrrrrrrkk..',
+      '.krrwwkrrkwwrrk.',
+      '.krwwwwkkwwwwwk.',
+      '.krwwwwkkwwwwwk.',
+      '.krrwwwkkwwwrrk.',
+      '.krrrrrrrrrrrrk.',
+      '.krrrddddddrrrk.',
+      '.krrrrddddrrrrk.',
+      '..krrrrkkrrrrk..',
+      '...krrrrrrrrk...',
+      '....kkrrrrkk....',
+      '.....kkkkkk.....',
+      '....bbbbbbbb....',
+      '...bbbbbbbbbb...',
+      '................',
+    ],
+    MASK_MAP,
+    ox,
+    oy,
+  );
+}
+
+/** Loading-screen portrait — 32×32, hard outline, lenses, web lines. */
+export function heroMask32(ox = 0, oy = 0, blink = false): PixelCell[] {
+  const cells = parseGrid(
+    [
+      '................................',
+      '............kkkkkkkk............',
+      '..........kkrrrrrrrrkk..........',
+      '........kkrrhhhhhhhhrrkk........',
+      '.......krrhhhhhhhhhhhhrrk.......',
+      '......krrhrrrrrrrrrrrrhrrk......',
+      '.....krrrrrrrrrrrrrrrrrrrrk.....',
+      '....krrrwwwkkrrrrrrkkwwwrrrk....',
+      '...krrwwwwwkkrrrrrrkkwwwwwrrk...',
+      '..kkrwwwwwwkrrrrrrrrkwwwwwwrkk..',
+      '..krwwwwwwwkrrrrrrrrkwwwwwwwrk..',
+      '..krwwkwwwwkrrkkkkrrkwwwwkwwrk..',
+      '..krwwwwwwwwkkkkkkkkwwwwwwwwrk..',
+      '..krwwwwwwwkrrrrrrrrkwwwwwwwrk..',
+      '..krrwwwwwkrrddddddrrkwwwwwrrk..',
+      '...krrwwwkrrrddddddrrrkwwwrrk...',
+      '...krrrrrkrrrddddddrrrkrrrrrk...',
+      '....krrrrkrrrrddddrrrrkrrrrk....',
+      '....krrdrrkrrrddddrrrkrrdrrk....',
+      '.....krrdrrkrrkkkkrrkrrdrrk.....',
+      '.....krrrdrkrrrrrrrrkrdrrrk.....',
+      '......krrrrkrrrrrrrrkrrrrk......',
+      '.......krrrrkrrrrrrkrrrrk.......',
+      '........krrrrkkkkkkrrrrk........',
+      '.........krrrrrrrrrrrrk.........',
+      '..........kkrrrrrrrrkk..........',
+      '............kkkkkkkk............',
+      '.............kkkkkk.............',
+      '............krrrrrrk............',
+      '..........kkbbbbbbbbkk..........',
+      '........kkbbbbbbbbbbbbkk........',
+      '.......kbbbbkkkkkkkkbbbbk.......',
+    ],
+    MASK_MAP,
+    ox,
+    oy,
+  );
+  if (!blink) return cells;
+  return cells.map((c) => {
+    if (c.fill !== C.white) return c;
+    if (c.y === oy + 11) return c;
+    return { ...c, fill: C.black };
   });
-  return out;
 }
 
 /** Swinging hero — body on diagonal web (fits 48×48) */

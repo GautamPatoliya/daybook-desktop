@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Icon, I } from '../../lib/icons';
+import SpideyLoader from '../../components/SpideyLoader';
 import { api } from '../../lib/api';
 import { TimePicker } from '../../components/TimePicker';
 import { formatHourLabel } from '../../lib/time';
@@ -35,8 +36,7 @@ export default function OnboardingPage() {
     return (
       <div className="onboarding-shell">
         <div className="onboarding-loading">
-          <Icon icon={I.dot} width={36} style={{ color: 'var(--accent)', animation: 'pulse 1.5s infinite' }} />
-          <p className="page-sub">Initializing your workspace...</p>
+          <SpideyLoader label="Initializing your workspace…" />
         </div>
       </div>
     );

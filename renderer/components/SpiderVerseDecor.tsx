@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import PixelWebCorner from './PixelWebCorner';
+import Cobweb from './spider/Cobweb';
 import SpiderHeroPixel from './spider/SpiderHeroPixel';
 
-/** Subtle corner webs + tiny hero accents — spider-verse theme only. */
+/** Corner cobwebs + mask — spider-verse only. Clipped; no page overflow. */
 export default function SpiderVerseDecor() {
   const [active, setActive] = useState(false);
 
@@ -22,19 +22,19 @@ export default function SpiderVerseDecor() {
   return (
     <div className="sv-decor-layer" aria-hidden="true">
       <div className="sv-decor sv-decor-tl">
-        <PixelWebCorner position="top-left" size={72} />
+        <Cobweb size={92} corner="top-left" opacity={0.55} />
       </div>
       <div className="sv-decor sv-decor-tr">
-        <PixelWebCorner position="top-right" size={72} />
+        <Cobweb size={92} corner="top-right" opacity={0.5} />
       </div>
       <div className="sv-decor sv-decor-bl">
-        <PixelWebCorner position="bottom-left" size={56} />
+        <Cobweb size={78} corner="bottom-left" opacity={0.42} />
       </div>
       <div className="sv-decor sv-decor-br">
-        <PixelWebCorner position="bottom-right" size={56} />
+        <Cobweb size={78} corner="bottom-right" opacity={0.42} />
       </div>
       <div className="sv-decor sv-decor-hero">
-        <SpiderHeroPixel variant="mask" size={28} />
+        <SpiderHeroPixel variant="mask" size={26} />
       </div>
     </div>
   );
