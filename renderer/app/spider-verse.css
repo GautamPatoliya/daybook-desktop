@@ -1125,6 +1125,9 @@
   --sv-bob-start: -12deg;
   --sv-swing-delay: 0s;
   --sv-swing-dur: 2.7s;
+  --sv-drag-angle: 0deg;
+  --sv-drag-bob: 0deg;
+  --sv-drag-stretch: 0px;
   position: absolute;
   top: 4px;
   display: flex;
@@ -1159,14 +1162,12 @@
   animation: sv-pendulum-once var(--sv-swing-dur) ease-in-out var(--sv-swing-delay) 1 both;
   will-change: transform;
 }
-.sv-hang-bob {
-  display: block;
-  line-height: 0;
-  margin-top: -4px;
-  transform: rotate(var(--sv-bob-start));
-  transform-origin: 50% 0;
-  animation: sv-pendulum-bob-once var(--sv-swing-dur) ease-in-out var(--sv-swing-delay) 1 both;
-  filter: drop-shadow(2px 2px 0 #000);
+.sv-hang-mount.is-interacted .sv-hang-arm {
+  animation: none !important;
+}
+.sv-hang-arm.is-dragging {
+  animation: none;
+  transform: rotate(var(--sv-drag-angle));
 }
 .sv-silk {
   display: block;
@@ -1175,11 +1176,56 @@
   background: #e8f0ff;
   box-shadow: 1px 0 0 #000;
 }
+.sv-hang-arm.is-dragging .sv-silk {
+  height: calc(36px + var(--sv-drag-stretch));
+}
 .sv-silk-xs { height: 22px; }
 .sv-silk-long { height: 58px; }
 .sv-silk-xl {
   height: 96px;
   width: 3px;
+}
+.sv-hang-arm.is-dragging .sv-silk-xs {
+  height: calc(22px + var(--sv-drag-stretch));
+}
+.sv-hang-arm.is-dragging .sv-silk-long {
+  height: calc(58px + var(--sv-drag-stretch));
+}
+.sv-hang-arm.is-dragging .sv-silk-xl {
+  height: calc(96px + var(--sv-drag-stretch));
+}
+.sv-hang-grip {
+  display: block;
+  line-height: 0;
+  margin-top: -4px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: grab;
+  transform: rotate(var(--sv-bob-start));
+  transform-origin: 50% 0;
+  animation: sv-pendulum-bob-once var(--sv-swing-dur) ease-in-out var(--sv-swing-delay) 1 both;
+  filter: drop-shadow(2px 2px 0 #000);
+  pointer-events: auto;
+  touch-action: none;
+}
+.sv-hang-mount.is-interacted .sv-hang-grip {
+  animation: none !important;
+}
+.sv-hang-grip:hover {
+  transform: rotate(var(--sv-bob-start)) translateY(-1px);
+}
+.sv-hang-grip:active {
+  cursor: grabbing;
+}
+.sv-hang-grip:focus-visible {
+  outline: 2px solid var(--sv-cream);
+  outline-offset: 2px;
+}
+.sv-hang-arm.is-dragging .sv-hang-grip {
+  animation: none;
+  transform: rotate(var(--sv-drag-bob));
 }
 
 /* ── 26. TEXT VISIBILITY FIXES ──────────────────────────────── */
