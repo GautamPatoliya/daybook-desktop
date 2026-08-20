@@ -18,4 +18,8 @@ export function applyTheme(theme: string) {
   } else {
     root.classList.remove('sv-entering');
   }
+
+  if (typeof window !== 'undefined' && (window as any).wtt) {
+    (window as any).wtt.invoke('app:setThemeIcon', theme).catch(() => {});
+  }
 }

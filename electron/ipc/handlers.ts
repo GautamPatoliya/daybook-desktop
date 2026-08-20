@@ -1,4 +1,4 @@
-import { BrowserWindow, clipboard, ipcMain, shell, app } from 'electron';
+import { BrowserWindow, clipboard, ipcMain, shell, app, nativeImage } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -111,6 +111,47 @@ function dayPayload(root: DataRoot, date: string, carry?: { carried: number; fro
 
 export function registerIpc(deps: Deps) {
   ipcMain.handle('app:getVersion', () => app.getVersion());
+
+  ipcMain.handle('app:setThemeIcon', (_e, theme: string) => {
+    try {
+      const isSpider = theme === 'spider-verse';
+      const iconName = isSpider ? 'spider-icon.png' : 'app-icon.png';
+      
+      const candidates = [
+        path.join(__dirname, '..', 'assets', iconName),
+        path.join(process.cwd(), 'electron', 'assets', iconName),
+        path.join(app.getAppPath(), 'dist-electron', 'electron', 'assets', iconName),
+        path.join(process.resourcesPath || '', 'app.asar', 'dist-electron', 'electron', 'assets', iconName),
+        path.join(process.resourcesPath || '', 'app.asar', 'electron', 'assets', iconName),
+        path.join(__dirname, '..', '..', 'build', iconName === 'app-icon.png' ? 'icon.png' : iconName),
+      ];
+      
+      let imgPath: string | null = null;
+      for (const candidate of candidates) {
+        if (candidate && fs.existsSync(candidate)) {
+          imgPath = candidate;
+          break;
+        }
+      }
+      
+      if (imgPath) {
+        const img = nativeImage.createFromPath(imgPath);
+        if (!img.isEmpty()) {
+          const windows = BrowserWindow.getAllWindows();
+          for (const win of windows) {
+            win.setIcon(img);
+          }
+          if (process.platform === 'darwin' && app.dock) {
+            app.dock.setIcon(img);
+          }
+        }
+      } else {
+        console.warn(`[app:setThemeIcon] Could not find icon: ${iconName}`);
+      }
+    } catch (err) {
+      console.error('Failed to set theme icon:', err);
+    }
+  });
 
   ipcMain.handle('settings:get', () => readSettings(deps.getRoot()));
   ipcMain.handle('settings:save', (_e, partial: Partial<AppSettings>) => {

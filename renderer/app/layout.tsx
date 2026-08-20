@@ -33,6 +33,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         if (s?.theme) {
           document.documentElement.setAttribute('data-theme', s.theme);
           localStorage.setItem('daybook-theme', s.theme);
+          if (typeof window !== 'undefined' && (window as any).wtt) {
+            (window as any).wtt.invoke('app:setThemeIcon', s.theme).catch(() => {});
+          }
         }
       })
       .catch(() => {});
