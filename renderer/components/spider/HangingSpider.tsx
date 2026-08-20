@@ -75,8 +75,8 @@ export default function HangingSpider({
   const gripRef = useRef<HTMLButtonElement>(null);
   const rafRef = useRef<number | null>(null);
   const motionRef = useRef<MotionState>({ angle: 0, bob: 0, stretch: 0, dragging: false });
-  const sampleRef = useRef<{ angle: number; stretch: number; t: number }>({ angle: 0, stretch: 0, t: 0 });
-  const prevSampleRef = useRef<{ angle: number; stretch: number; t: number }>({ angle: 0, stretch: 0, t: 0 });
+  const sampleRef = useRef<{ x: number; y: number; t: number }>({ x: 0, y: 0, t: 0 });
+  const prevSampleRef = useRef<{ x: number; y: number; t: number }>({ x: 0, y: 0, t: 0 });
   const activePointerRef = useRef<number | null>(null);
   const [seed] = useState<MotionSeed>(() => {
     const swing = pickSwing();
@@ -129,97 +129,109 @@ export default function HangingSpider({
     const anchorY = anchor.bottom;
     const dx = clientX - anchorX;
     const dy = clientY - anchorY;
-    const angle = clamp((Math.atan2(-dx, Math.max(16, dy)) * 180) / Math.PI, -52, 52);
+    
+    // Convert to angle and stretch
+    const angle = clamp((Math.atan2(-dx, Math.max(16, dy)) * 180) / Math.PI, -80, 80);
     const length = Math.hypot(dx, Math.max(8, dy));
-    // Only stretch (no compression): silk can elongate, then elastically rebound.
-    const stretch = clamp(length - baseLength, 0, 82);
+    const stretch = clamp(length - baseLength, 0, 80); // Limit max stretch
     const bob = clamp(-angle * 0.34, -18, 18);
+    
     const next = { angle, bob, stretch, dragging: true };
+    
     prevSampleRef.current = sampleRef.current;
-    sampleRef.current = { angle, stretch, t: performance.now() };
+    sampleRef.current = { x: dx, y: Math.max(8, dy), t: performance.now() };
     motionRef.current = next;
     setMotion(next);
   };
 
-  const settleToRest = (from: MotionState) => {
+  const settleToRest = () => {
     if (prefersReducedMotion()) {
       resetMotion();
       return;
     }
     stopAnimation();
-    const start = performance.now();
+    
+    const now = performance.now();
+    
+    // Only apply initial velocity if the user was actively moving just before release
+    let vx = 0;
+    let vy = 0;
+    const timeSinceLastMove = now - sampleRef.current.t;
+    if (timeSinceLastMove < 100) {
+      const dtMs = Math.max(1, sampleRef.current.t - prevSampleRef.current.t);
+      vx = ((sampleRef.current.x - prevSampleRef.current.x) / dtMs) * 1000;
+      vy = ((sampleRef.current.y - prevSampleRef.current.y) / dtMs) * 1000;
+    }
 
-    const dtMs = sampleRef.current.t - prevSampleRef.current.t;
-    const dt = Math.max(1, dtMs);
-    // velocity units: angle (deg/ms) -> (rad/s), stretch (px/ms) -> (px/s)
-    const velocityAngleDegPerMs = (sampleRef.current.angle - prevSampleRef.current.angle) / dt;
-    const velocityStretchPxPerMs =
-      (sampleRef.current.stretch - prevSampleRef.current.stretch) / dt;
+    // Convert current angle and stretch back to Cartesian
+    const rad = (motionRef.current.angle * Math.PI) / 180;
+    const currentLength = baseLength + motionRef.current.stretch;
+    
+    let x = -Math.sin(rad) * currentLength;
+    let y = Math.cos(rad) * currentLength;
 
-    const degToRad = Math.PI / 180;
-    const radToDeg = 180 / Math.PI;
-    const theta0 = from.angle * degToRad;
-    const s0 = from.stretch;
-    const thetaDot0 = velocityAngleDegPerMs * degToRad * 1000;
-    const sDot0 = velocityStretchPxPerMs * 1000;
+    // Physics parameters (2D Spring-Pendulum)
+    const mass = 1.0;
+    const gravity = 1200; // px/s^2 (slower, more leisurely swing)
+    const k = 220; // Spring stiffness (softer bounce)
+    const damping = 2.0; // Air resistance / string friction
+    
+    // Adjust unstretched length so that the equilibrium position under gravity is exactly baseLength.
+    // Equilibrium: k * (baseLength - restLength) = mass * gravity
+    const restLength = baseLength - (mass * gravity) / k;
 
-    // "Science-ish": pendulum small-angle frequency depends on effective length.
-    // Map pixels to meters approximately (calibrated by current baseLength values).
-    const PX_TO_M = 58;
-    const effectiveLengthM = clamp((baseLength + s0) / PX_TO_M, 0.15, 6);
-    const G = 9.81;
-    const omega0 = Math.sqrt(G / effectiveLengthM); // rad/s
-    const zeta = 0.14; // damping ratio
-    const omegaD = omega0 * Math.sqrt(Math.max(0.0001, 1 - zeta * zeta));
+    let lastTime = performance.now();
+    const durationMaxMs = 6000; // allow a longer settling time for smoothness
+    const start = lastTime;
 
-    const A = theta0;
-    const B =
-      (thetaDot0 + zeta * omega0 * theta0) / (omegaD || (omega0 + 0.0001));
+    const frame = (frameTime: number) => {
+      const elapsedMs = frameTime - start;
+      const dtMs = frameTime - lastTime;
+      lastTime = frameTime;
+      
+      // Cap dt to avoid physics explosion on lag spikes
+      const dt = Math.min(dtMs / 1000, 0.033);
 
-    // Silk stretch is an independent elastic spring.
-    const omegaS = (2 * Math.PI) / 0.72; // rad/s (period ~0.72s)
-    const zetaS = 0.22;
-    const omegaSD = omegaS * Math.sqrt(Math.max(0.0001, 1 - zetaS * zetaS));
-    const Cs = sDot0 + zetaS * omegaS * s0;
+      // Current length of the silk
+      const length = Math.hypot(x, y);
+      
+      // Spring force (only pulls, web goes slack if length < restLength)
+      const springForce = length > restLength ? -k * (length - restLength) : 0;
+      
+      const fx = (x / length) * springForce - damping * vx;
+      const fy = (y / length) * springForce - damping * vy + gravity * mass;
 
-    const durationMaxMs = 2600;
+      vx += (fx / mass) * dt;
+      vy += (fy / mass) * dt;
 
-    const frame = (now: number) => {
-      const elapsedMs = now - start;
-      const t = elapsedMs / 1000;
+      x += vx * dt;
+      y += vy * dt;
 
-      const expP = Math.exp(-zeta * omega0 * t);
-      const angleRad = expP * (A * Math.cos(omegaD * t) + B * Math.sin(omegaD * t));
-
-      const expS = Math.exp(-zetaS * omegaS * t);
-      const stretchRaw =
-        expS *
-        (s0 * Math.cos(omegaSD * t) + (Cs / (omegaSD || (omegaS + 0.0001))) * Math.sin(omegaSD * t));
-      const stretch = Math.max(0, stretchRaw);
-
-      const angle = angleRad * radToDeg;
+      const angleRad = Math.atan2(-x, Math.max(1, y));
+      const angle = (angleRad * 180) / Math.PI;
+      const stretchRaw = length - baseLength;
+      
+      // Allow slight visual compression if the web goes slack, or clamp to 0
+      const stretch = Math.max(-5, stretchRaw); 
       const bob = clamp(-angle * 0.34, -18, 18);
 
+      // Stop condition: kinetic and potential energy are very low
+      const speedSq = vx * vx + vy * vy;
+      // Since equilibrium length is exactly baseLength, stretchRaw will settle exactly at 0
       const done =
         elapsedMs > durationMaxMs ||
-        (Math.abs(angle) < 0.18 && stretch < 0.22);
+        (speedSq < 10 && Math.abs(angle) < 0.2 && Math.abs(stretchRaw) < 0.5);
 
-      const next = {
-        angle,
-        bob,
-        stretch,
-        // Keep the "controlled" visual state until we finish the settle.
-        dragging: !done,
-      };
-      motionRef.current = next;
-      setMotion(next);
-      if (!done) {
-        rafRef.current = requestAnimationFrame(frame);
-      } else {
+      if (done) {
         rafRef.current = null;
         const rest = { angle: 0, bob: 0, stretch: 0, dragging: false };
         motionRef.current = rest;
         setMotion(rest);
+      } else {
+        const next = { angle, bob, stretch, dragging: true }; // dragging: true keeps the animation crisp without css transitions
+        motionRef.current = next;
+        setMotion(next);
+        rafRef.current = requestAnimationFrame(frame);
       }
     };
 
@@ -259,9 +271,16 @@ export default function HangingSpider({
     stopAnimation();
     setHasInteracted(true);
     activePointerRef.current = event.pointerId;
+    
     const now = performance.now();
-    sampleRef.current = { angle: motionRef.current.angle, stretch: motionRef.current.stretch, t: now };
+    const rad = (motionRef.current.angle * Math.PI) / 180;
+    const currentLength = baseLength + motionRef.current.stretch;
+    const x = -Math.sin(rad) * currentLength;
+    const y = Math.cos(rad) * currentLength;
+    
+    sampleRef.current = { x, y, t: now };
     prevSampleRef.current = sampleRef.current;
+    
     window.dispatchEvent(new CustomEvent(GRAB_EVENT, { detail: { id: spiderId } }));
     gripRef.current?.setPointerCapture(event.pointerId);
     updateFromPointer(event.clientX, event.clientY);
@@ -276,12 +295,9 @@ export default function HangingSpider({
   const handlePointerUp = (event: React.PointerEvent<HTMLButtonElement>) => {
     if (activePointerRef.current !== event.pointerId) return;
     event.preventDefault();
-    const releaseState = motionRef.current.dragging
-      ? motionRef.current
-      : { ...motionRef.current, dragging: false };
     gripRef.current?.releasePointerCapture(event.pointerId);
     activePointerRef.current = null;
-    settleToRest(releaseState);
+    settleToRest();
   };
 
   const handlePointerCancel = (event: React.PointerEvent<HTMLButtonElement>) => {
