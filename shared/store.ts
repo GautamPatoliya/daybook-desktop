@@ -255,6 +255,28 @@ export function listExistingDates(root: DataRoot): string[] {
     .sort();
 }
 
+/** True if this source-day task was already copied to a later day */
+function taskAlreadyCarriedForward(root: DataRoot, sourceDate: string, task: Task): boolean {
+  if (task.carriedAwayAt) return true;
+  const later = listExistingDates(root).filter((d) => d > sourceDate);
+  for (const d of later) {
+    const store = readStore(root, d);
+    if (
+      store.tasks.some(
+        (t) =>
+          t.sourceTaskId === task.id ||
+          (t.carriedFrom === sourceDate &&
+            t.title === task.title &&
+            t.project === task.project &&
+            t.category === task.category),
+      )
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
 export function initDayWithCarry(root: DataRoot, date: string, settings: AppSettings) {
   assertDate(date);
   const store = readStore(root, date);
@@ -264,33 +286,52 @@ export function initDayWithCarry(root: DataRoot, date: string, settings: AppSett
     return { carried: 0, from: alreadyCarried ? previousBusinessDate(date, settings.workingDays) : null };
   }
 
-  let from = previousBusinessDate(date, settings.workingDays);
   const existing = listExistingDates(root).filter((d) => d < date);
+  let from: string | null = null;
   let sourceTasks: Task[] = [];
+  let sourceDate: string | null = null;
+
   for (let i = existing.length - 1; i >= 0; i--) {
-    const prev = readStore(root, existing[i]);
-    const open = prev.tasks.filter((t) => t.status === 'wip' || t.status === 'none');
+    const day = existing[i];
+    const prev = readStore(root, day);
+    const open = prev.tasks.filter(
+      (t) =>
+        (t.status === 'wip' || t.status === 'none') &&
+        !taskAlreadyCarriedForward(root, day, t),
+    );
     if (open.length) {
-      from = existing[i];
+      from = day;
+      sourceDate = day;
       sourceTasks = open;
       break;
     }
   }
-  if (!sourceTasks.length) {
+
+  if (!sourceTasks.length || !sourceDate) {
     store.carriedAt = date;
     writeStore(root, date, store);
     return { carried: 0, from: null };
   }
 
+  const sourceStore = readStore(root, sourceDate);
+  const carriedIds = new Set(sourceTasks.map((t) => t.id));
+
   const carried: Task[] = sourceTasks.map((t) => ({
     ...t,
     id: newId(),
+    sourceTaskId: t.id,
     status: t.status === 'done' ? 'wip' : normalizeStatus(t.status),
     priority: normalizePriority(t.priority),
     createdAt: hhmm(settings.timezone),
     updatedAt: hhmm(settings.timezone),
-    carriedFrom: from,
+    carriedFrom: from!,
   }));
+
+  sourceStore.tasks = sourceStore.tasks.map((t) =>
+    carriedIds.has(t.id) ? { ...t, carriedAwayAt: date } : t,
+  );
+  writeStore(root, sourceDate, sourceStore);
+
   store.tasks = carried;
   store.carriedAt = date;
   writeStore(root, date, store);

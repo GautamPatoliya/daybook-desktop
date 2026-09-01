@@ -279,42 +279,36 @@ export default function AnalyticsPage() {
           <h2 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0 }}>Daily Logs (Last 10 Active Days)</h2>
         </div>
         
-        <div style={{ overflowX: 'auto' }}>
-          <table className="table" style={{ borderCollapse: 'collapse', width: '100%' }}>
+        <div className="table-panel table-scroll">
+          <table className="table">
             <thead>
-              <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                <th style={{ padding: '0.8rem 0.5rem', fontSize: '0.75rem' }}>Date</th>
-                <th style={{ padding: '0.8rem 0.5rem', fontSize: '0.75rem', textAlign: 'center' }}>Total Logged</th>
-                <th style={{ padding: '0.8rem 0.5rem', fontSize: '0.75rem', textAlign: 'center' }}>Completed</th>
-                <th style={{ padding: '0.8rem 0.5rem', fontSize: '0.75rem', textAlign: 'center' }}>In Progress</th>
-                <th style={{ padding: '0.8rem 0.5rem', fontSize: '0.75rem', textAlign: 'center' }}>Backlog</th>
+              <tr>
+                <th>Date</th>
+                <th style={{ textAlign: 'center' }}>Total Logged</th>
+                <th style={{ textAlign: 'center' }}>Completed</th>
+                <th style={{ textAlign: 'center' }}>In Progress</th>
+                <th style={{ textAlign: 'center' }}>Backlog</th>
               </tr>
             </thead>
             <tbody>
               {recent.map((d) => (
-                <tr key={d.date} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', transition: 'background 0.15s' }}>
-                  <td style={{ padding: '0.75rem 0.5rem', fontWeight: 600, color: 'var(--text-secondary)' }}>{formatIndianDate(d.date)}</td>
-                  <td style={{ padding: '0.75rem 0.5rem', color: 'var(--text)', textAlign: 'center', fontWeight: 650 }}>{d.total}</td>
-                  <td style={{ padding: '0.75rem 0.5rem', textAlign: 'center' }}>
-                    <span style={{ color: 'var(--status-done)', background: 'rgba(34,197,94,0.08)', padding: '2px 8px', borderRadius: '12px', fontSize: '0.78rem', fontWeight: 700 }}>
-                      {d.done}
-                    </span>
+                <tr key={d.date}>
+                  <td style={{ fontWeight: 600 }}>{formatIndianDate(d.date)}</td>
+                  <td style={{ textAlign: 'center', fontWeight: 650 }}>{d.total}</td>
+                  <td style={{ textAlign: 'center' }}>
+                    <span className="table-stat table-stat--done">{d.done}</span>
                   </td>
-                  <td style={{ padding: '0.75rem 0.5rem', textAlign: 'center' }}>
-                    <span style={{ color: 'var(--status-wip)', background: 'rgba(245,158,11,0.08)', padding: '2px 8px', borderRadius: '12px', fontSize: '0.78rem', fontWeight: 700 }}>
-                      {d.wip}
-                    </span>
+                  <td style={{ textAlign: 'center' }}>
+                    <span className="table-stat table-stat--wip">{d.wip}</span>
                   </td>
-                  <td style={{ padding: '0.75rem 0.5rem', textAlign: 'center' }}>
-                    <span style={{ color: 'var(--text-dim)', background: 'rgba(255,255,255,0.04)', padding: '2px 8px', borderRadius: '12px', fontSize: '0.78rem', fontWeight: 600 }}>
-                      {d.none}
-                    </span>
+                  <td style={{ textAlign: 'center' }}>
+                    <span className="table-stat table-stat--none">{d.none}</span>
                   </td>
                 </tr>
               ))}
               {recent.length === 0 && (
                 <tr>
-                  <td colSpan={5} style={{ color: 'var(--text-dim)', textAlign: 'center', padding: '2rem' }}>
+                  <td colSpan={5} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-dim)' }}>
                     No history logged yet. Work logged on the Board will display here.
                   </td>
                 </tr>

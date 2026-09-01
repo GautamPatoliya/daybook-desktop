@@ -70,7 +70,9 @@ export default function HangingSpider({
   kind = 'red',
 }: Props) {
   const [hasInteracted, setHasInteracted] = useState(false);
+  const [dragging, setDragging] = useState(false);
   const spiderId = useId();
+  const mountRef = useRef<HTMLDivElement>(null);
   const anchorRef = useRef<HTMLSpanElement>(null);
   const gripRef = useRef<HTMLButtonElement>(null);
   const rafRef = useRef<number | null>(null);
@@ -89,15 +91,20 @@ export default function HangingSpider({
       duration: swing.duration,
     };
   });
-  const [motion, setMotion] = useState<MotionState>({
-    angle: seed.angle,
-    bob: seed.bob,
-    stretch: 0,
-    dragging: false,
-  });
   const placeClass =
     place === 'stage' || place === 'inline' ? `sv-hang--${place}` : `sv-hang-${place}`;
   const baseLength = BASE_SILK_LENGTH[silk];
+
+  const applyMotionCss = (next: MotionState) => {
+    motionRef.current = next;
+    const el = mountRef.current;
+    if (!el) return;
+    el.style.setProperty('--sv-drag-angle', `${next.angle}deg`);
+    el.style.setProperty('--sv-drag-bob', `${next.bob}deg`);
+    el.style.setProperty('--sv-drag-stretch', `${next.stretch}px`);
+    el.style.setProperty('--sv-start', `${next.angle}deg`);
+    el.style.setProperty('--sv-bob-start', `${next.bob}deg`);
+  };
 
   const stopAnimation = () => {
     if (rafRef.current !== null) {
@@ -117,9 +124,8 @@ export default function HangingSpider({
         // ignore
       }
     }
-    const next = { angle: 0, bob: 0, stretch: 0, dragging: false };
-    motionRef.current = next;
-    setMotion(next);
+    applyMotionCss({ angle: 0, bob: 0, stretch: 0, dragging: false });
+    setDragging(false);
   };
 
   const updateFromPointer = (clientX: number, clientY: number) => {
@@ -129,19 +135,16 @@ export default function HangingSpider({
     const anchorY = anchor.bottom;
     const dx = clientX - anchorX;
     const dy = clientY - anchorY;
-    
-    // Convert to angle and stretch
+
     const angle = clamp((Math.atan2(-dx, Math.max(16, dy)) * 180) / Math.PI, -80, 80);
     const length = Math.hypot(dx, Math.max(8, dy));
-    const stretch = clamp(length - baseLength, 0, 80); // Limit max stretch
+    const stretch = clamp(length - baseLength, 0, 80);
     const bob = clamp(-angle * 0.34, -18, 18);
-    
+
     const next = { angle, bob, stretch, dragging: true };
-    
     prevSampleRef.current = sampleRef.current;
     sampleRef.current = { x: dx, y: Math.max(8, dy), t: performance.now() };
-    motionRef.current = next;
-    setMotion(next);
+    applyMotionCss(next);
   };
 
   const settleToRest = () => {
@@ -150,10 +153,8 @@ export default function HangingSpider({
       return;
     }
     stopAnimation();
-    
+
     const now = performance.now();
-    
-    // Only apply initial velocity if the user was actively moving just before release
     let vx = 0;
     let vy = 0;
     const timeSinceLastMove = now - sampleRef.current.t;
@@ -163,74 +164,51 @@ export default function HangingSpider({
       vy = ((sampleRef.current.y - prevSampleRef.current.y) / dtMs) * 1000;
     }
 
-    // Convert current angle and stretch back to Cartesian
     const rad = (motionRef.current.angle * Math.PI) / 180;
     const currentLength = baseLength + motionRef.current.stretch;
-    
     let x = -Math.sin(rad) * currentLength;
     let y = Math.cos(rad) * currentLength;
 
-    // Physics parameters (2D Spring-Pendulum)
     const mass = 1.0;
-    const gravity = 1200; // px/s^2 (slower, more leisurely swing)
-    const k = 220; // Spring stiffness (softer bounce)
-    const damping = 2.0; // Air resistance / string friction
-    
-    // Adjust unstretched length so that the equilibrium position under gravity is exactly baseLength.
-    // Equilibrium: k * (baseLength - restLength) = mass * gravity
+    const gravity = 1200;
+    const k = 220;
+    const damping = 2.0;
     const restLength = baseLength - (mass * gravity) / k;
 
     let lastTime = performance.now();
-    const durationMaxMs = 6000; // allow a longer settling time for smoothness
+    const durationMaxMs = 4500;
     const start = lastTime;
 
     const frame = (frameTime: number) => {
       const elapsedMs = frameTime - start;
-      const dtMs = frameTime - lastTime;
+      const dt = Math.min((frameTime - lastTime) / 1000, 0.033);
       lastTime = frameTime;
-      
-      // Cap dt to avoid physics explosion on lag spikes
-      const dt = Math.min(dtMs / 1000, 0.033);
 
-      // Current length of the silk
       const length = Math.hypot(x, y);
-      
-      // Spring force (only pulls, web goes slack if length < restLength)
       const springForce = length > restLength ? -k * (length - restLength) : 0;
-      
       const fx = (x / length) * springForce - damping * vx;
       const fy = (y / length) * springForce - damping * vy + gravity * mass;
 
       vx += (fx / mass) * dt;
       vy += (fy / mass) * dt;
-
       x += vx * dt;
       y += vy * dt;
 
-      const angleRad = Math.atan2(-x, Math.max(1, y));
-      const angle = (angleRad * 180) / Math.PI;
+      const angle = (Math.atan2(-x, Math.max(1, y)) * 180) / Math.PI;
       const stretchRaw = length - baseLength;
-      
-      // Allow slight visual compression if the web goes slack, or clamp to 0
-      const stretch = Math.max(-5, stretchRaw); 
+      const stretch = Math.max(-5, stretchRaw);
       const bob = clamp(-angle * 0.34, -18, 18);
-
-      // Stop condition: kinetic and potential energy are very low
       const speedSq = vx * vx + vy * vy;
-      // Since equilibrium length is exactly baseLength, stretchRaw will settle exactly at 0
       const done =
         elapsedMs > durationMaxMs ||
         (speedSq < 10 && Math.abs(angle) < 0.2 && Math.abs(stretchRaw) < 0.5);
 
       if (done) {
         rafRef.current = null;
-        const rest = { angle: 0, bob: 0, stretch: 0, dragging: false };
-        motionRef.current = rest;
-        setMotion(rest);
+        applyMotionCss({ angle: 0, bob: 0, stretch: 0, dragging: false });
+        setDragging(false);
       } else {
-        const next = { angle, bob, stretch, dragging: true }; // dragging: true keeps the animation crisp without css transitions
-        motionRef.current = next;
-        setMotion(next);
+        applyMotionCss({ angle, bob, stretch, dragging: true });
         rafRef.current = requestAnimationFrame(frame);
       }
     };
@@ -239,8 +217,13 @@ export default function HangingSpider({
   };
 
   useEffect(() => {
-    motionRef.current = motion;
-  }, [motion]);
+    applyMotionCss({
+      angle: seed.angle,
+      bob: seed.bob,
+      stretch: 0,
+      dragging: false,
+    });
+  }, [seed.angle, seed.bob]);
 
   useEffect(() => {
     const handleOtherGrab = (event: Event) => {
@@ -258,9 +241,8 @@ export default function HangingSpider({
 
   useEffect(() => {
     if (prefersReducedMotion()) {
-      const next = { angle: 0, bob: 0, stretch: 0, dragging: false };
-      motionRef.current = next;
-      setMotion(next);
+      applyMotionCss({ angle: 0, bob: 0, stretch: 0, dragging: false });
+      setDragging(false);
     }
   }, []);
 
@@ -270,17 +252,18 @@ export default function HangingSpider({
     event.stopPropagation();
     stopAnimation();
     setHasInteracted(true);
+    setDragging(true);
     activePointerRef.current = event.pointerId;
-    
+
     const now = performance.now();
     const rad = (motionRef.current.angle * Math.PI) / 180;
     const currentLength = baseLength + motionRef.current.stretch;
     const x = -Math.sin(rad) * currentLength;
     const y = Math.cos(rad) * currentLength;
-    
+
     sampleRef.current = { x, y, t: now };
     prevSampleRef.current = sampleRef.current;
-    
+
     window.dispatchEvent(new CustomEvent(GRAB_EVENT, { detail: { id: spiderId } }));
     gripRef.current?.setPointerCapture(event.pointerId);
     updateFromPointer(event.clientX, event.clientY);
@@ -308,22 +291,23 @@ export default function HangingSpider({
 
   return (
     <div
+      ref={mountRef}
       className={`sv-hang-mount ${placeClass}${hasInteracted ? ' is-interacted' : ''}`}
       style={
         {
-          '--sv-start': `${motion.angle}deg`,
-          '--sv-bob-start': `${motion.bob}deg`,
+          '--sv-start': `${seed.angle}deg`,
+          '--sv-bob-start': `${seed.bob}deg`,
           '--sv-swing-delay': `${seed.delay}s`,
           '--sv-swing-dur': `${seed.duration}s`,
-          '--sv-drag-angle': `${motion.angle}deg`,
-          '--sv-drag-bob': `${motion.bob}deg`,
-          '--sv-drag-stretch': `${motion.stretch}px`,
+          '--sv-drag-angle': `${seed.angle}deg`,
+          '--sv-drag-bob': `${seed.bob}deg`,
+          '--sv-drag-stretch': '0px',
         } as React.CSSProperties
       }
       suppressHydrationWarning
     >
       <span ref={anchorRef} className="sv-hang-anchor" />
-      <div className={`sv-hang-arm${motion.dragging ? ' is-dragging' : ''}`}>
+      <div className={`sv-hang-arm${dragging ? ' is-dragging' : ''}`}>
         <span className={`sv-silk ${SILK_CLASS[silk]}`.trim()} />
         <button
           ref={gripRef}

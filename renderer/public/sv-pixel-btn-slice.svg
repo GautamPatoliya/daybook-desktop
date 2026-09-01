@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36">
+  <!-- 9-slice skin: 12px corners, 4px black border, cream bands -->
+  <!-- top -->
+  <rect x="12" y="0" width="12" height="4" fill="#000"/>
+  <rect x="8" y="4" width="4" height="4" fill="#000"/>
+  <rect x="4" y="8" width="4" height="4" fill="#000"/>
+  <!-- bottom -->
+  <rect x="12" y="32" width="12" height="4" fill="#000"/>
+  <rect x="8" y="28" width="4" height="4" fill="#000"/>
+  <rect x="4" y="24" width="4" height="4" fill="#000"/>
+  <!-- left -->
+  <rect x="0" y="12" width="4" height="12" fill="#000"/>
+  <!-- right -->
+  <rect x="32" y="12" width="4" height="12" fill="#000"/>
+  <!-- TR -->
+  <rect x="20" y="0" width="12" height="4" fill="#000"/>
+  <rect x="24" y="4" width="4" height="4" fill="#000"/>
+  <rect x="28" y="8" width="4" height="4" fill="#000"/>
+  <!-- BR -->
+  <rect x="20" y="32" width="12" height="4" fill="#000"/>
+  <rect x="24" y="28" width="4" height="4" fill="#000"/>
+  <rect x="28" y="24" width="4" height="4" fill="#000"/>
+  <!-- inner cream bands (visible at slice edges) -->
+  <rect x="4" y="4" width="28" height="4" fill="#f8ecc0"/>
+  <rect x="4" y="28" width="28" height="4" fill="#c9a84a"/>
+</svg>

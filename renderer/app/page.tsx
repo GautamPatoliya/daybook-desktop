@@ -144,7 +144,7 @@ function TaskCard({
           <Icon icon={I.clock} width={13} />
           {formatTime12h(task.updatedAt)}
         </span>
-        {task.carriedFrom ? (
+        {task.carriedFrom && task.status !== 'done' ? (
           <span className="carried">
             <Icon icon={I.carry} width={13} />
             from {formatShortDate(task.carriedFrom)}

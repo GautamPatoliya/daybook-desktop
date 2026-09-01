@@ -669,6 +669,34 @@ select:focus-visible,
 }
 .table th { color: var(--text-muted); font-weight: 650; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em; }
 
+.table-panel {
+  background: linear-gradient(180deg, var(--bg-raised) 0%, var(--bg-surface) 100%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  margin-top: 1rem;
+}
+.table-scroll { overflow-x: auto; }
+.table-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.table-stat {
+  display: inline-block;
+  padding: 0.15rem 0.55rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+.table-stat--done { color: var(--status-done); background: rgba(34, 197, 94, 0.08); }
+.table-stat--wip { color: var(--status-wip); background: rgba(245, 158, 11, 0.08); }
+.table-stat--none { color: var(--text-dim); background: rgba(255, 255, 255, 0.04); }
+.project-name { font-weight: 700; color: var(--text); font-size: 0.96rem; }
+
 .mail-body {
   white-space: pre-wrap; font-family: Verdana, Geneva, sans-serif; font-size: 0.875rem; line-height: 1.65;
   margin: 0; padding: 0.9rem; background: var(--bg-input); border-radius: var(--radius-sm); border: 1px solid var(--border);

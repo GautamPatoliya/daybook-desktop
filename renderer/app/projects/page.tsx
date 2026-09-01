@@ -92,11 +92,11 @@ export default function ProjectsPage() {
           </p>
         </div>
         <div style={{ display: 'flex', gap: '0.75rem' }}>
-          <button type="button" className={`btn ${showArchived ? '' : 'btn-primary'}`} style={{ borderRadius: '99px' }} onClick={() => setShowArchived((v) => !v)}>
+          <button type="button" className={`btn ${showArchived ? '' : 'btn-primary'}`} onClick={() => setShowArchived((v) => !v)}>
             <Icon icon={showArchived ? I.success : I.archive} width={16} />
             {showArchived ? 'Show active' : 'Show archived'}
           </button>
-          <button type="button" className="btn btn-primary" style={{ borderRadius: '99px' }} onClick={openCreate}>
+          <button type="button" className="btn btn-primary" onClick={openCreate}>
             <Icon icon={I.plus} width={16} /> New project
           </button>
         </div>
@@ -116,73 +116,45 @@ export default function ProjectsPage() {
           </p>
         </div>
       ) : (
-        <div style={{
-          background: 'linear-gradient(180deg, #1e293b 0%, #0f172a 100%)',
-          border: '1px solid rgba(255, 255, 255, 0.05)',
-          borderRadius: '16px',
-          boxShadow: '0 8px 30px rgba(0, 0, 0, 0.2)',
-          overflow: 'hidden',
-          marginTop: '1rem'
-        }}>
-          <table className="table" style={{ margin: 0, width: '100%', borderCollapse: 'collapse' }}>
+        <div className="table-panel">
+          <table className="table">
             <thead>
-              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.01)' }}>
-                <th style={{ padding: '1rem', width: '240px', color: 'var(--text-muted)', fontWeight: 650, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Project</th>
-                <th style={{ padding: '1rem', color: 'var(--text-muted)', fontWeight: 650, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Notes & Context</th>
-                <th style={{ padding: '1rem', width: '140px', textAlign: 'center', color: 'var(--text-muted)', fontWeight: 650, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status</th>
-                <th style={{ padding: '1rem', width: '420px', textAlign: 'right', color: 'var(--text-muted)', fontWeight: 650, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Actions</th>
+              <tr>
+                <th style={{ width: '240px' }}>Project</th>
+                <th>Notes & Context</th>
+                <th style={{ width: '140px', textAlign: 'center' }}>Status</th>
+                <th style={{ width: '420px', textAlign: 'right' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {visible.map((p) => {
                 const isDefault = defaultProject === p.name;
                 return (
-                  <tr key={p.name} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', transition: 'background 0.15s' }}>
-                    <td style={{ padding: '1.25rem 1rem', verticalAlign: 'middle' }}>
+                  <tr key={p.name}>
+                    <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <span style={{ display: 'inline-block', width: '12px', height: '12px', borderRadius: '50%', background: p.color, flexShrink: 0, boxShadow: `0 0 8px ${p.color}80` }} />
-                        <span style={{ fontWeight: 700, color: '#fff', fontSize: '0.96rem' }}>{p.name}</span>
+                        <span className="project-swatch" style={{ background: p.color }} />
+                        <span className="project-name">{p.name}</span>
                       </div>
                     </td>
-                    <td style={{ padding: '1.25rem 1rem', color: 'var(--text-secondary)', fontSize: '0.88rem', verticalAlign: 'middle', lineHeight: '1.4' }}>
+                    <td style={{ lineHeight: '1.4' }}>
                       {p.notes?.trim() || <span style={{ color: 'var(--text-dim)', fontStyle: 'italic' }}>No description provided.</span>}
                     </td>
-                    <td style={{ padding: '1.25rem 1rem', textAlign: 'center', verticalAlign: 'middle' }}>
+                    <td style={{ textAlign: 'center' }}>
                       {isDefault ? (
-                        <span className="project-status-badge" style={{
-                          fontSize: '0.72rem',
-                          fontWeight: 750,
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.05em',
-                          padding: '4px 12px',
-                          background: 'rgba(var(--accent-rgb,223,42,47), 0.12)',
-                          color: 'var(--accent)',
-                          border: '1px solid rgba(var(--accent-rgb,223,42,47), 0.25)',
-                        }}>
-                          Default
-                        </span>
+                        <span className="project-status-badge">Default</span>
                       ) : (
-                        <span className={p.archived ? 'project-archive-badge' : 'project-active-badge'} style={{
-                          fontSize: '0.72rem',
-                          fontWeight: 700,
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.04em',
-                          padding: '4px 12px',
-                          background: p.archived ? 'rgba(255,255,255,0.03)' : 'rgba(var(--success-rgb,26,127,196), 0.1)',
-                          color: p.archived ? 'var(--text-dim)' : 'var(--status-done)',
-                          border: p.archived ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(var(--success-rgb,26,127,196), 0.2)'
-                        }}>
+                        <span className={p.archived ? 'project-archive-badge' : 'project-active-badge'}>
                           {p.archived ? 'Archived' : 'Active'}
                         </span>
                       )}
                     </td>
-                    <td style={{ padding: '1.25rem 1rem', textAlign: 'right', verticalAlign: 'middle' }}>
-                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', alignItems: 'center' }}>
+                    <td style={{ textAlign: 'right' }}>
+                      <div className="table-actions">
                         {!p.archived && !isDefault && (
                           <button
                             type="button"
                             className="btn"
-                            style={{ padding: '0.45rem 1rem', fontSize: '0.84rem', borderRadius: '8px', whiteSpace: 'nowrap' }}
                             onClick={async () => {
                               await api.saveSettings({ defaultProject: p.name });
                               setDefaultProject(p.name);
@@ -195,7 +167,6 @@ export default function ProjectsPage() {
                         <button
                           type="button"
                           className="btn"
-                          style={{ padding: '0.45rem 1rem', fontSize: '0.84rem', borderRadius: '8px', whiteSpace: 'nowrap' }}
                           onClick={() => openEdit(p)}
                         >
                           <Icon icon={I.edit} width={13} /> Edit
@@ -203,7 +174,6 @@ export default function ProjectsPage() {
                         <button
                           type="button"
                           className="btn"
-                          style={{ padding: '0.45rem 1rem', fontSize: '0.84rem', borderRadius: '8px', whiteSpace: 'nowrap' }}
                           onClick={async () => {
                             try {
                               const res = await api.archiveProject(p.name, !p.archived);
@@ -219,7 +189,6 @@ export default function ProjectsPage() {
                         <button
                           type="button"
                           className="btn btn-danger"
-                          style={{ padding: '0.45rem 0.8rem', borderRadius: '8px' }}
                           onClick={async () => {
                             if (!confirm(`Permanently delete “${p.name}”? Existing tasks keep the name, but the project will disappear from lists.`)) {
                               return;

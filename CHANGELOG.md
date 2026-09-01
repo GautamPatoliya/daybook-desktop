@@ -2,6 +2,23 @@
 
 All notable changes to Daybook will be documented in this file.
 
+## 1.1.1 — 2026-09-01
+
+### What's new
+* **Spider-Verse theme** — A new pixel-art HUD inspired by Spidey Tracker: chunky borders, cream CTAs, corner cobwebs, and a light-blue outer frame.
+* **Ambient spider decor** — Hanging spiders on the board and screens; interactive drag-and-swing on the silk thread.
+* **Action beats** — Quick Thwip when you add a task and a hero landing when you move one to Done (Spider-Verse theme only).
+* **Spidey loading screen** — Pixel swing troupe on first visit while the app loads.
+* **Pixel UI polish** — Buttons, cards, columns, tables, settings, and forms use stepped pixel corners across the Spider-Verse theme.
+
+### Improvements
+* **Theme picker** — Choose **Spider-Verse** alongside the default theme in Settings → Profile.
+* **Readability** — Brighter text contrast and cleaner column borders in Spider-Verse mode.
+
+### Fixes
+* **Carry-forward tasks** — Completing or updating carried tasks no longer causes them to reappear on the next day’s board.
+* **Performance** — Reduced GPU-heavy effects so the Spider-Verse theme stays smooth on everyday office laptops.
+
 ## 1.1.0 — 2026-08-11
 
 ### What's new

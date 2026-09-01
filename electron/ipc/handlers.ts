@@ -286,7 +286,12 @@ export function registerIpc(deps: Deps) {
         if (!t) throw new Error('Please enter a task title');
         task.title = t;
       }
-      if (payload.patch.status !== undefined) task.status = normalizeStatus(payload.patch.status);
+      if (payload.patch.status !== undefined) {
+        task.status = normalizeStatus(payload.patch.status);
+        if (task.status === 'done') {
+          delete task.carriedFrom;
+        }
+      }
       if (payload.patch.priority !== undefined) task.priority = normalizePriority(payload.patch.priority);
       if (payload.patch.dueDate !== undefined) {
         task.dueDate = payload.patch.dueDate || undefined;

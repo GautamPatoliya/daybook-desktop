@@ -1,7 +1,41 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import PixelWebCorner from './PixelWebCorner';
+
+/** Deterministic pseudo-random in [0, 1) — stable across renders */
+function hash01(n: number) {
+  const x = Math.sin(n * 12.9898) * 43758.5453;
+  return x - Math.floor(x);
+}
+
+const STARS = Array.from({ length: 24 }, (_, i) => ({
+  x: `${hash01(i + 1) * 100}%`,
+  y: `${hash01(i + 41) * 48}%`,
+}));
+
+const BUILDINGS_BG = Array.from({ length: 20 }, (_, i) => {
+  const width = 30 + hash01(i + 100) * 60;
+  const height = 100 + hash01(i + 200) * 200;
+  const x = i * (1200 / 20) - 20 + hash01(i + 300) * 40;
+  return { x, y: 400 - height, width, height };
+});
+
+const BUILDINGS_FG = Array.from({ length: 16 }, (_, i) => {
+  const width = 40 + hash01(i + 400) * 80;
+  const height = 50 + hash01(i + 500) * 250;
+  const x = i * (1200 / 16) - 10;
+  const colors = ['#0a0e1a', '#0c1020', '#070b15'];
+  const color = colors[Math.floor(hash01(i + 600) * colors.length)];
+  return { x, y: 400 - height, width, height, color };
+});
+
+const WINDOWS = Array.from({ length: 36 }, (_, i) => ({
+  x: hash01(i + 700) * 1200,
+  y: 150 + hash01(i + 800) * 250,
+  fill: hash01(i + 900) > 0.5 ? '#FF8C00' : '#FFD700',
+  opacity: 0.3 + hash01(i + 1000) * 0.5,
+}));
 
 export default function SpiderVerseBackground() {
   const [isActive, setIsActive] = useState(false);
@@ -12,9 +46,41 @@ export default function SpiderVerseBackground() {
     };
     checkTheme();
     const observer = new MutationObserver(checkTheme);
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme'],
+    });
     return () => observer.disconnect();
   }, []);
+
+  const skyline = useMemo(
+    () => (
+      <svg
+        viewBox="0 0 1200 400"
+        preserveAspectRatio="xMidYMax slice"
+        style={{
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          width: '100%',
+          height: '280px',
+          opacity: 0.35,
+        }}
+        aria-hidden
+      >
+        {BUILDINGS_BG.map((b, i) => (
+          <rect key={`bg-${i}`} x={b.x} y={b.y} width={b.width} height={b.height} fill="#060914" />
+        ))}
+        {BUILDINGS_FG.map((b, i) => (
+          <rect key={`fg-${i}`} x={b.x} y={b.y} width={b.width} height={b.height} fill={b.color} />
+        ))}
+        {WINDOWS.map((w, i) => (
+          <rect key={`win-${i}`} x={w.x} y={w.y} width="4" height="4" fill={w.fill} opacity={w.opacity} />
+        ))}
+      </svg>
+    ),
+    []
+  );
 
   if (!isActive) return null;
 
@@ -27,37 +93,16 @@ export default function SpiderVerseBackground() {
         zIndex: 0,
         pointerEvents: 'none',
         overflow: 'hidden',
-        background: '#010208'
+        background: '#010208',
       }}
+      aria-hidden
     >
-      {/* Halftone Pattern Overlay */}
-      <svg width="100%" height="100%" style={{ position: 'absolute', opacity: 0.05 }}>
-        <defs>
-          <pattern id="halftone" width="4" height="4" patternUnits="userSpaceOnUse">
-            <rect width="2" height="2" fill="#fff" />
-          </pattern>
-        </defs>
-        <rect width="100%" height="100%" fill="url(#halftone)" />
-      </svg>
-
-      {/* Star Field */}
-      <svg width="100%" height="100%" style={{ position: 'absolute', opacity: 0.5 }}>
-        {Array.from({ length: 40 }).map((_, i) => (
-          <rect
-            key={`star-${i}`}
-            x={`${Math.random() * 100}%`}
-            y={`${Math.random() * 50}%`}
-            width="2"
-            height="2"
-            fill="#fff"
-            style={{
-              animation: `twinkle ${2 + Math.random() * 3}s infinite ${Math.random()}s`,
-            }}
-          />
+      <svg width="100%" height="100%" style={{ position: 'absolute', opacity: 0.45 }}>
+        {STARS.map((s, i) => (
+          <rect key={`star-${i}`} x={s.x} y={s.y} width="2" height="2" fill="#fff" />
         ))}
       </svg>
 
-      {/* Web Decorations */}
       <div style={{ position: 'absolute', top: 0, right: 0 }}>
         <PixelWebCorner position="top-right" size={150} />
       </div>
@@ -65,73 +110,7 @@ export default function SpiderVerseBackground() {
         <PixelWebCorner position="bottom-left" size={120} />
       </div>
 
-      {/* City Skyline */}
-      <svg
-        viewBox="0 0 1200 400"
-        preserveAspectRatio="xMidYMax slice"
-        style={{
-          position: 'absolute',
-          bottom: 0,
-          left: 0,
-          width: '100%',
-          height: '400px',
-          opacity: 0.4
-        }}
-      >
-        {/* Buildings background layer */}
-        {Array.from({ length: 30 }).map((_, i) => {
-          const width = 30 + Math.random() * 60;
-          const height = 100 + Math.random() * 200;
-          const x = i * (1200 / 30) - 20 + Math.random() * 40;
-          return (
-            <rect
-              key={`bg-${i}`}
-              x={x}
-              y={400 - height}
-              width={width}
-              height={height}
-              fill="#060914"
-            />
-          );
-        })}
-
-        {/* Buildings foreground layer */}
-        {Array.from({ length: 25 }).map((_, i) => {
-          const width = 40 + Math.random() * 80;
-          const height = 50 + Math.random() * 250;
-          const x = i * (1200 / 25) - 10;
-          const colors = ['#0a0e1a', '#0c1020', '#070b15'];
-          const color = colors[Math.floor(Math.random() * colors.length)];
-          return (
-            <rect
-              key={`fg-${i}`}
-              x={x}
-              y={400 - height}
-              width={width}
-              height={height}
-              fill={color}
-            />
-          );
-        })}
-
-        {/* Lit Windows */}
-        {Array.from({ length: 80 }).map((_, i) => {
-          const x = Math.random() * 1200;
-          const y = 150 + Math.random() * 250;
-          const isOrange = Math.random() > 0.5;
-          return (
-            <rect
-              key={`win-${i}`}
-              x={x}
-              y={y}
-              width="4"
-              height="4"
-              fill={isOrange ? '#FF8C00' : '#FFD700'}
-              opacity={0.3 + Math.random() * 0.5}
-            />
-          );
-        })}
-      </svg>
+      {skyline}
     </div>
   );
 }

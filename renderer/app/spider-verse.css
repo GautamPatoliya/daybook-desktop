@@ -32,10 +32,10 @@
   --bg-hover: #1a3050;
   --border: #000;
   --border-strong: var(--sv-frame);
-  --text: #dce8f8;
-  --text-secondary: #a0b8d0;
-  --text-muted: #6a88a8;
-  --text-dim: #3a5070;
+  --text: #e8f2fc;
+  --text-secondary: #b8d4ec;
+  --text-muted: #8eb0d0;
+  --text-dim: #6a90b0;
   --accent: var(--sv-red);
   --accent-soft: var(--sv-red-bright);
   --accent-dim: rgba(223, 42, 47, 0.15);
@@ -65,11 +65,228 @@
 }
 
 /* ── 2. PIXEL BORDER PRIMITIVES ────────────────────────────── */
+[data-theme='spider-verse'] {
+  --sv-pix-r: 8px;
+  --sv-pix-bd: 3px;
+  --sv-pix-drop: 4px;
+  /* Two-step pixel corners — matches reference HUD pill buttons */
+  --sv-pix-clip: polygon(
+    8px 0,
+    calc(100% - 8px) 0,
+    calc(100% - 8px) 4px,
+    calc(100% - 4px) 4px,
+    calc(100% - 4px) 8px,
+    100% 8px,
+    100% calc(100% - 8px),
+    calc(100% - 4px) calc(100% - 8px),
+    calc(100% - 4px) calc(100% - 4px),
+    calc(100% - 8px) calc(100% - 4px),
+    calc(100% - 8px) 100%,
+    8px 100%,
+    8px calc(100% - 4px),
+    4px calc(100% - 4px),
+    4px calc(100% - 8px),
+    0 calc(100% - 8px),
+    0 8px,
+    4px 8px,
+    4px 4px,
+    8px 4px
+  );
+  --sv-pix-clip-sm: polygon(
+    5px 0,
+    calc(100% - 5px) 0,
+    calc(100% - 5px) 3px,
+    calc(100% - 3px) 3px,
+    calc(100% - 3px) 5px,
+    100% 5px,
+    100% calc(100% - 5px),
+    calc(100% - 3px) calc(100% - 5px),
+    calc(100% - 3px) calc(100% - 3px),
+    calc(100% - 5px) calc(100% - 3px),
+    calc(100% - 5px) 100%,
+    5px 100%,
+    5px calc(100% - 3px),
+    3px calc(100% - 3px),
+    3px calc(100% - 5px),
+    0 calc(100% - 5px),
+    0 5px,
+    3px 5px,
+    3px 3px,
+    5px 3px
+  );
+  --sv-pix-shadow-press: drop-shadow(1px 1px 0 #000);
+  /* Cheap outline — 4 shadows, not 12. Extra layers freeze Electron on hover/scroll. */
+  --sv-pix-outline:
+    drop-shadow(2px 0 0 #000)
+    drop-shadow(-2px 0 0 #000)
+    drop-shadow(0 2px 0 #000)
+    drop-shadow(0 -2px 0 #000);
+  --sv-pix-shadow: var(--sv-pix-outline) drop-shadow(3px 3px 0 #000);
+  --sv-pix-shadow-hover: var(--sv-pix-outline) drop-shadow(4px 4px 0 #000);
+  --sv-pix-clip-lg: polygon(
+    12px 0,
+    calc(100% - 12px) 0,
+    calc(100% - 12px) 6px,
+    calc(100% - 6px) 6px,
+    calc(100% - 6px) 12px,
+    100% 12px,
+    100% calc(100% - 12px),
+    calc(100% - 6px) calc(100% - 12px),
+    calc(100% - 6px) calc(100% - 6px),
+    calc(100% - 12px) calc(100% - 6px),
+    calc(100% - 12px) 100%,
+    12px 100%,
+    12px calc(100% - 6px),
+    6px calc(100% - 6px),
+    6px calc(100% - 12px),
+    0 calc(100% - 12px),
+    0 12px,
+    6px 12px,
+    6px 6px,
+    12px 6px
+  );
+  --sv-pix-shadow-sm: var(--sv-pix-outline) drop-shadow(2px 2px 0 #000);
+  --sv-pix-shadow-sm-hover: var(--sv-pix-outline) drop-shadow(3px 3px 0 #000);
+  --sv-pix-shadow-lg: var(--sv-pix-outline) drop-shadow(4px 4px 0 #000);
+  --sv-pix-shadow-lg-hover: var(--sv-pix-outline) drop-shadow(5px 5px 0 #000);
+}
+
 [data-theme='spider-verse'] .pixel-outline {
   border: 3px solid var(--sv-black);
   box-shadow:
     inset -3px -3px 0 0 rgba(0, 0, 0, 0.45),
     inset 3px 3px 0 0 rgba(255, 255, 255, 0.06);
+}
+
+/* Pixel-rounded controls — clip-path + drop-shadow (shadow follows shape) */
+[data-theme='spider-verse'] .btn,
+[data-theme='spider-verse'] .btn-add-line,
+[data-theme='spider-verse'] .icon-btn,
+[data-theme='spider-verse'] .nav-link.active,
+[data-theme='spider-verse'] .chip,
+[data-theme='spider-verse'] .chip.active {
+  position: relative;
+  clip-path: var(--sv-pix-clip);
+  -webkit-clip-path: var(--sv-pix-clip);
+  border: none !important;
+  box-shadow:
+    inset 0 3px 0 0 rgba(255, 255, 255, 0.1),
+    inset 0 -4px 0 0 rgba(0, 0, 0, 0.45) !important;
+  filter: var(--sv-pix-shadow) !important;
+  transition: none !important;
+  margin: 2px;
+}
+
+[data-theme='spider-verse'] .btn::before,
+[data-theme='spider-verse'] .btn::after,
+[data-theme='spider-verse'] .icon-btn::before,
+[data-theme='spider-verse'] .icon-btn::after,
+[data-theme='spider-verse'] .nav-link.active::before,
+[data-theme='spider-verse'] .nav-link.active::after {
+  display: none !important;
+  content: none !important;
+}
+
+[data-theme='spider-verse'] .icon-btn {
+  clip-path: var(--sv-pix-clip-sm);
+  -webkit-clip-path: var(--sv-pix-clip-sm);
+  filter: var(--sv-pix-shadow-sm) !important;
+  box-shadow:
+    inset 0 2px 0 0 rgba(255, 255, 255, 0.08),
+    inset 0 -3px 0 0 rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Pixel-rounded surfaces — cards, pills, inputs, tags */
+[data-theme='spider-verse'] .stat-pill,
+[data-theme='spider-verse'] .date-pill,
+[data-theme='spider-verse'] .tag,
+[data-theme='spider-verse'] .column-count,
+[data-theme='spider-verse'] .theme-live,
+[data-theme='spider-verse'] .version-badge-main,
+[data-theme='spider-verse'] .onboarding-day,
+[data-theme='spider-verse'] .ui-select-trigger,
+[data-theme='spider-verse'] .toggle-track,
+[data-theme='spider-verse'] .card,
+[data-theme='spider-verse'] .premium-metric-card,
+[data-theme='spider-verse'] .chart-card,
+[data-theme='spider-verse'] .update-status-card,
+[data-theme='spider-verse'] .release-card,
+[data-theme='spider-verse'] .model-card,
+[data-theme='spider-verse'] .theme-card,
+[data-theme='spider-verse'] .toast,
+[data-theme='spider-verse'] .empty,
+[data-theme='spider-verse'] .onboarding-banner,
+[data-theme='spider-verse'] .sv-suit-banner,
+[data-theme='spider-verse'] .sv-empty-art {
+  clip-path: var(--sv-pix-clip-sm);
+  -webkit-clip-path: var(--sv-pix-clip-sm);
+  border: none !important;
+  filter: none !important;
+  box-shadow:
+    inset 0 0 0 2px var(--sv-black),
+    inset 0 2px 0 0 rgba(255, 255, 255, 0.06),
+    inset 0 -3px 0 0 rgba(0, 0, 0, 0.35) !important;
+}
+
+[data-theme='spider-verse'] .card,
+[data-theme='spider-verse'] .premium-metric-card,
+[data-theme='spider-verse'] .chart-card,
+[data-theme='spider-verse'] .update-status-card,
+[data-theme='spider-verse'] .release-card,
+[data-theme='spider-verse'] .model-card,
+[data-theme='spider-verse'] .theme-card,
+[data-theme='spider-verse'] .toast,
+[data-theme='spider-verse'] .empty,
+[data-theme='spider-verse'] .onboarding-banner,
+[data-theme='spider-verse'] .sv-suit-banner,
+[data-theme='spider-verse'] .sv-empty-art {
+  clip-path: var(--sv-pix-clip);
+  -webkit-clip-path: var(--sv-pix-clip);
+  margin: 2px;
+}
+
+[data-theme='spider-verse'] .stat-pill,
+[data-theme='spider-verse'] .date-pill {
+  clip-path: var(--sv-pix-clip-sm);
+  -webkit-clip-path: var(--sv-pix-clip-sm);
+  box-shadow:
+    inset 0 2px 0 0 rgba(255, 255, 255, 0.06),
+    inset 0 -3px 0 0 rgba(0, 0, 0, 0.35) !important;
+  margin: 2px;
+}
+
+[data-theme='spider-verse'] .composer,
+[data-theme='spider-verse'] .onboarding-card,
+[data-theme='spider-verse'] .settings-panel,
+[data-theme='spider-verse'] .date-picker,
+[data-theme='spider-verse'] .ui-select-menu,
+[data-theme='spider-verse'] .settings-nav,
+[data-theme='spider-verse'] .table-panel {
+  clip-path: var(--sv-pix-clip-lg);
+  -webkit-clip-path: var(--sv-pix-clip-lg);
+  border: none !important;
+  filter: none !important;
+}
+
+[data-theme='spider-verse'] .settings-nav-item {
+  clip-path: var(--sv-pix-clip-sm);
+  -webkit-clip-path: var(--sv-pix-clip-sm);
+  border: none !important;
+  margin: 2px;
+  transition: transform 60ms steps(1), filter 60ms steps(1) !important;
+}
+
+/* Form fields — clip only (no filter: keeps Hindi/English text crisp while typing) */
+[data-theme='spider-verse'] input:not([type='hidden']),
+[data-theme='spider-verse'] textarea,
+[data-theme='spider-verse'] select {
+  clip-path: var(--sv-pix-clip-sm);
+  -webkit-clip-path: var(--sv-pix-clip-sm);
+  border: none !important;
+  filter: none !important;
+  box-shadow:
+    inset 0 0 0 2px var(--sv-black),
+    inset 3px 3px 0 rgba(0, 0, 0, 0.5) !important;
 }
 
 /* ── 3. GLOBAL RESETS ──────────────────────────────────────── */
@@ -103,17 +320,26 @@
   background: #02060c !important;
 }
 
+/* Outer HUD bezel — Spidey Tracker light-blue frame around the whole app */
+[data-theme='spider-verse'] html::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 46;
+  border: 10px solid var(--sv-frame);
+  box-shadow:
+    inset 0 0 0 4px var(--sv-black),
+    inset 0 0 0 7px var(--sv-frame-dark);
+}
+
 /* CRT edge is the window chrome — no outer black gutter */
 [data-theme='spider-verse'] .app-shell {
   position: relative;
   isolation: isolate;
   z-index: 1;
   background-color: var(--sv-panel-inset) !important;
-  background-image: repeating-linear-gradient(
-    to bottom,
-    transparent 0 2px,
-    rgba(0, 0, 0, 0.08) 2px 3px
-  ) !important;
+  background-image: none !important;
   margin: 0 !important;
   height: 100% !important;
   max-height: 100%;
@@ -142,6 +368,11 @@
   backdrop-filter: none;
   padding: 0.55rem 1rem;
   position: relative;
+  overflow: visible !important;
+}
+[data-theme='spider-verse'] .nav-links {
+  overflow: visible;
+  gap: 0.35rem;
 }
 [data-theme='spider-verse'] .topbar::after {
   display: none;
@@ -153,8 +384,11 @@
 
 [data-theme='spider-verse'] .brand-mark {
   background: var(--sv-red);
-  border: 3px solid var(--sv-black);
-  box-shadow: 3px 3px 0 var(--sv-black);
+  clip-path: var(--sv-pix-clip-sm);
+  -webkit-clip-path: var(--sv-pix-clip-sm);
+  border: none !important;
+  filter: var(--sv-pix-shadow-sm) !important;
+  box-shadow: none !important;
 }
 [data-theme='spider-verse'] .brand-name {
   text-transform: uppercase;
@@ -172,80 +406,83 @@
   font-size: 1rem;
   color: var(--sv-cream);
   opacity: 0.65;
-  border: 3px solid transparent;
+  border: none !important;
   padding: 0.35rem 0.7rem;
-  transition: none;
+  margin: 2px;
+  transition: transform 60ms steps(1), filter 60ms steps(1) !important;
 }
-[data-theme='spider-verse'] .nav-link:hover {
+[data-theme='spider-verse'] .nav-link:not(.active):hover {
+  clip-path: var(--sv-pix-clip-sm);
+  -webkit-clip-path: var(--sv-pix-clip-sm);
   opacity: 1;
-  background: rgba(0, 0, 0, 0.25);
-  border-color: var(--sv-black);
+  background: var(--sv-panel-raised) !important;
+  box-shadow:
+    inset 0 2px 0 0 rgba(255, 255, 255, 0.08),
+    inset 0 -3px 0 0 rgba(0, 0, 0, 0.4) !important;
+  filter: var(--sv-pix-shadow-hover) !important;
+  transform: translate(-1px, -1px);
 }
 [data-theme='spider-verse'] .nav-link.active {
   opacity: 1;
-  background: var(--sv-cream);
-  color: var(--sv-black);
-  border: 3px solid var(--sv-black);
-  box-shadow: 3px 3px 0 var(--sv-black);
+  color: var(--sv-black) !important;
+  padding: 0.35rem 0.7rem;
+  background: var(--sv-cream) !important;
+  box-shadow:
+    inset 0 3px 0 0 rgba(255, 255, 255, 0.35),
+    inset 0 -4px 0 0 var(--sv-cream-dark) !important;
+  filter: var(--sv-pix-shadow) !important;
 }
-[data-theme='spider-verse'] .nav-link.active::after {
-  display: none;
+[data-theme='spider-verse'] .nav-link.active:hover {
+  filter: var(--sv-pix-shadow-hover) !important;
+  transform: translate(-1px, -1px);
 }
 
-/* ── 7. BUTTONS — BEVELED GAME BUTTONS ─────────────────────── */
+/* ── 7. BUTTONS — PIXEL-ROUNDED GAME BUTTONS ───────────────── */
 [data-theme='spider-verse'] .btn {
   background: var(--sv-panel-raised) !important;
-  border: 3px solid var(--sv-black) !important;
   color: var(--sv-cream) !important;
-  box-shadow:
-    inset 0 -4px 0 0 rgba(0, 0, 0, 0.5),
-    4px 4px 0 0 var(--sv-black) !important;
   text-transform: uppercase;
   letter-spacing: 1px;
   font-size: 1rem;
-  padding: 0.45rem 0.9rem;
-  transition: transform 60ms steps(1), box-shadow 60ms steps(1) !important;
-  filter: none !important;
+  padding: 0.5rem 1rem;
 }
 [data-theme='spider-verse'] .btn:hover:not(:disabled) {
   transform: translate(-1px, -1px);
-  box-shadow:
-    inset 0 -4px 0 0 rgba(0, 0, 0, 0.5),
-    5px 5px 0 0 var(--sv-black) !important;
-  filter: none !important;
+  filter: var(--sv-pix-shadow-hover) !important;
 }
 [data-theme='spider-verse'] .btn:active:not(:disabled) {
   transform: translate(3px, 3px) !important;
+  filter: var(--sv-pix-shadow-press) !important;
   box-shadow:
-    inset 0 -2px 0 0 rgba(0, 0, 0, 0.5),
-    1px 1px 0 0 var(--sv-black) !important;
+    inset 0 2px 0 0 rgba(255, 255, 255, 0.06),
+    inset 0 -2px 0 0 rgba(0, 0, 0, 0.35) !important;
 }
 
-/* Primary = cream CTA like "GET TICKETS" in reference */
+/* Primary = cream CTA like reference */
 [data-theme='spider-verse'] .btn-primary {
   background: var(--sv-cream) !important;
   color: var(--sv-black) !important;
-  border-color: var(--sv-black) !important;
-  box-shadow:
-    inset 0 -5px 0 0 var(--sv-cream-dark),
-    4px 4px 0 0 var(--sv-black) !important;
   text-shadow: none;
+  box-shadow:
+    inset 0 3px 0 0 rgba(255, 255, 255, 0.45),
+    inset 0 -5px 0 0 var(--sv-cream-dark) !important;
 }
 [data-theme='spider-verse'] .btn-primary:hover:not(:disabled) {
   background: #f5e8b8 !important;
-  filter: none !important;
+  transform: translate(-1px, -1px);
+  filter: var(--sv-pix-shadow-hover) !important;
 }
-[data-theme='spider-verse'] .btn-primary::before { display: none !important; }
 
 [data-theme='spider-verse'] .icon-btn {
   background: var(--sv-panel-raised) !important;
-  border: 3px solid var(--sv-black) !important;
   color: var(--sv-cream) !important;
-  box-shadow: 2px 2px 0 var(--sv-black) !important;
+  padding: 0.35rem;
 }
 [data-theme='spider-verse'] .icon-btn:hover {
   background: var(--sv-panel) !important;
   color: var(--sv-cream) !important;
+  transform: translate(-1px, -1px);
+  filter: var(--sv-pix-shadow-sm-hover) !important;
 }
 
 /* ── 8. FILTERS BAR ────────────────────────────────────────── */
@@ -263,38 +500,41 @@
   position: relative;
   z-index: 31;
 }
-[data-theme='spider-verse'] .date-picker {
-  z-index: 80 !important;
-  position: absolute !important;
-}
 [data-theme='spider-verse'] .chip {
-  border: 3px solid var(--sv-black) !important;
   background: var(--sv-panel-inset) !important;
   color: var(--text-muted);
   text-transform: uppercase;
   font-size: 0.95rem;
-  box-shadow: 2px 2px 0 var(--sv-black);
+  padding: 0.35rem 0.75rem;
+  box-shadow:
+    inset 0 2px 0 0 rgba(255, 255, 255, 0.06),
+    inset 0 -3px 0 0 rgba(0, 0, 0, 0.35) !important;
 }
-[data-theme='spider-verse'] .chip.active,
+[data-theme='spider-verse'] .chip.active {
+  background: var(--sv-frame-dark) !important;
+  color: var(--sv-cream) !important;
+}
 [data-theme='spider-verse'] .chip:hover {
   background: var(--sv-frame-dark) !important;
   color: var(--sv-cream) !important;
-  border-color: var(--sv-black) !important;
+  transform: translate(-1px, -1px);
+  filter: var(--sv-pix-shadow-hover) !important;
 }
 [data-theme='spider-verse'] .stat-pill {
-  border: 3px solid var(--sv-black) !important;
   background: var(--sv-panel-inset) !important;
   font-size: 0.95rem;
   text-transform: uppercase;
-  box-shadow: 2px 2px 0 var(--sv-black);
 }
 [data-theme='spider-verse'] .date-pill {
-  border: 3px solid var(--sv-black) !important;
   background: var(--sv-panel-raised) !important;
-  box-shadow: 3px 3px 0 var(--sv-black);
   text-transform: uppercase;
   font-size: 1rem;
   color: var(--sv-cream);
+}
+[data-theme='spider-verse'] .date-pill:hover {
+  transform: translate(-1px, -1px);
+  filter: none !important;
+  background: var(--sv-panel) !important;
 }
 
 /* ── 9. KANBAN COLUMNS — GAME PANELS ───────────────────────── */
@@ -308,27 +548,40 @@
   overflow: hidden;
 }
 [data-theme='spider-verse'] .board {
-  padding: 4px 8px 10px 4px;
+  padding: 6px 10px 12px 6px;
   box-sizing: border-box;
 }
 
 [data-theme='spider-verse'] .column {
+  position: relative;
   background: var(--sv-panel) !important;
-  border: 4px solid var(--sv-black) !important;
-  box-shadow:
-    inset 0 0 0 3px var(--sv-frame-dark),
-    6px 6px 0 var(--sv-black) !important;
+  clip-path: var(--sv-pix-clip-lg);
+  -webkit-clip-path: var(--sv-pix-clip-lg);
+  border: none !important;
+  box-shadow: none !important;
   backdrop-filter: none;
+  overflow: hidden;
 }
-[data-theme='spider-verse'] .col-none { box-shadow: inset 0 0 0 3px #3a5070, 6px 6px 0 var(--sv-black) !important; }
-[data-theme='spider-verse'] .col-wip  { box-shadow: inset 0 0 0 3px #a07818, 6px 6px 0 var(--sv-black) !important; }
-[data-theme='spider-verse'] .col-done { box-shadow: inset 0 0 0 3px var(--sv-frame), 6px 6px 0 var(--sv-black) !important; }
+[data-theme='spider-verse'] .column::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  clip-path: var(--sv-pix-clip-lg);
+  -webkit-clip-path: var(--sv-pix-clip-lg);
+  pointer-events: none;
+  z-index: 4;
+  box-shadow: inset 0 0 0 3px var(--sv-frame-dark);
+}
+[data-theme='spider-verse'] .col-none::after { box-shadow: inset 0 0 0 3px #3a5070; }
+[data-theme='spider-verse'] .col-wip::after { box-shadow: inset 0 0 0 3px #a07818; }
+[data-theme='spider-verse'] .col-done::after { box-shadow: inset 0 0 0 3px var(--sv-frame); }
 
 [data-theme='spider-verse'] .column-header {
   border-bottom: 4px solid var(--sv-black) !important;
   background: var(--sv-frame-dark) !important;
   padding: 0 !important;
   position: relative;
+  z-index: 2;
 }
 [data-theme='spider-verse'] .column-header-inner {
   padding: 10px 12px !important;
@@ -339,16 +592,21 @@
   text-shadow: 2px 2px 0 var(--sv-black);
 }
 [data-theme='spider-verse'] .column-count {
-  border: 2px solid var(--sv-black) !important;
   background: var(--sv-cream) !important;
   color: var(--sv-black) !important;
   font-size: 0.95rem;
   min-width: 1.5rem;
   text-align: center;
   font-weight: 400;
+  box-shadow:
+    inset 0 2px 0 0 rgba(255, 255, 255, 0.35),
+    inset 0 -2px 0 0 var(--sv-cream-dark) !important;
 }
 [data-theme='spider-verse'] .column-body {
   background: rgba(6, 14, 26, 0.55);
+  padding: 0.75rem 0.5rem !important;
+  position: relative;
+  z-index: 1;
 }
 [data-theme='spider-verse'] .column-body.drag-over {
   background: rgba(26, 127, 196, 0.08) !important;
@@ -359,37 +617,75 @@
 /* ── 10. TASK CARDS ────────────────────────────────────────── */
 [data-theme='spider-verse'] .card {
   background: var(--sv-panel-raised) !important;
-  border: 3px solid var(--sv-black) !important;
-  box-shadow: 4px 4px 0 var(--sv-black) !important;
-  transition: transform 60ms steps(1), box-shadow 60ms steps(1) !important;
+  box-shadow:
+    inset 0 0 0 2px var(--sv-black),
+    inset 0 2px 0 0 rgba(255, 255, 255, 0.06),
+    inset 0 -3px 0 0 rgba(0, 0, 0, 0.35) !important;
 }
-[data-theme='spider-verse'] .card:hover {
-  transform: translate(-2px, -2px) !important;
-  box-shadow: 6px 6px 0 var(--sv-black) !important;
+[data-theme='spider-verse'] .card:hover:not(.dragging):not(.overlay) {
+  transform: translate(-1px, -1px) !important;
+  filter: none !important;
+}
+[data-theme='spider-verse'] .card.dragging {
+  opacity: 0.35 !important;
+  transform: none !important;
+  filter: none !important;
+  cursor: grabbing;
+}
+[data-theme='spider-verse'] .card.overlay {
+  opacity: 1 !important;
+  transform: rotate(1deg) scale(1.02) !important;
+  filter: none !important;
+  cursor: grabbing;
+  z-index: 60;
+  box-shadow:
+    inset 0 0 0 2px var(--sv-black),
+    inset 0 2px 0 0 rgba(255, 255, 255, 0.1),
+    inset 0 -3px 0 0 rgba(0, 0, 0, 0.35) !important;
+}
+[data-theme='spider-verse'] .card.overlay:hover {
+  transform: rotate(1deg) scale(1.02) !important;
+  filter: none !important;
 }
 [data-theme='spider-verse'] .card-title {
   font-family: var(--font) !important;
   font-size: 1.15rem;
   letter-spacing: 0.5px;
   text-transform: none;
+  color: var(--sv-cream) !important;
 }
 [data-theme='spider-verse'] .card-foot {
   background: rgba(0, 0, 0, 0.3);
   border-top: 3px solid var(--sv-black);
   font-size: 0.95rem;
   text-transform: uppercase;
-  color: #a0b8d0 !important;
+  color: var(--text-secondary) !important;
 }
 [data-theme='spider-verse'] .card-foot .card-time,
-[data-theme='spider-verse'] .card-foot .card-priority-label,
+[data-theme='spider-verse'] .card-foot .card-priority-label {
+  color: var(--text-secondary) !important;
+}
 [data-theme='spider-verse'] .card-foot .carried {
-  color: #b8cce0 !important;
+  color: var(--sv-frame-light) !important;
 }
 [data-theme='spider-verse'] .tag {
-  border: 2px solid var(--sv-black) !important;
   background: var(--sv-panel-inset) !important;
   font-size: 0.9rem;
   text-transform: uppercase;
+  color: var(--text) !important;
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.05),
+    inset 0 -2px 0 0 rgba(0, 0, 0, 0.3) !important;
+}
+[data-theme='spider-verse'] .card-meta {
+  color: var(--text-secondary);
+}
+[data-theme='spider-verse'] .page-sub {
+  color: var(--text-muted) !important;
+}
+[data-theme='spider-verse'] .card-subs,
+[data-theme='spider-verse'] .card-subs li {
+  color: var(--text-secondary) !important;
 }
 [data-theme='spider-verse'] .tag .dot {
   border-radius: 0 !important;
@@ -410,11 +706,8 @@
 }
 [data-theme='spider-verse'] .sv-empty-art {
   padding: 10px;
-  border: 3px solid var(--sv-black);
   background: linear-gradient(180deg, #0a1628 0%, #060e1a 100%);
-  box-shadow:
-    inset 0 0 0 3px var(--sv-frame-dark),
-    4px 4px 0 var(--sv-black);
+  box-shadow: inset 0 0 0 3px var(--sv-frame-dark) !important;
 }
 [data-theme='spider-verse'] .sv-empty-art--open {
   overflow: visible;
@@ -461,10 +754,7 @@
   display: flex !important;
   flex-direction: column !important;
   background: var(--sv-panel) !important;
-  border: 4px solid var(--sv-black) !important;
-  box-shadow:
-    inset 0 0 0 4px var(--sv-frame),
-    8px 8px 0 var(--sv-black) !important;
+  box-shadow: inset 0 0 0 4px var(--sv-frame) !important;
   overflow: hidden !important;
 }
 [data-theme='spider-verse'] .composer-header {
@@ -489,6 +779,8 @@
   flex-shrink: 0;
   background: var(--sv-panel-inset) !important;
   border-top: 4px solid var(--sv-black) !important;
+  overflow: visible !important;
+  padding-bottom: 0.35rem;
 }
 [data-theme='spider-verse'] .composer label,
 [data-theme='spider-verse'] .composer-fields label,
@@ -511,7 +803,10 @@
   flex-direction: column !important;
   background: var(--sv-panel) !important;
   border-left: 4px solid var(--sv-black) !important;
-  box-shadow: -6px 0 0 var(--sv-black) !important;
+  box-shadow: inset 4px 0 0 0 var(--sv-frame), -6px 0 0 var(--sv-black) !important;
+  clip-path: none !important;
+  -webkit-clip-path: none !important;
+  filter: none !important;
   backdrop-filter: none !important;
 }
 [data-theme='spider-verse'] .drawer-header {
@@ -535,22 +830,22 @@
 }
 
 /* ── 13. FORM INPUTS ───────────────────────────────────────── */
-[data-theme='spider-verse'] input,
+[data-theme='spider-verse'] input:not([type='hidden']),
 [data-theme='spider-verse'] textarea,
 [data-theme='spider-verse'] select {
   background: var(--sv-panel-inset) !important;
-  border: 3px solid var(--sv-black) !important;
   color: var(--text) !important;
   font-size: 1.05rem !important;
-  box-shadow: inset 3px 3px 0 rgba(0, 0, 0, 0.5) !important;
   caret-color: var(--sv-cream);
 }
-[data-theme='spider-verse'] input:focus,
+[data-theme='spider-verse'] input:not([type='hidden']):focus,
 [data-theme='spider-verse'] textarea:focus,
 [data-theme='spider-verse'] select:focus {
-  outline: 3px solid var(--sv-frame) !important;
-  outline-offset: 0;
-  border-color: var(--sv-black) !important;
+  outline: none !important;
+  box-shadow:
+    inset 0 0 0 2px var(--sv-black),
+    inset 0 0 0 4px var(--sv-frame),
+    inset 3px 3px 0 rgba(0, 0, 0, 0.5) !important;
 }
 [data-theme='spider-verse'] input::placeholder,
 [data-theme='spider-verse'] textarea::placeholder {
@@ -558,43 +853,84 @@
 }
 
 /* ── 14. SELECT / TOGGLE / DATE PICKER ─────────────────────── */
-[data-theme='spider-verse'] .select-trigger {
+[data-theme='spider-verse'] .ui-select-trigger {
   background: var(--sv-panel-inset) !important;
-  border: 3px solid var(--sv-black) !important;
-  box-shadow: 3px 3px 0 var(--sv-black) !important;
   font-size: 1.05rem !important;
   color: var(--text) !important;
+  box-shadow:
+    inset 0 0 0 2px var(--sv-black),
+    inset 3px 3px 0 rgba(0, 0, 0, 0.45) !important;
+  filter: none !important;
 }
-[data-theme='spider-verse'] .select-list {
+[data-theme='spider-verse'] .ui-select-trigger:hover {
+  transform: translate(-1px, -1px);
+  filter: none !important;
+  background: var(--sv-panel-raised) !important;
+}
+[data-theme='spider-verse'] .ui-select-trigger.open {
+  filter: none !important;
+  box-shadow:
+    inset 0 0 0 2px var(--sv-frame),
+    inset 3px 3px 0 rgba(0, 0, 0, 0.45) !important;
+}
+[data-theme='spider-verse'] .ui-select-menu {
   background: var(--sv-panel) !important;
-  border: 3px solid var(--sv-black) !important;
-  box-shadow: 4px 4px 0 var(--sv-black) !important;
+  overflow: hidden;
+  padding: 0.35rem !important;
+  box-shadow: inset 0 0 0 3px var(--sv-frame) !important;
 }
-[data-theme='spider-verse'] .select-option:hover,
-[data-theme='spider-verse'] .select-option[aria-selected='true'] {
+[data-theme='spider-verse'] .ui-select-option {
+  margin: 2px 4px;
+  border-radius: 0 !important;
+}
+[data-theme='spider-verse'] .ui-select-option:hover,
+[data-theme='spider-verse'] .ui-select-option.selected {
   background: var(--sv-frame-dark) !important;
   color: var(--sv-cream) !important;
+  clip-path: none !important;
+  -webkit-clip-path: none !important;
+  filter: none !important;
+}
+[data-theme='spider-verse'] .ui-select-option:hover {
+  transform: none;
+  filter: none !important;
+}
+[data-theme='spider-verse'] .ui-select-option.add {
+  color: var(--sv-frame-light) !important;
+  font-weight: 400;
+}
+[data-theme='spider-verse'] .ui-select-add {
+  border-top: 3px solid var(--sv-black);
+  margin-top: 0.25rem;
+  padding-top: 0.25rem;
+}
+[data-theme='spider-verse'] .ui-select-label {
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--sv-frame-light) !important;
 }
 
 [data-theme='spider-verse'] .toggle-track {
   background: var(--sv-panel-inset) !important;
-  border: 3px solid var(--sv-black) !important;
+  box-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.45) !important;
 }
 [data-theme='spider-verse'] .toggle-track.on {
   background: var(--sv-mint-dark) !important;
 }
 [data-theme='spider-verse'] .toggle-thumb {
   background: var(--sv-cream) !important;
-  border: 2px solid var(--sv-black);
-  border-radius: 0 !important;
+  clip-path: var(--sv-pix-clip-sm);
+  -webkit-clip-path: var(--sv-pix-clip-sm);
+  border: none !important;
+  filter: none !important;
+  box-shadow: inset 0 0 0 2px var(--sv-black) !important;
 }
 
 [data-theme='spider-verse'] .date-picker {
   z-index: 80 !important;
   position: absolute !important;
   background: var(--sv-panel) !important;
-  border: 4px solid var(--sv-black) !important;
-  box-shadow: inset 0 0 0 3px var(--sv-frame), 6px 6px 0 var(--sv-black) !important;
+  box-shadow: inset 0 0 0 3px var(--sv-frame) !important;
 }
 [data-theme='spider-verse'] .date-picker-header {
   background: var(--sv-frame-dark) !important;
@@ -608,7 +944,6 @@
 [data-theme='spider-verse'] .date-picker-day:hover:not(.selected):not(:disabled) {
   color: var(--sv-cream) !important;
   background: rgba(26, 127, 196, 0.22) !important;
-  border-color: var(--sv-frame) !important;
 }
 [data-theme='spider-verse'] .date-picker-weekdays span {
   color: var(--sv-frame-light) !important;
@@ -624,48 +959,63 @@
   background: transparent !important;
 }
 [data-theme='spider-verse'] .date-picker-day.today:not(.selected) {
-  border: 2px solid var(--sv-cream) !important;
   color: var(--sv-cream) !important;
   background: transparent !important;
+  box-shadow: inset 0 0 0 2px var(--sv-cream) !important;
 }
 [data-theme='spider-verse'] .date-picker-day.selected,
 [data-theme='spider-verse'] .date-picker-day.selected.today {
   background: var(--sv-cream) !important;
   color: #111 !important;
-  border: 2px solid var(--sv-black) !important;
+  box-shadow:
+    inset 0 2px 0 0 rgba(255, 255, 255, 0.35),
+    inset 0 -2px 0 0 var(--sv-cream-dark) !important;
+  filter: none !important;
 }
 [data-theme='spider-verse'] .date-picker-footer .btn-today {
   background: var(--sv-cream) !important;
   color: #111 !important;
-  border: 3px solid var(--sv-black) !important;
+  box-shadow:
+    inset 0 3px 0 0 rgba(255, 255, 255, 0.35),
+    inset 0 -4px 0 0 var(--sv-cream-dark) !important;
+  filter: var(--sv-pix-shadow) !important;
 }
 
 /* ── 15. SETTINGS ──────────────────────────────────────────── */
-[data-theme='spider-verse'] .settings-sidebar,
-[data-theme='spider-verse'] .settings-nav {
+[data-theme='spider-verse'] .settings-sidebar {
   background: var(--sv-panel-inset) !important;
   border-right: 4px solid var(--sv-black) !important;
+}
+[data-theme='spider-verse'] .settings-nav {
+  background: var(--sv-panel-inset) !important;
+  border-right: none !important;
 }
 [data-theme='spider-verse'] .settings-nav-item {
   text-transform: uppercase;
   font-size: 1rem;
-  border: 3px solid transparent !important;
-  transition: none;
 }
-[data-theme='spider-verse'] .settings-nav-item:hover {
-  background: rgba(0, 0, 0, 0.25);
-  border-color: var(--sv-black) !important;
+[data-theme='spider-verse'] .settings-nav-item:not(.is-active):hover {
+  clip-path: var(--sv-pix-clip-sm);
+  -webkit-clip-path: var(--sv-pix-clip-sm);
+  background: var(--sv-panel-raised) !important;
+  transform: translate(-1px, -1px);
+  filter: var(--sv-pix-shadow-sm-hover) !important;
 }
 [data-theme='spider-verse'] .settings-nav-item.is-active {
   background: var(--sv-cream);
   color: var(--sv-black);
-  border-color: var(--sv-black) !important;
-  box-shadow: 3px 3px 0 var(--sv-black);
+  box-shadow:
+    inset 0 3px 0 0 rgba(255, 255, 255, 0.35),
+    inset 0 -4px 0 0 var(--sv-cream-dark) !important;
+  filter: var(--sv-pix-shadow-sm) !important;
+}
+[data-theme='spider-verse'] .settings-nav-item.is-active:hover {
+  transform: translate(-1px, -1px);
+  filter: var(--sv-pix-shadow-sm-hover) !important;
 }
 [data-theme='spider-verse'] .settings-panel {
   background: var(--sv-panel) !important;
-  border: 4px solid var(--sv-black) !important;
-  box-shadow: inset 0 0 0 3px var(--sv-frame-dark), 6px 6px 0 var(--sv-black) !important;
+  box-shadow: inset 0 0 0 3px var(--sv-frame-dark) !important;
 }
 [data-theme='spider-verse'] .settings-panel-header {
   background: var(--sv-frame-dark) !important;
@@ -674,13 +1024,19 @@
   color: var(--sv-cream);
 }
 [data-theme='spider-verse'] .theme-card {
-  border: 3px solid var(--sv-black) !important;
   background: var(--sv-panel-raised);
-  box-shadow: 4px 4px 0 var(--sv-black);
   opacity: 1;
+  box-shadow:
+    inset 0 2px 0 0 rgba(255, 255, 255, 0.06),
+    inset 0 -3px 0 0 rgba(0, 0, 0, 0.35) !important;
+}
+[data-theme='spider-verse'] .theme-card:hover {
+  transform: translate(-1px, -1px);
+  filter: none !important;
+  background: var(--sv-panel) !important;
 }
 [data-theme='spider-verse'] .theme-card.theme-active {
-  box-shadow: inset 0 0 0 3px var(--sv-frame), 4px 4px 0 var(--sv-black);
+  box-shadow: inset 0 0 0 3px var(--sv-frame) !important;
 }
 [data-theme='spider-verse'] .sv-suit-banner {
   display: flex;
@@ -689,9 +1045,8 @@
   margin: 0 0 1.1rem;
   padding: 0.85rem 1rem;
   background: var(--sv-frame-dark);
-  border: 3px solid var(--sv-black);
-  box-shadow: 4px 4px 0 var(--sv-black);
   color: var(--sv-cream);
+  box-shadow: inset 0 0 0 3px var(--sv-frame) !important;
 }
 [data-theme='spider-verse'] .sv-suit-banner strong {
   display: block;
@@ -706,8 +1061,11 @@
   font-size: 0.95rem;
 }
 [data-theme='spider-verse'] .theme-preview {
-  border: 3px solid var(--sv-black);
-  border-radius: 0 !important;
+  clip-path: var(--sv-pix-clip-sm);
+  -webkit-clip-path: var(--sv-pix-clip-sm);
+  border: none !important;
+  filter: none !important;
+  box-shadow: inset 0 0 0 2px var(--sv-black) !important;
 }
 [data-theme='spider-verse'] .theme-preview-spidey {
   display: flex;
@@ -731,9 +1089,11 @@
 [data-theme='spider-verse'] .theme-live {
   color: var(--sv-black);
   background: var(--sv-cream);
-  border: 2px solid var(--sv-black);
   padding: 2px 8px;
   letter-spacing: 0.16em;
+  box-shadow:
+    inset 0 2px 0 0 rgba(255, 255, 255, 0.35),
+    inset 0 -2px 0 0 var(--sv-cream-dark) !important;
 }
 
 /* ── 16. PAGES — TYPOGRAPHY ────────────────────────────────── */
@@ -759,8 +1119,18 @@
 [data-theme='spider-verse'] .release-card,
 [data-theme='spider-verse'] .model-card {
   background: var(--sv-panel) !important;
-  border: 3px solid var(--sv-black) !important;
-  box-shadow: 4px 4px 0 var(--sv-black) !important;
+  box-shadow:
+    inset 0 2px 0 0 rgba(255, 255, 255, 0.06),
+    inset 0 -3px 0 0 rgba(0, 0, 0, 0.35) !important;
+}
+[data-theme='spider-verse'] .premium-metric-card:hover,
+[data-theme='spider-verse'] .chart-card:hover,
+[data-theme='spider-verse'] .update-status-card:hover,
+[data-theme='spider-verse'] .release-card:hover,
+[data-theme='spider-verse'] .model-card:hover {
+  transform: translate(-1px, -1px);
+  filter: none !important;
+  background: var(--sv-panel-raised) !important;
 }
 [data-theme='spider-verse'] .premium-metric-val {
   background: none !important;
@@ -776,41 +1146,140 @@
 }
 [data-theme='spider-verse'] .premium-bar-track {
   background: var(--sv-panel-inset) !important;
-  border: 2px solid var(--sv-black);
+  clip-path: var(--sv-pix-clip-sm);
+  -webkit-clip-path: var(--sv-pix-clip-sm);
+  border: none !important;
+  box-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.45) !important;
 }
 [data-theme='spider-verse'] .premium-hour-bar.has-data {
   background: var(--sv-frame) !important;
 }
 [data-theme='spider-verse'] .table th {
-  background: var(--sv-frame-dark);
-  color: var(--sv-cream);
+  background: transparent !important;
+  color: var(--sv-cream) !important;
   text-transform: uppercase;
-  border-bottom: 3px solid var(--sv-black) !important;
-  font-size: 0.95rem;
+  border: none !important;
+  font-size: 0.95rem !important;
+  font-weight: 400 !important;
+  letter-spacing: 2px !important;
+  padding: 0.85rem 1rem !important;
+  text-shadow: 2px 2px 0 var(--sv-black);
 }
-[data-theme='spider-verse'] .table tr {
-  border-bottom: 2px solid rgba(0, 0, 0, 0.4) !important;
+[data-theme='spider-verse'] .table td {
+  padding: 1rem !important;
+  color: var(--text-secondary) !important;
+  font-size: 1rem !important;
+  vertical-align: middle !important;
+  border: none !important;
+  background: transparent !important;
+}
+[data-theme='spider-verse'] .table thead tr {
+  background: var(--sv-frame-dark) !important;
+  border-bottom: 4px solid var(--sv-black) !important;
+}
+[data-theme='spider-verse'] .table tbody tr {
+  border-bottom: 3px solid var(--sv-black) !important;
+  background: var(--sv-panel-raised) !important;
+  transition: background 60ms steps(1) !important;
+}
+[data-theme='spider-verse'] .table tbody tr:hover {
+  background: var(--sv-panel) !important;
+}
+[data-theme='spider-verse'] .table tbody tr:last-child {
+  border-bottom: none !important;
+}
+[data-theme='spider-verse'] .table-panel {
+  clip-path: var(--sv-pix-clip-lg);
+  -webkit-clip-path: var(--sv-pix-clip-lg);
+  border: none !important;
+  border-radius: 0 !important;
+  filter: none !important;
+  background: var(--sv-panel) !important;
+  overflow: hidden !important;
+  margin-top: 1rem !important;
+  position: relative;
+}
+[data-theme='spider-verse'] .table-panel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  clip-path: var(--sv-pix-clip-lg);
+  -webkit-clip-path: var(--sv-pix-clip-lg);
+  pointer-events: none;
+  z-index: 1;
+  box-shadow: inset 0 0 0 3px var(--sv-frame-dark);
+}
+[data-theme='spider-verse'] .table-scroll {
+  overflow-x: auto;
+}
+[data-theme='spider-verse'] .table .project-name {
+  color: var(--sv-cream) !important;
+  font-size: 1.05rem !important;
+  font-weight: 400 !important;
+  text-shadow: 1px 1px 0 var(--sv-black);
+}
+[data-theme='spider-verse'] .table .project-swatch {
+  width: 12px !important;
+  height: 12px !important;
+  flex-shrink: 0;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+[data-theme='spider-verse'] .table .table-stat {
+  clip-path: var(--sv-pix-clip-sm);
+  -webkit-clip-path: var(--sv-pix-clip-sm);
+  border: none !important;
+  border-radius: 0 !important;
+  font-size: 0.9rem !important;
+  font-weight: 400 !important;
+  padding: 0.2rem 0.55rem !important;
+  filter: none !important;
+  box-shadow: inset 0 0 0 2px var(--sv-black) !important;
+}
+[data-theme='spider-verse'] .table .table-stat--done {
+  color: var(--sv-frame-light) !important;
+  background: rgba(26, 127, 196, 0.2) !important;
+}
+[data-theme='spider-verse'] .table .table-stat--wip {
+  color: var(--sv-cream) !important;
+  background: rgba(212, 160, 23, 0.22) !important;
+}
+[data-theme='spider-verse'] .table .table-stat--none {
+  color: var(--text-muted) !important;
+  background: var(--sv-panel-inset) !important;
+}
+[data-theme='spider-verse'] .table-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+[data-theme='spider-verse'] .table-actions .btn {
+  font-size: 0.9rem !important;
+  padding: 0.4rem 0.85rem !important;
+  white-space: nowrap;
 }
 
 /* ── 18. TOAST / SCROLLBAR / MISC ──────────────────────────── */
 [data-theme='spider-verse'] .toast {
   background: var(--sv-panel-raised) !important;
-  border: 3px solid var(--sv-black) !important;
-  box-shadow: 4px 4px 0 var(--sv-black) !important;
   text-transform: uppercase;
   font-size: 1rem;
   color: var(--sv-cream) !important;
+  box-shadow:
+    inset 0 2px 0 0 rgba(255, 255, 255, 0.08),
+    inset 0 -3px 0 0 rgba(0, 0, 0, 0.35) !important;
+}
+[data-theme='spider-verse'] .empty {
+  background: var(--sv-panel-inset);
+  box-shadow: inset 3px 3px 0 rgba(0, 0, 0, 0.4) !important;
 }
 [data-theme='spider-verse'] ::-webkit-scrollbar { width: 8px; height: 8px; }
 [data-theme='spider-verse'] ::-webkit-scrollbar-track { background: var(--sv-panel-inset); }
 [data-theme='spider-verse'] ::-webkit-scrollbar-thumb {
   background: var(--sv-frame);
   border: 2px solid var(--sv-black);
-}
-[data-theme='spider-verse'] .empty {
-  border: 3px solid var(--sv-black) !important;
-  background: var(--sv-panel-inset);
-  box-shadow: inset 3px 3px 0 rgba(0, 0, 0, 0.4);
 }
 [data-theme='spider-verse'] .bullet-row-dot,
 [data-theme='spider-verse'] .bullet-dot {
@@ -824,8 +1293,9 @@
 }
 [data-theme='spider-verse'] .version-badge-main {
   background: var(--sv-red) !important;
-  border: 3px solid var(--sv-black);
-  box-shadow: 3px 3px 0 var(--sv-black);
+  box-shadow:
+    inset 0 2px 0 0 rgba(255, 255, 255, 0.15),
+    inset 0 -2px 0 0 rgba(0, 0, 0, 0.35) !important;
 }
 
 /* ── 19. ONBOARDING ─────────────────────────────────────────── */
@@ -834,8 +1304,7 @@
 }
 [data-theme='spider-verse'] .onboarding-card {
   background: var(--sv-panel) !important;
-  border: 4px solid var(--sv-black) !important;
-  box-shadow: inset 0 0 0 4px var(--sv-frame), 8px 8px 0 var(--sv-black) !important;
+  box-shadow: inset 0 0 0 4px var(--sv-frame) !important;
 }
 [data-theme='spider-verse'] .onboarding-brand h1,
 [data-theme='spider-verse'] .onboarding-body h2 {
@@ -846,16 +1315,21 @@
   text-shadow: 2px 2px 0 var(--sv-black);
 }
 [data-theme='spider-verse'] .onboarding-brand-mark {
-  border: 3px solid var(--sv-black);
-  box-shadow: 3px 3px 0 var(--sv-black);
+  clip-path: var(--sv-pix-clip-sm);
+  -webkit-clip-path: var(--sv-pix-clip-sm);
+  border: none !important;
+  filter: var(--sv-pix-shadow-sm) !important;
+  box-shadow: none !important;
 }
 [data-theme='spider-verse'] .onboarding-day {
-  border: 3px solid var(--sv-black) !important;
-  box-shadow: 2px 2px 0 var(--sv-black);
+  box-shadow:
+    inset 0 2px 0 0 rgba(255, 255, 255, 0.06),
+    inset 0 -2px 0 0 rgba(0, 0, 0, 0.35) !important;
 }
 [data-theme='spider-verse'] .onboarding-day.on {
   background: var(--sv-cream) !important;
   color: var(--sv-black) !important;
+  filter: var(--sv-pix-shadow-sm) !important;
 }
 [data-theme='spider-verse'] .onboarding-steps span.on {
   background: var(--sv-frame) !important;
@@ -867,8 +1341,7 @@
 }
 [data-theme='spider-verse'] .onboarding-banner {
   background: var(--sv-panel-inset) !important;
-  border: 3px solid var(--sv-black) !important;
-  box-shadow: 3px 3px 0 var(--sv-black);
+  box-shadow: inset 3px 3px 0 rgba(0, 0, 0, 0.4) !important;
 }
 [data-theme='spider-verse'] .onboarding-banner h3 {
   color: var(--sv-mint) !important;
@@ -883,14 +1356,12 @@
 /* ── 20. SETTINGS SHELL / NAV ──────────────────────────────── */
 [data-theme='spider-verse'] .settings-nav {
   background: var(--sv-panel-inset) !important;
-  border: 3px solid var(--sv-black) !important;
-  box-shadow: 4px 4px 0 var(--sv-black);
   padding: 0.35rem !important;
 }
 [data-theme='spider-verse'] .settings-nav-item--danger.is-active {
   background: var(--sv-cream) !important;
   color: var(--sv-black) !important;
-  box-shadow: 3px 3px 0 var(--sv-red) !important;
+  filter: var(--sv-pix-shadow-sm) drop-shadow(3px 3px 0 var(--sv-red)) !important;
 }
 [data-theme='spider-verse'] .settings-nav-item--danger.is-active .settings-nav-label {
   color: var(--sv-black) !important;
@@ -911,22 +1382,33 @@
 [data-theme='spider-verse'] .project-swatch,
 [data-theme='spider-verse'] .color-swatch {
   border-radius: 0 !important;
-  border: 2px solid var(--sv-black) !important;
+  border: none !important;
+  clip-path: var(--sv-pix-clip-sm);
+  -webkit-clip-path: var(--sv-pix-clip-sm);
+  filter: none !important;
+  box-shadow: inset 0 0 0 2px var(--sv-black) !important;
 }
 [data-theme='spider-verse'] .color-swatch.selected {
-  box-shadow: 0 0 0 2px var(--sv-cream) !important;
+  box-shadow: inset 0 0 0 2px var(--sv-cream) !important;
+  filter: none !important;
 }
 [data-theme='spider-verse'] .time-picker-sep {
   color: var(--sv-cream);
   font-size: 1.2rem;
 }
 [data-theme='spider-verse'] .status-banner {
-  border: 3px solid var(--sv-black) !important;
-  box-shadow: 3px 3px 0 var(--sv-black);
+  clip-path: var(--sv-pix-clip);
+  -webkit-clip-path: var(--sv-pix-clip);
+  border: none !important;
+  filter: none !important;
+  margin: 2px;
+  box-shadow:
+    inset 0 0 0 2px var(--sv-black),
+    inset 0 2px 0 0 rgba(255, 255, 255, 0.06),
+    inset 0 -3px 0 0 rgba(0, 0, 0, 0.35) !important;
 }
 [data-theme='spider-verse'] .status-banner.ok {
   background: rgba(126, 205, 184, 0.1) !important;
-  border-color: var(--sv-black) !important;
 }
 [data-theme='spider-verse'] .status-banner.warn {
   background: rgba(212, 160, 23, 0.1) !important;
@@ -974,32 +1456,66 @@
   text-shadow: 2px 2px 0 var(--sv-black);
 }
 [data-theme='spider-verse'] .project-status-badge,
-[data-theme='spider-verse'] .project-active-badge {
-  border: 2px solid var(--sv-black) !important;
+[data-theme='spider-verse'] .project-active-badge,
+[data-theme='spider-verse'] .project-archive-badge {
+  clip-path: var(--sv-pix-clip-sm);
+  -webkit-clip-path: var(--sv-pix-clip-sm);
+  border: none !important;
+  border-radius: 0 !important;
   text-transform: uppercase;
+  font-size: 0.85rem !important;
+  font-weight: 400 !important;
+  letter-spacing: 1px;
+  padding: 0.25rem 0.65rem !important;
+  filter: none !important;
+  box-shadow: inset 0 0 0 2px var(--sv-black) !important;
+}
+[data-theme='spider-verse'] .project-status-badge {
+  background: var(--sv-red) !important;
+  color: var(--sv-cream) !important;
+}
+[data-theme='spider-verse'] .project-active-badge {
+  background: var(--sv-frame-dark) !important;
+  color: var(--sv-frame-light) !important;
+}
+[data-theme='spider-verse'] .project-archive-badge {
+  background: var(--sv-panel-inset) !important;
+  color: var(--text-muted) !important;
 }
 
 /* ── 23. MISC CONTROLS ─────────────────────────────────────── */
 [data-theme='spider-verse'] .btn-add-line {
-  border: 3px solid var(--sv-black) !important;
   background: var(--sv-panel-inset) !important;
   color: var(--sv-frame-light) !important;
-  box-shadow: 2px 2px 0 var(--sv-black) !important;
   font-size: 0.95rem !important;
   text-transform: uppercase;
   letter-spacing: 1px;
+  padding: 0.4rem 0.7rem;
+  box-shadow:
+    inset 0 2px 0 0 rgba(255, 255, 255, 0.05),
+    inset 0 -3px 0 0 rgba(0, 0, 0, 0.35) !important;
 }
 [data-theme='spider-verse'] .btn-add-line:hover {
   background: var(--sv-panel-raised) !important;
   color: var(--sv-cream) !important;
+  transform: translate(-1px, -1px);
+  filter: var(--sv-pix-shadow-hover) !important;
 }
 [data-theme='spider-verse'] .btn-danger {
   color: var(--sv-red-bright) !important;
-  border-color: var(--sv-black) !important;
+  background: var(--sv-panel-raised) !important;
 }
 [data-theme='spider-verse'] .btn-ghost {
+  color: var(--sv-cream) !important;
+  clip-path: none !important;
+  -webkit-clip-path: none !important;
   border-color: transparent !important;
   box-shadow: none !important;
+  filter: none !important;
+  background: transparent !important;
+}
+[data-theme='spider-verse'] .btn-ghost:hover {
+  background: rgba(0, 0, 0, 0.2) !important;
 }
 [data-theme='spider-verse'] .field-hint {
   color: var(--text-muted);
@@ -1063,11 +1579,11 @@
   z-index: 1;
   overflow-x: hidden;
 }
-[data-theme='spider-verse'] .select-list {
+[data-theme='spider-verse'] .ui-select-menu {
   z-index: 300 !important;
 }
 [data-theme='spider-verse'] .toast {
-  z-index: 100 !important;
+  z-index: 400 !important;
 }
 .sv-decor {
   position: absolute;
@@ -1160,7 +1676,6 @@
   transform-origin: 50% 0;
   margin-top: -1px;
   animation: sv-pendulum-once var(--sv-swing-dur) ease-in-out var(--sv-swing-delay) 1 both;
-  will-change: transform;
 }
 .sv-hang-mount.is-interacted .sv-hang-arm {
   animation: none !important;
@@ -1494,6 +2009,33 @@ html.sv-entering .sv-stage { animation: sv-pop-in 0.45s 0.38s both; }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  [data-theme='spider-verse'] .btn,
+  [data-theme='spider-verse'] .icon-btn,
+  [data-theme='spider-verse'] .chip,
+  [data-theme='spider-verse'] .nav-link,
+  [data-theme='spider-verse'] .card,
+  [data-theme='spider-verse'] .ui-select-trigger,
+  [data-theme='spider-verse'] .ui-select-option,
+  [data-theme='spider-verse'] .settings-nav-item,
+  [data-theme='spider-verse'] .date-pill,
+  [data-theme='spider-verse'] .theme-card,
+  [data-theme='spider-verse'] .date-picker-day {
+    transition: none !important;
+  }
+  [data-theme='spider-verse'] .btn:hover:not(:disabled),
+  [data-theme='spider-verse'] .icon-btn:hover,
+  [data-theme='spider-verse'] .chip:hover,
+  [data-theme='spider-verse'] .nav-link:not(.active):hover,
+  [data-theme='spider-verse'] .nav-link.active:hover,
+  [data-theme='spider-verse'] .card:hover:not(.dragging):not(.overlay),
+  [data-theme='spider-verse'] .ui-select-trigger:hover,
+  [data-theme='spider-verse'] .ui-select-option:hover,
+  [data-theme='spider-verse'] .settings-nav-item:not(.is-active):hover,
+  [data-theme='spider-verse'] .settings-nav-item.is-active:hover,
+  [data-theme='spider-verse'] .date-pill:hover,
+  [data-theme='spider-verse'] .theme-card:hover {
+    transform: none !important;
+  }
   .sv-hang-arm,
   .sv-hang-bob {
     animation: none !important;

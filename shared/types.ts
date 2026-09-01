@@ -19,6 +19,10 @@ export interface Task {
   createdAt: string;
   updatedAt: string;
   carriedFrom?: string;
+  /** Source task id when this row was copied by carry-forward */
+  sourceTaskId?: string;
+  /** Set on source task when copied to a later day — prevents re-carry */
+  carriedAwayAt?: string;
 }
 
 export interface TaskStore {
