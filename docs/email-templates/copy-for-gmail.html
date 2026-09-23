@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Copy Daybook email for Gmail</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: #0a1628;
+      color: #dbeafe;
+      min-height: 100vh;
+    }
+    .wrap { max-width: 920px; margin: 0 auto; padding: 28px 20px 48px; }
+    h1 { font-size: 1.35rem; margin: 0 0 8px; color: #f4d58d; }
+    p { line-height: 1.55; color: #94a3b8; margin: 0 0 16px; }
+    .steps {
+      background: #0f2137;
+      border: 2px solid #2563eb;
+      padding: 18px 20px;
+      margin-bottom: 20px;
+    }
+    .steps ol { margin: 0; padding-left: 20px; color: #dbeafe; }
+    .steps li { margin: 8px 0; }
+    .bar { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+    button, label.file-btn {
+      appearance: none;
+      border: 2px solid #c9a227;
+      background: #f0d898;
+      color: #1a1208;
+      font-weight: 700;
+      font-size: 14px;
+      padding: 12px 18px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    button.secondary {
+      background: #1e3a5f;
+      color: #dbeafe;
+      border-color: #3b82c4;
+    }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    label.file-btn input { display: none; }
+    .status {
+      min-height: 24px;
+      margin: 12px 0 0;
+      font-size: 14px;
+      color: #82e67a;
+    }
+    .status.error { color: #fca5a5; }
+    .preview-label {
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #7ec8ff;
+      margin: 0 0 8px;
+    }
+    iframe {
+      width: 100%;
+      height: 520px;
+      border: 2px solid #3b82c4;
+      background: #060d18;
+    }
+    .subject {
+      background: #111f33;
+      border: 1px solid #1e40af;
+      padding: 12px 14px;
+      margin-bottom: 20px;
+      font-size: 14px;
+    }
+    .subject strong { color: #fff; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Copy formatted email for Gmail</h1>
+    <p>Local tool — no htmlmail.pro needed. Loads your template and copies it as rich HTML for Gmail Compose.</p>
+
+    <div class="subject">
+      <strong>Subject:</strong> Daybook v1.1.1 — The Spider-Verse theme is here. Switch today.
+    </div>
+
+    <div class="steps">
+      <ol>
+        <li>Click <strong>Load template file</strong> (pick <code>v1.1.1-spider-verse-announcement.html</code>).</li>
+        <li>Check the preview below looks correct.</li>
+        <li>Click <strong>Copy for Gmail</strong>.</li>
+        <li>Open <a href="https://mail.google.com/mail/u/0/#inbox?compose=new" style="color:#7ec8ff;">Gmail Compose</a> → click in body → <strong>Ctrl+V</strong> → Send.</li>
+      </ol>
+    </div>
+
+    <div class="bar">
+      <label class="file-btn">
+        Load template file
+        <input type="file" id="file" accept=".html,text/html" />
+      </label>
+      <button type="button" id="copyBtn" disabled>Copy for Gmail</button>
+      <button type="button" class="secondary" id="openGmail" type="button">Open Gmail Compose</button>
+    </div>
+    <p id="status" class="status"></p>
+
+    <p class="preview-label">Preview</p>
+    <iframe id="preview" title="Email preview"></iframe>
+  </div>
+
+  <script>
+    let htmlContent = "";
+
+    const fileInput = document.getElementById("file");
+    const copyBtn = document.getElementById("copyBtn");
+    const preview = document.getElementById("preview");
+    const statusEl = document.getElementById("status");
+
+    function setStatus(msg, isError) {
+      statusEl.textContent = msg;
+      statusEl.className = "status" + (isError ? " error" : "");
+    }
+
+    function loadHtml(html) {
+      htmlContent = html;
+      preview.srcdoc = html;
+      copyBtn.disabled = !html.trim();
+      setStatus("Template loaded. Click Copy for Gmail, then paste in Gmail Compose.");
+    }
+
+    fileInput.addEventListener("change", function () {
+      const file = fileInput.files && fileInput.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function () { loadHtml(String(reader.result || "")); };
+      reader.onerror = function () { setStatus("Could not read file.", true); };
+      reader.readAsText(file);
+    });
+
+    copyBtn.addEventListener("click", async function () {
+      if (!htmlContent.trim()) {
+        setStatus("Load the template file first.", true);
+        return;
+      }
+
+      const plain = "Daybook v1.1.1 — Spider-Verse theme update. Open the HTML version of this email for full layout.";
+
+      try {
+        if (navigator.clipboard && window.ClipboardItem) {
+          const item = new ClipboardItem({
+            "text/html": new Blob([htmlContent], { type: "text/html" }),
+            "text/plain": new Blob([plain], { type: "text/plain" }),
+          });
+          await navigator.clipboard.write([item]);
+          setStatus("Copied! Open Gmail Compose and press Ctrl+V in the message body.");
+          return;
+        }
+      } catch (_) { /* fall through */ }
+
+      // Fallback: select from preview and execCommand
+      try {
+        preview.contentWindow.focus();
+        const doc = preview.contentDocument;
+        const range = doc.createRange();
+        range.selectNodeContents(doc.body);
+        const sel = preview.contentWindow.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        const ok = doc.execCommand("copy");
+        sel.removeAllRanges();
+        if (ok) {
+          setStatus("Copied (fallback). Paste in Gmail with Ctrl+V.");
+          return;
+        }
+      } catch (_) { /* fall through */ }
+
+      setStatus("Copy failed. Use Chrome, load the file again, or install Gmail HTML Insert extension.", true);
+    });
+
+    document.getElementById("openGmail").addEventListener("click", function () {
+      window.open("https://mail.google.com/mail/u/0/#inbox?compose=new", "_blank");
+    });
+
+    // Auto-load sibling template when opened via local server; optional hint on file://
+    fetch("v1.1.1-spider-verse-announcement.html")
+      .then(function (r) { return r.ok ? r.text() : Promise.reject(); })
+      .then(loadHtml)
+      .catch(function () {
+        setStatus("Click Load template file and choose v1.1.1-spider-verse-announcement.html", false);
+      });
+  </script>
+</body>
+</html>

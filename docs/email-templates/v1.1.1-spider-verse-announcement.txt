@@ -1,0 +1,40 @@
+Subject: 🕷️ Daybook v1.1.1 — The Spider-Verse theme is here. Switch today.
+
+---
+
+YOUR DAILY BOARD JUST WENT MULTIVERSE
+
+Daybook v1.1.1 drops a full Spider-Verse pixel HUD — cobwebs, hanging spideys, thwip beats, and a hero landing when you crush your Done column.
+
+We built this for everyone on the team. Update once, switch the theme, and make the board yours.
+
+MISSION: GO SPIDEY IN 3 STEPS
+─────────────────────────────
+1. UPDATES — Open Daybook → Updates → Check for updates → Restart & install v1.1.1
+2. SETTINGS — Go to Settings → Profile and open the theme picker
+3. SWITCH   — Select Spider-Verse. Thwip. Swing. Hero landing. You're in.
+
+Already on v1.1.1? Jump straight to Settings → Profile → Spider-Verse.
+
+FRESH INSTALL? DOWNLOAD v1.1.1
+──────────────────────────────
+Windows: https://github.com/GautamPatoliya/daybook-desktop/releases/download/v1.1.1/Daybook-Setup-1.1.1.exe
+Mac (Apple Silicon): https://github.com/GautamPatoliya/daybook-desktop/releases/download/v1.1.1/Daybook-1.1.1-arm64.dmg
+
+Already installed? Use Updates → Check for updates instead — no reinstall needed.
+
+WHAT'S IN THE SUIT
+──────────────────
+▸ Pixel-art HUD — chunky borders, cream CTAs, light-blue outer frame
+▸ Hanging spidey decor — drag & swing on the silk thread
+▸ Action beats — Thwip when you add a task, hero landing on Done
+▸ Spidey loading screen — pixel swing troupe while the app loads
+▸ Plus: carry-forward fix & smoother performance on office laptops
+
+Let's make Spider-Verse the team default.
+
+Same Daybook you rely on — just way more fun to open every morning. Update today, flip the theme, and send us a screenshot of your board when you're in.
+
+—
+Daybook · v1.1.1
+Questions? Reply to this email or ping in the team channel.

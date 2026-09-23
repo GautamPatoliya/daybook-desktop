@@ -2,6 +2,8 @@
 
 Offline Electron + Next.js app for employee task tracking, daily email drafts, local LLM polish, reminders, analytics, and GitHub Releases auto-update.
 
+**Full product overview:** [docs/PROJECT_OVERVIEW.md](docs/PROJECT_OVERVIEW.md) — purpose, usage, features, architecture, data, and distribution.
+
 ## Requirements
 
 - Node.js 20+
