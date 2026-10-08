@@ -10,8 +10,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
-import pngToIco from 'png-to-ico';
 import png2icons from 'png2icons';
+
+const NAVY_HEX = '#0a1a3a';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -27,7 +28,6 @@ const SIZE_APP = 1024;
 const SIZE_WINDOW = 256;
 const NSIS_W = 164;
 const NSIS_H = 314;
-const ICO_SIZES = [16, 24, 32, 48, 64, 128, 256];
 
 function ensureDir(dir) {
   fs.mkdirSync(dir, { recursive: true });
@@ -74,9 +74,9 @@ async function knockOutWhite(inputPath, threshold = 242) {
  * Transparent square with the hero logo centered (no plate).
  * Slight padding so Dock / Start Menu masks do not clip sparkles.
  */
-async function composeAppIcon(size) {
+async function composeAppIcon(size, { opaque = false } = {}) {
   const cutout = await knockOutWhite(MASTER_HERO);
-  const padded = Math.round(size * 0.9);
+  const padded = Math.round(size * (opaque ? 0.82 : 0.9));
   const logo = await cutout
     .resize(padded, padded, {
       fit: 'contain',
@@ -86,6 +86,31 @@ async function composeAppIcon(size) {
     .toBuffer();
 
   const offset = Math.round((size - padded) / 2);
+
+  // Windows .exe / taskbar / Start Menu need an opaque icon — transparent
+  // ICOs often fail to embed, so the old Daybook.exe icon sticks around.
+  if (opaque) {
+    // Full-bleed navy (no rounded transparent corners) so Windows rcedit
+    // embeds a real opaque .ico into Daybook.exe for the taskbar.
+    const plate = Buffer.from(
+      `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
+        <defs>
+          <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#122a52"/>
+            <stop offset="100%" stop-color="${NAVY_HEX}"/>
+          </linearGradient>
+        </defs>
+        <rect width="${size}" height="${size}" fill="url(#g)"/>
+      </svg>`,
+    );
+    const platePng = await sharp(plate).png().toBuffer();
+    return sharp(platePng)
+      .composite([{ input: logo, left: offset, top: offset }])
+      .removeAlpha()
+      .png()
+      .toBuffer();
+  }
+
   return sharp({
     create: {
       width: size,
@@ -183,30 +208,17 @@ async function composeTray(size) {
   return sharp(trayGlyphSvg(size)).png().toBuffer();
 }
 
-/** Tiny Start Menu / ICO sizes share the same crisp tray glyph. */
-async function composeSmallOsIcon(size) {
-  return sharp(trayGlyphSvg(size)).png().toBuffer();
-}
-
-async function writeIco(png1024) {
-  const tmpDir = path.join(BUILD, '.icon-tmp');
-  ensureDir(tmpDir);
-  const paths = [];
-  for (const s of ICO_SIZES) {
-    const p = path.join(tmpDir, `icon-${s}.png`);
-    if (s <= 32) {
-      fs.writeFileSync(p, await composeSmallOsIcon(s));
-    } else {
-      await sharp(png1024)
-        .resize(s, s, { kernel: sharp.kernel.lanczos3 })
-        .png()
-        .toFile(p);
-    }
-    paths.push(p);
+/**
+ * Windows .exe icon — build from an opaque 256/512 master via png2icons (BMP
+ * layers). Do not put the tray SVG into the ICO; taskbar uses this file.
+ */
+async function writeIco(opaquePngBuffer) {
+  // false = BMP entries inside ICO (best compatibility with electron-builder / rcedit)
+  const ico = png2icons.createICO(opaquePngBuffer, png2icons.BILINEAR, 0, false);
+  if (!ico || !ico.length) {
+    throw new Error('png2icons.createICO returned empty — Windows exe icon would stay stale');
   }
-  const ico = await pngToIco(paths);
   fs.writeFileSync(path.join(BUILD, 'icon.ico'), ico);
-  fs.rmSync(tmpDir, { recursive: true, force: true });
 }
 
 async function writeIcns(png1024) {
@@ -254,11 +266,15 @@ async function main() {
   ensureDir(ASSETS);
 
   console.log('Composing transparent 1024 app icon…');
-  const icon1024 = await composeAppIcon(SIZE_APP);
+  const icon1024 = await composeAppIcon(SIZE_APP, { opaque: false });
   fs.writeFileSync(path.join(BUILD, 'icon.png'), icon1024);
 
-  console.log('Writing window app-icon.png (256)…');
-  await sharp(icon1024)
+  console.log('Composing opaque Windows / Dock master…');
+  const iconOpaque1024 = await composeAppIcon(SIZE_APP, { opaque: true });
+  fs.writeFileSync(path.join(BUILD, 'icon-win.png'), iconOpaque1024);
+
+  console.log('Writing window app-icon.png (256, opaque for taskbar)…');
+  await sharp(iconOpaque1024)
     .resize(SIZE_WINDOW, SIZE_WINDOW, { kernel: sharp.kernel.lanczos3 })
     .png()
     .toFile(path.join(ASSETS, 'app-icon.png'));
@@ -281,17 +297,17 @@ async function main() {
   const sidebar = await composeNsisSidebar();
   fs.writeFileSync(path.join(BUILD, 'nsis-sidebar.png'), sidebar);
 
-  console.log('Writing transparent tray-16 / tray-32…');
+  console.log('Writing tray-16 / tray-32…');
   const tray16 = await composeTray(16);
   const tray32 = await composeTray(32);
   fs.writeFileSync(path.join(ASSETS, 'tray-16.png'), tray16);
   fs.writeFileSync(path.join(ASSETS, 'tray-32.png'), tray32);
 
-  console.log('Writing icon.ico…');
-  await writeIco(icon1024);
+  console.log('Writing icon.ico (opaque, for Daybook.exe)…');
+  await writeIco(iconOpaque1024);
 
   console.log('Writing icon.icns…');
-  await writeIcns(icon1024);
+  await writeIcns(iconOpaque1024);
 
   console.log('Writing QA previews…');
   await writeQaPreviews(icon1024, tray16, tray32);
@@ -307,6 +323,7 @@ async function main() {
 
   console.log('Done.');
   console.log(`  ${path.relative(ROOT, path.join(BUILD, 'icon.png'))}`);
+  console.log(`  ${path.relative(ROOT, path.join(BUILD, 'icon-win.png'))}`);
   console.log(`  ${path.relative(ROOT, path.join(BUILD, 'icon.ico'))}`);
   console.log(`  ${path.relative(ROOT, path.join(BUILD, 'icon.icns'))}`);
   console.log(`  ${path.relative(ROOT, path.join(BUILD, 'nsis-sidebar.png'))}`);

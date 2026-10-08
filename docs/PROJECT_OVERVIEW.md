@@ -1,7 +1,7 @@
 # Daybook - Project Overview
 
 **Product name:** Daybook  
-**Version:** 1.2.0  
+**Version:** 1.2.1  
 **Type:** Offline desktop app (Windows + macOS)  
 **Audience:** Office employees who log daily work and send end-of-day updates to a manager  
 **Repo:** [GautamPatoliya/daybook-desktop](https://github.com/GautamPatoliya/daybook-desktop)  
@@ -260,7 +260,7 @@ See [VERSION_MANAGEMENT.md](./VERSION_MANAGEMENT.md) and [PILOT.md](./PILOT.md).
 
 | Item | Value |
 |------|--------|
-| Current version | 1.2.0 |
+| Current version | 1.2.1 |
 | Platforms | Windows x64, macOS arm64 |
 | UI themes | Default, Spider-Verse |
 | Default timezone | Asia/Kolkata |

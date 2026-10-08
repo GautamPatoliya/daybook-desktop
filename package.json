@@ -1,6 +1,6 @@
 {
   "name": "daybook",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Daybook - offline daily work tracker for office teams",
   "author": "Gautam Patoliya",
   "license": "UNLICENSED",
@@ -137,6 +137,8 @@
       "uninstallDisplayName": "Daybook",
       "deleteAppDataOnUninstall": false,
       "runAfterFinish": true,
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
       "installerSidebar": "build/nsis-sidebar.png",
       "uninstallerSidebar": "build/nsis-sidebar.png"
     },

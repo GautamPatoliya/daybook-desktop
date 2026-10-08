@@ -2,6 +2,11 @@
 
 All notable changes to Daybook will be documented in this file.
 
+## 1.2.1 - 2026-10-08
+
+### Fixes
+* **Windows app icon** - Taskbar / Start Menu / `.exe` now use the new Daybook notebook icon. Tray had updated in 1.2.0, but the main app icon stayed on the old mark because the Windows icon file was transparent and did not embed correctly.
+
 ## 1.2.0 - 2026-10-08
 
 ### What's new

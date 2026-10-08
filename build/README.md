@@ -20,8 +20,9 @@ npm run icons:generate
 | Output | Size / notes |
 |--------|----------------|
 | `build/icon.png` | 1024×1024 **transparent** Main Logo |
-| `build/icon.ico` | Windows multi-size (16…256), transparent |
-| `build/icon.icns` | macOS bundle icon, transparent |
+| `build/icon-win.png` | 1024×1024 **opaque** navy plate (Windows / Dock master) |
+| `build/icon.ico` | Windows `.exe` / taskbar / Start Menu (from opaque master) |
+| `build/icon.icns` | macOS bundle icon (from opaque master) |
 | `build/nsis-sidebar.png` | 164×314 installer banner (opaque navy — NSIS requirement) |
 | `electron/assets/app-icon.png` | 256×256 window / Dock / taskbar |
 | `electron/assets/tray-16.png` | Windows tray — solid notebook glyph @ 16px |

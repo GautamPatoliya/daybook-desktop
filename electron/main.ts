@@ -248,11 +248,27 @@ async function createWindow(mode?: string): Promise<BrowserWindow> {
     },
   });
 
+  // Windows taskbar / Alt-Tab often keep a cached shell icon; re-apply after create.
+  if (appIcon && !appIcon.isEmpty()) {
+    try {
+      mainWindow.setIcon(appIcon);
+    } catch {
+      /* ignore */
+    }
+  }
+
   mainWindow.webContents.on('did-fail-load', (_e, code, desc, url) => {
     console.error('Renderer failed to load', { code, desc, url });
   });
 
   mainWindow.once('ready-to-show', () => {
+    if (appIcon && !appIcon.isEmpty()) {
+      try {
+        mainWindow?.setIcon(appIcon);
+      } catch {
+        /* ignore */
+      }
+    }
     mainWindow?.show();
   });
 
