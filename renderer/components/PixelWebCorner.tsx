@@ -4,7 +4,7 @@ import React from 'react';
 
 type Position = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
 
-/** Pixel-stepped web corner — blue/cream, matches Spidey Tracker HUD. */
+/** Pixel-stepped web corner - blue/cream, matches Spidey Tracker HUD. */
 export default function PixelWebCorner({ position, size = 60 }: { position: Position; size?: number }) {
   let transform = '';
   switch (position) {

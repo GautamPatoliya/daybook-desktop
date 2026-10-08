@@ -36,7 +36,7 @@ Example edit in `package.json`:
 {
   "name": "daybook",
   "version": "1.0.1",
-  "description": "Daybook — offline daily work tracker for office teams"
+  "description": "Daybook - offline daily work tracker for office teams"
   ...
 }
 ```
@@ -44,7 +44,7 @@ Example edit in `package.json`:
 ### 2. Update the Changelog (Optional but Recommended)
 Open [CHANGELOG.md](file:///Users/gautam/Downloads/dailybook-desktop/CHANGELOG.md) and document your changes so they render in the app's **Updates** panel:
 ```markdown
-## 1.0.1 — Today's Date
+## 1.0.1 - Today's Date
 - Fixed newline bugs inside task detail descriptions.
 - Removed deprecated due date selectors.
 - Beautified the Analytics and Updates dashboards.

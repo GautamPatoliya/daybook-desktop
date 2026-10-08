@@ -5,9 +5,9 @@ import HangingSpider from './spider/HangingSpider';
 import SpiderHeroPixel from './spider/SpiderHeroPixel';
 
 const LABELS: Record<string, string> = {
-  none: 'THWIP — DROP A TASK',
+  none: 'THWIP - DROP A TASK',
   wip: 'SWINGING INTO ACTION',
-  done: 'HERO LANDING — NICE!',
+  done: 'HERO LANDING - NICE!',
 };
 
 interface Props { status: 'none' | 'wip' | 'done' }

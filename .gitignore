@@ -10,3 +10,5 @@ release/
 *.pfx
 *.p12
 *.key
+
+build/.qa/

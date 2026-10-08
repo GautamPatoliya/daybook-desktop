@@ -23,16 +23,8 @@ export function formatShortDate(iso: string): string {
   return `${Number(d)} ${months[mIndex] || m}`;
 }
 
-export function formatTime12h(hhmm: string): string {
-  const parts = hhmm.split(':');
-  if (parts.length < 2) return hhmm;
-  const h = Number(parts[0]);
-  const m = Number(parts[1]);
-  if (Number.isNaN(h) || Number.isNaN(m)) return hhmm;
-  const ampm = h >= 12 ? 'PM' : 'AM';
-  const h12 = h % 12 || 12;
-  return `${h12}:${String(m).padStart(2, '0')} ${ampm}`;
-}
+export { formatTime12h } from './formatTime';
+
 
 export function parseIsoDate(iso: string): Date {
   const [y, m, d] = iso.split('-').map(Number);

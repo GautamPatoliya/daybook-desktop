@@ -2,40 +2,62 @@
 
 All notable changes to Daybook will be documented in this file.
 
-## 1.1.1 — 2026-09-01
+## 1.2.0 - 2026-10-08
 
 ### What's new
-* **Spider-Verse theme** — A new pixel-art HUD inspired by Spidey Tracker: chunky borders, cream CTAs, corner cobwebs, and a light-blue outer frame.
-* **Ambient spider decor** — Hanging spiders on the board and screens; interactive drag-and-swing on the silk thread.
-* **Action beats** — Quick Thwip when you add a task and a hero landing when you move one to Done (Spider-Verse theme only).
-* **Spidey loading screen** — Pixel swing troupe on first visit while the app loads.
-* **Pixel UI polish** — Buttons, cards, columns, tables, settings, and forms use stepped pixel corners across the Spider-Verse theme.
+* **Richer task details** - When you add or edit a task, you get a full formatting toolbar: headings, bold/italic/underline, lists, links, colors, tables, images, code, and more. Switch to Source if you prefer raw HTML.
+* **Simpler daily email** - Open Email draft for a clean preview of today’s update. Copy it, polish the wording when you want, then Open Gmail to paste and send. Opening Gmail marks that day’s email as sent.
+* **Analytics you can share** - Analytics now names the period (this week, last 7 / 30 / 90 days) with real date spans, clearer charts, and an **Export task report** CSV (created, updated, completed / still running) for your manager.
+* **Email settings tab** - Settings has an Email tab for To / Cc chips, sign-off, backlog-in-email, and a live draft preview.
+* **Appearance tab** - Theme lives under Settings → Appearance (Default vs Spider-Verse).
+* **Projects page** - Search, color, notes, default project, archive/restore, and delete from Projects.
+* **Categories you control** - In Settings → Projects, drag categories to reorder, set a default, add or rename, and delete (tasks move to Other).
+* **Daybook brand icons** - New notebook app icon, installer sidebar, and crisp system-tray glyph across Windows and macOS.
+* **Tray shortcuts** - The system tray shows what you're working on and offers New Task, Pause Reminders, and Generate EOD.
+* **Updates that behave** - Windows can restart and install updates cleanly. Mac builds that aren’t signed walk you through Download DMG instead of a fake “Restart” success.
 
 ### Improvements
-* **Theme picker** — Choose **Spider-Verse** alongside the default theme in Settings → Profile.
-* **Readability** — Brighter text contrast and cleaner column borders in Spider-Verse mode.
+* Times on the Board use familiar 12-hour clocks (e.g. `9:15 am`).
+* Long links and rich text wrap instead of spilling out of cards.
+* Email bullets no longer use checkmark emojis - status stays on the task title.
+* Settings Save stays pinned at the bottom so it’s hard to miss.
+* Loading screens and in-app brand mark use the new Daybook notebook logo.
+* Dialogs and drawers use clearer overlays; Spider-Verse keeps its HUD pause veil.
+
+## 1.1.1 - 2026-09-01
+
+### What's new
+* **Spider-Verse theme** - A new pixel-art HUD inspired by Spidey Tracker: chunky borders, cream CTAs, corner cobwebs, and a light-blue outer frame.
+* **Ambient spider decor** - Hanging spiders on the board and screens; interactive drag-and-swing on the silk thread.
+* **Action beats** - Quick Thwip when you add a task and a hero landing when you move one to Done (Spider-Verse theme only).
+* **Spidey loading screen** - Pixel swing troupe on first visit while the app loads.
+* **Pixel UI polish** - Buttons, cards, columns, tables, settings, and forms use stepped pixel corners across the Spider-Verse theme.
+
+### Improvements
+* **Theme picker** - Choose **Spider-Verse** alongside the default theme in Settings → Profile.
+* **Readability** - Brighter text contrast and cleaner column borders in Spider-Verse mode.
 
 ### Fixes
-* **Carry-forward tasks** — Completing or updating carried tasks no longer causes them to reappear on the next day’s board.
-* **Performance** — Reduced GPU-heavy effects so the Spider-Verse theme stays smooth on everyday office laptops.
+* **Carry-forward tasks** - Completing or updating carried tasks no longer causes them to reappear on the next day’s board.
+* **Performance** - Reduced GPU-heavy effects so the Spider-Verse theme stays smooth on everyday office laptops.
 
-## 1.1.0 — 2026-08-11
+## 1.1.0 - 2026-08-11
 
 ### What's new
-* **Smaller, faster install** — Daybook takes less space and runs better on everyday office laptops.
-* **Local AI is optional** — Install the AI engine and a model only when you want on-device wording polish for email drafts.
-* **Clearer Settings** — Side tabs (Profile, Schedule, Projects, Behavior, Data) so you can find options quickly.
-* **Better Updates screen** — Each version has its own release card; easier to see what changed.
-* **Smarter task bullets** — Paste several lines at once and Daybook splits them into separate bullet points automatically.
-* **Cleaner daily email** — Backlog tasks are left out of end-of-day drafts by default. Turn on **Include Backlog in EOD email** in Settings if you want them.
+* **Smaller, faster install** - Daybook takes less space and runs better on everyday office laptops.
+* **Local AI is optional** - Install the AI engine and a model only when you want on-device wording polish for email drafts.
+* **Clearer Settings** - Side tabs (Profile, Schedule, Projects, Behavior, Data) so you can find options quickly.
+* **Better Updates screen** - Each version has its own release card; easier to see what changed.
+* **Smarter task bullets** - Paste several lines at once and Daybook splits them into separate bullet points automatically.
+* **Cleaner daily email** - Backlog tasks are left out of end-of-day drafts by default. Turn on **Include Backlog in EOD email** in Settings if you want them.
 
 ### Improvements
-* **Polish wording** — Email drafts show polished titles and details more reliably, with clearer feedback when Local AI is used.
-* **Faster, offline-ready UI** — Icons and fonts load instantly without waiting on the internet.
-* **Reminders** — Wait a few seconds after startup before nudging you, so login stays smooth on slow PCs.
-* **Windows notifications** — Reminders now show the Daybook name and icon instead of a generic Electron label.
+* **Polish wording** - Email drafts show polished titles and details more reliably, with clearer feedback when Local AI is used.
+* **Faster, offline-ready UI** - Icons and fonts load instantly without waiting on the internet.
+* **Reminders** - Wait a few seconds after startup before nudging you, so login stays smooth on slow PCs.
+* **Windows notifications** - Reminders now show the Daybook name and icon instead of a generic Electron label.
 
-## 1.0.2 — 2026-08-04
+## 1.0.2 - 2026-08-04
 
 ### Fixes
 * **Small screens / onboarding:** Onboarding and app shell now scroll so Next / Submit stay reachable on short laptop displays; sticky action buttons; lower minimum window size.
@@ -43,7 +65,7 @@ All notable changes to Daybook will be documented in this file.
 * **Windows autostart:** Stop registering both AutoLaunch and Electron login items (that combo launched Daybook twice at sign-in).
 * **Tray icon:** Show a real Daybook tray icon on Windows instead of a blank/missing icon.
 
-## 1.0.1 — 2026-08-03
+## 1.0.1 - 2026-08-03
 
 ### Fixes
 * **EOD reminder:** End-of-day now builds and shows the email draft immediately (no more blank side panel until reopen).
@@ -56,7 +78,7 @@ All notable changes to Daybook will be documented in this file.
 * Mac packaging hooks for signing/notarization readiness (Developer ID + notarize when secrets are configured).
 * Local AI download UX: Pause, Cancel, Resume, and Discard for partial downloads.
 
-## 1.0.0 — 2026-07-31
+## 1.0.0 - 2026-07-31
 
 Welcome to **Daybook v1.0.0**! This is the initial stable release of Daybook, a local-first daily work tracker and automated email companion tailored for office teams.
 

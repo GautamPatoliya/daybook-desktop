@@ -207,7 +207,7 @@ export function stopDownload(
   const d = downloads.get(id);
   if (!d) {
     if (!opts.keepPartial && item) {
-      // Cancel with no active request — still clear leftover partial if requested
+      // Cancel with no active request - still clear leftover partial if requested
       // (caller may pass root via deleteModel; here we only know catalog filename)
     }
     return { ok: true, wasActive: false };
@@ -237,8 +237,8 @@ export function stopDownload(
   downloads.delete(id);
 
   if (!opts.keepPartial && item) {
-    // Best-effort: partial path needs models dir — reconstruct from common userData layout via dest name only if we have filename
-    // deleteModel handles full cleanup; for cancel from UI we need root — see cancelDownload(root, id)
+    // Best-effort: partial path needs models dir - reconstruct from common userData layout via dest name only if we have filename
+    // deleteModel handles full cleanup; for cancel from UI we need root - see cancelDownload(root, id)
   }
 
   if (!opts.silent) {
@@ -284,7 +284,7 @@ export function cancelDownload(root: DataRoot, id: string) {
 
 /**
  * Start (or resume) a model download in the background.
- * Resolves immediately once the request is underway — progress is broadcast.
+ * Resolves immediately once the request is underway - progress is broadcast.
  */
 export function startDownload(root: DataRoot, id: string): { ok: true } | { ok: false; error: string } {
   if (isDownloading(id)) return { ok: true };
@@ -348,11 +348,11 @@ export function startDownload(root: DataRoot, id: string): { ok: true } | { ok: 
     cleanupStreams();
     try {
       if (!fs.existsSync(tmp)) {
-        throw new Error('Download file missing — please try again');
+        throw new Error('Download file missing - please try again');
       }
       const size = fs.statSync(tmp).size;
       if (state.total > 0 && size < state.total * 0.98) {
-        throw new Error('Download incomplete — please resume to finish');
+        throw new Error('Download incomplete - please resume to finish');
       }
       try {
         fs.renameSync(tmp, dest);
@@ -562,7 +562,7 @@ export function startDownload(root: DataRoot, id: string): { ok: true } | { ok: 
   return { ok: true };
 }
 
-/** @deprecated Prefer startDownload — kept for callers that await completion. */
+/** @deprecated Prefer startDownload - kept for callers that await completion. */
 export function downloadModel(
   root: DataRoot,
   id: string,

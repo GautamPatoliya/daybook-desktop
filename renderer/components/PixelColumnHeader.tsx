@@ -3,10 +3,10 @@ import React from 'react';
 
 // ============================================================
 // PIXEL COLUMN HEADERS
-// ViewBox: 96 wide × 28 tall — each "pixel" = ~1 SVG unit
+// ViewBox: 96 wide × 28 tall - each "pixel" = ~1 SVG unit
 // Rendered at: full column width × 56px CSS height
 // At a 320px wide column: each pixel ≈ 3.3px wide × 2px tall
-// — large enough to clearly read as pixel art
+// - large enough to clearly read as pixel art
 // ============================================================
 
 // ── Helper ──────────────────────────────────────────────────
@@ -19,7 +19,7 @@ function rect(x: number, y: number, fill: string, w = 1, h = 1) {
 function makeBacklog() {
   const px: Array<{ x: number; y: number; fill: string; w: number; h: number }> = [];
 
-  // SKY — deep night
+  // SKY - deep night
   px.push(rect(0, 0, '#010410', 96, 28));
 
   // STARS (clear, isolated)
@@ -44,24 +44,24 @@ function makeBacklog() {
   // Bldg BG-6
   px.push(rect(88, 16, '#08101e', 8, 12));
 
-  // FOREGROUND BUILDINGS — darker, solid silhouettes
-  // Bldg 1 — far left
+  // FOREGROUND BUILDINGS - darker, solid silhouettes
+  // Bldg 1 - far left
   px.push(rect(0,  20, '#060c18', 11, 8));
   px.push(rect(2,  17, '#060c18', 7,  3));
-  // Bldg 2 — left-center (TALLEST)
+  // Bldg 2 - left-center (TALLEST)
   px.push(rect(14, 12, '#050a14', 14, 16));
   px.push(rect(17, 10, '#050a14', 8,  2)); // setback
   px.push(rect(20,  8, '#050a14', 4,  2)); // spire base
-  // Bldg 3 — center
+  // Bldg 3 - center
   px.push(rect(32, 17, '#070d1c', 12, 11));
   px.push(rect(34, 15, '#070d1c', 8,  2));
-  // Bldg 4 — right-center
+  // Bldg 4 - right-center
   px.push(rect(48, 14, '#060b18', 16, 14));
   px.push(rect(50, 12, '#060b18', 12, 2));
-  // Bldg 5 — far right
+  // Bldg 5 - far right
   px.push(rect(68, 19, '#050a14', 12, 9));
   px.push(rect(70, 17, '#050a14', 8,  2));
-  // Bldg 6 — right edge
+  // Bldg 6 - right edge
   px.push(rect(82, 16, '#060c18', 14, 12));
   px.push(rect(86, 14, '#060c18', 6,  2));
 
@@ -69,7 +69,7 @@ function makeBacklog() {
   px.push(rect(23,  5, '#d4a017', 2, 3));
   px.push(rect(23,  8, '#8a7010', 2, 2));
 
-  // WINDOWS — bright squares against dark buildings
+  // WINDOWS - bright squares against dark buildings
   // Bldg 1 windows
   for (const [wx, wy] of [[2,21],[6,21],[2,24],[6,24]]) px.push(rect(wx, wy, '#f0c050', 2, 2));
   // Bldg 2 windows
@@ -138,7 +138,7 @@ function makeDone() {
 
   const cx = 48, cy = 14;
 
-  // WEB RINGS — clear concentric rectangles in blue
+  // WEB RINGS - clear concentric rectangles in blue
   [[6,'rgba(22,112,176,0.75)'],[11,'rgba(22,112,176,0.55)'],[16,'rgba(22,112,176,0.35)']].forEach(([r, col]) => {
     const R = r as number; const C = col as string;
     for (let i = -R; i <= R; i += 2) {
@@ -163,7 +163,7 @@ function makeDone() {
     if (cy - d >= 0) px.push(rect(cx,     cy - d, col, 2, 2));
   }
 
-  // PIXEL CHECKMARK — bold 3px strokes, clearly visible
+  // PIXEL CHECKMARK - bold 3px strokes, clearly visible
   const check: Array<[number, number]> = [
     [38,15],[39,16],[40,17],[41,18],[42,19],[43,20],
     [44,19],[45,18],[46,17],[47,16],[48,15],[49,14],

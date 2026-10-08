@@ -1,7 +1,7 @@
 {
   "name": "daybook",
-  "version": "1.1.1",
-  "description": "Daybook — offline daily work tracker for office teams",
+  "version": "1.2.0",
+  "description": "Daybook - offline daily work tracker for office teams",
   "author": "Gautam Patoliya",
   "license": "UNLICENSED",
   "private": true,
@@ -10,18 +10,42 @@
     "dev:renderer": "next dev renderer -p 41763",
     "dev:electron": "tsc -p electron/tsconfig.json && electron .",
     "dev": "npm run build:electron && concurrently -k \"next dev renderer -p 41763\" \"wait-on http://127.0.0.1:41763 && cross-env ELECTRON_DEV=1 electron .\"",
-    "build:renderer": "next build renderer",
+    "check:renderer-imports": "node scripts/check-renderer-imports.mjs",
+    "icons:generate": "node scripts/generate-icons.mjs",
+    "typecheck": "tsc -p renderer/tsconfig.json --noEmit && tsc -p electron/tsconfig.json --noEmit",
+    "build:renderer": "npm run check:renderer-imports && next build renderer",
     "build:electron": "tsc -p electron/tsconfig.json && node -e \"require('fs').cpSync('electron/assets','dist-electron/electron/assets',{recursive:true})\"",
-    "build": "npm run build:renderer && npm run build:electron",
-    "dist": "npm run build && electron-builder --publish never",
-    "dist:win": "npm run build && electron-builder --win --publish never",
-    "dist:mac": "npm run build && electron-builder --mac --publish never",
-    "publish:github": "npm run build && electron-builder --publish always",
+    "build": "npm run typecheck && npm run build:renderer && npm run build:electron",
+    "dist": "npm run icons:generate && npm run build && electron-builder --publish never",
+    "dist:win": "npm run icons:generate && npm run build && electron-builder --win --publish never",
+    "dist:mac": "npm run icons:generate && npm run build && electron-builder --mac --publish never",
+    "publish:github": "npm run icons:generate && npm run build && electron-builder --publish always",
     "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
+    "@dnd-kit/sortable": "^10.0.0",
+    "@radix-ui/react-scroll-area": "^1.2.18",
+    "@tiptap/extension-color": "^3.31.3",
+    "@tiptap/extension-highlight": "^3.31.3",
+    "@tiptap/extension-image": "^3.31.3",
+    "@tiptap/extension-link": "^3.31.3",
+    "@tiptap/extension-placeholder": "^3.31.3",
+    "@tiptap/extension-subscript": "^3.31.3",
+    "@tiptap/extension-superscript": "^3.31.3",
+    "@tiptap/extension-table": "^3.31.3",
+    "@tiptap/extension-table-cell": "^3.31.3",
+    "@tiptap/extension-table-header": "^3.31.3",
+    "@tiptap/extension-table-row": "^3.31.3",
+    "@tiptap/extension-text-align": "^3.31.3",
+    "@tiptap/extension-text-style": "^3.31.3",
+    "@tiptap/extension-underline": "^3.31.3",
+    "@tiptap/pm": "^3.31.3",
+    "@tiptap/react": "^3.31.3",
+    "@tiptap/starter-kit": "^3.31.3",
     "auto-launch": "^5.0.6",
     "electron-updater": "^6.6.2",
+    "react-hook-form": "^7.89.0",
+    "recharts": "^2.15.4",
     "tar": "^7.5.22"
   },
   "devDependencies": {
@@ -42,8 +66,11 @@
     "electron": "^35.5.1",
     "electron-builder": "^26.0.12",
     "next": "15.5.22",
+    "png-to-ico": "^3.0.2",
+    "png2icons": "^2.0.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "sharp": "^0.35.5",
     "typescript": "^5.8.3",
     "wait-on": "^8.0.3"
   },
@@ -61,6 +88,8 @@
       "package.json",
       "CHANGELOG.md",
       "build/icon.png",
+      "build/icon.ico",
+      "build/icon.icns",
       "!**/node_modules/next/**/*",
       "!**/node_modules/@next/**/*",
       "!**/node_modules/sharp/**/*",
@@ -86,6 +115,7 @@
       }
     ],
     "win": {
+      "icon": "build/icon.ico",
       "target": [
         {
           "target": "nsis",
@@ -100,6 +130,7 @@
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
+      "allowElevation": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "Daybook",
@@ -110,6 +141,7 @@
       "uninstallerSidebar": "build/nsis-sidebar.png"
     },
     "mac": {
+      "icon": "build/icon.icns",
       "target": [
         "dmg",
         "zip"

@@ -1,6 +1,6 @@
 /**
  * Optional Local AI runtime (node-llama-cpp + platform package + JS deps).
- * Not shipped in the base installer — downloaded into userData on demand.
+ * Not shipped in the base installer - downloaded into userData on demand.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -13,7 +13,7 @@ import { BrowserWindow } from 'electron';
 import * as tar from 'tar';
 import type { DataRoot } from '../../shared/store';
 
-/** Pinned JS API — platform binary version resolved from optionalDependencies. */
+/** Pinned JS API - platform binary version resolved from optionalDependencies. */
 export const LLM_ENGINE_VERSION = '3.19.1';
 
 export type EngineProgress = {
@@ -80,7 +80,7 @@ function markerPath(root: DataRoot): string {
 function hasRunnableEngine(dir: string, platformPkg: string): boolean {
   const llamaEntry = path.join(dir, 'node_modules', 'node-llama-cpp', 'package.json');
   const nativeEntry = path.join(dir, 'node_modules', ...platformPkg.split('/'), 'package.json');
-  // Runtime JS deps — missing these caused "Cannot find package lifecycle-utils"
+  // Runtime JS deps - missing these caused "Cannot find package lifecycle-utils"
   const lifecycle = path.join(dir, 'node_modules', 'lifecycle-utils', 'package.json');
   return fs.existsSync(llamaEntry) && fs.existsSync(nativeEntry) && fs.existsSync(lifecycle);
 }
@@ -259,7 +259,7 @@ async function resolvePackageTarball(
     if (!tarball) throw new Error(`No tarball for ${packageName}@${version}`);
     return { tarball, version: meta.version || version };
   } catch {
-    // Caret pin may not exist as an exact publish — use latest
+    // Caret pin may not exist as an exact publish - use latest
     const packument = await httpGetJson<{
       'dist-tags'?: { latest?: string };
       versions?: Record<string, { dist?: { tarball?: string } }>;
@@ -596,7 +596,7 @@ export function uninstallEngine(root: DataRoot): boolean {
 /**
  * Load node-llama-cpp from userData.
  * Package is ESM (top-level await). TypeScript CommonJS emit rewrites `import()` to
- * `require()`, which cannot load file:// ESM — use a real dynamic import instead.
+ * `require()`, which cannot load file:// ESM - use a real dynamic import instead.
  */
 export async function loadLlamaModule(root: DataRoot): Promise<LlamaModule | null> {
   const status = getEngineStatus(root);
@@ -609,7 +609,7 @@ export async function loadLlamaModule(root: DataRoot): Promise<LlamaModule | nul
 
   try {
     const specifier = pathToFileURL(entry).href;
-    // Prevent TS from downleveling to require() — must be native ESM import
+    // Prevent TS from downleveling to require() - must be native ESM import
     const dynamicImport = new Function('u', 'return import(u)') as (u: string) => Promise<LlamaModule>;
     const mod = await dynamicImport(specifier);
     cachedModule = mod;

@@ -11,7 +11,7 @@ type ToggleSwitchProps = {
   warning?: ReactNode;
 };
 
-/** Accessible switch control — no native checkbox chrome. */
+/** Accessible switch control - no native checkbox chrome. */
 export function ToggleSwitch({ id, checked, onChange, label, description, warning }: ToggleSwitchProps) {
   return (
     <div className={`settings-switch-row${checked ? ' is-on' : ''}`}>

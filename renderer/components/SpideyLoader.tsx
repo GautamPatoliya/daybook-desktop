@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import HangingSpider from './spider/HangingSpider';
 import Cobweb from './spider/Cobweb';
+import BrandMark from './BrandMark';
 
-/** Spidey-mask loader when Spider-Verse is on; compact fallback otherwise. */
+/** Brand-led page loader — polished for Default and Spider-Verse. */
 export default function SpideyLoader({ label }: { label: string }) {
   const [spidey, setSpidey] = useState(false);
 
@@ -19,31 +19,54 @@ export default function SpideyLoader({ label }: { label: string }) {
 
   if (!spidey) {
     return (
-      <div className="sv-loader sv-loader--plain">
-        <span className="sv-loader-dot" />
-        <p className="page-sub">{label}</p>
+      <div className="db-loader" role="status" aria-live="polite" aria-busy="true">
+        <div className="db-loader-glow" aria-hidden />
+        <div className="db-loader-mark" aria-hidden>
+          <svg className="db-loader-ring" viewBox="0 0 96 96" width="96" height="96">
+            <circle className="db-loader-ring-track" cx="48" cy="48" r="40" />
+            <circle className="db-loader-ring-arc" cx="48" cy="48" r="40" />
+          </svg>
+          <span className="db-loader-icon db-loader-icon--logo">
+            <BrandMark size={40} />
+          </span>
+        </div>
+        <div className="db-loader-copy">
+          <p className="db-loader-brand">Daybook</p>
+          <p className="db-loader-label">{label}</p>
+        </div>
+        <div className="db-loader-bar" aria-hidden>
+          <span className="db-loader-bar-fill" />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="sv-loader" role="status" aria-live="polite">
+    <div className="sv-loader" role="status" aria-live="polite" aria-busy="true">
       <div className="sv-loader-stage">
         <span className="sv-loader-web sv-loader-web--tl" aria-hidden>
-          <Cobweb size={120} corner="top-left" opacity={0.55} />
+          <Cobweb size={110} corner="top-left" opacity={0.5} />
         </span>
         <span className="sv-loader-web sv-loader-web--tr" aria-hidden>
-          <Cobweb size={120} corner="top-right" opacity={0.55} />
+          <Cobweb size={110} corner="top-right" opacity={0.5} />
         </span>
-        <div className="sv-loader-troupe">
-          <HangingSpider place="stage" silk="xs" size={44} kind="ink" />
-          <HangingSpider place="stage" silk="long" size={64} kind="blue" />
-          <HangingSpider place="stage" silk="xl" size={84} kind="red" />
-          <HangingSpider place="stage" silk="short" size={52} kind="gold" />
-          <HangingSpider place="stage" silk="xs" size={40} kind="hero" />
+        <span className="sv-loader-web sv-loader-web--bl" aria-hidden>
+          <Cobweb size={72} corner="bottom-left" opacity={0.28} />
+        </span>
+        <span className="sv-loader-web sv-loader-web--br" aria-hidden>
+          <Cobweb size={72} corner="bottom-right" opacity={0.28} />
+        </span>
+
+        <div className="sv-loader-hero sv-loader-hero--brand" aria-hidden>
+          <BrandMark size={88} className="sv-loader-brand-mark" />
         </div>
+
+        <p className="sv-loader-brand">DAYBOOK</p>
         <p className="sv-loader-kicker">THWIP</p>
         <p className="sv-loader-label">{label}</p>
+        <div className="sv-loader-bar" aria-hidden>
+          <span className="sv-loader-bar-fill" />
+        </div>
       </div>
     </div>
   );

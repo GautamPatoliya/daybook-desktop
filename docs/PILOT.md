@@ -1,4 +1,4 @@
-# Office pilot rollout — Work Task Tracker
+# Office pilot rollout - Work Task Tracker
 
 Guide for distributing the unsigned (then signed) desktop app to the CEO’s office team.
 
@@ -40,7 +40,7 @@ Set secrets before CI publish:
 | Windows | `CSC_LINK` (pfx base64 or file), `CSC_KEY_PASSWORD` |
 | macOS | Apple Developer ID + notarization (`APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID`) |
 
-Then push a version tag `v1.0.1` — GitHub Actions builds both OS targets and uploads to Releases. Employees update from **Updates** in the app (or get the next installer).
+Then push a version tag `v1.0.1` - GitHub Actions builds both OS targets and uploads to Releases. Employees update from **Updates** in the app (or get the next installer).
 
 ## GitHub Releases setup
 

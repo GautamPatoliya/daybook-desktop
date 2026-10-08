@@ -1,4 +1,4 @@
-/** Original 16-bit style pixel sprites — inspired web-hero motif, not Marvel assets. */
+/** Original 16-bit style pixel sprites - inspired web-hero motif, not Marvel assets. */
 
 export type PixelCell = { x: number; y: number; fill: string; w?: number; h?: number };
 
@@ -182,7 +182,7 @@ export function spiderSprite(ox = 0, oy = 0, kind: SpiderKind = 'red'): PixelCel
   return parseGrid(SPIDER_GRIDS[kind], SPIDER_MAP, ox, oy);
 }
 
-/** 16×16 shooter pose — add-task thwip burst */
+/** 16×16 shooter pose - add-task thwip burst */
 export function thwipSprite(): PixelCell[] {
   return parseGrid(
     [
@@ -244,7 +244,7 @@ export function heroMaskSprite(ox = 0, oy = 0): PixelCell[] {
   );
 }
 
-/** Loading-screen portrait — 32×32, hard outline, lenses, web lines. */
+/** Loading-screen portrait - 32×32, hard outline, lenses, web lines. */
 export function heroMask32(ox = 0, oy = 0, blink = false): PixelCell[] {
   const cells = parseGrid(
     [
@@ -293,7 +293,7 @@ export function heroMask32(ox = 0, oy = 0, blink = false): PixelCell[] {
   });
 }
 
-/** Swinging hero — body on diagonal web (fits 48×48) */
+/** Swinging hero - body on diagonal web (fits 48×48) */
 export function sceneSwing(): PixelCell[] {
   const out: PixelCell[] = [];
   // diagonal web
@@ -301,7 +301,7 @@ export function sceneSwing(): PixelCell[] {
     out.push(px(8 + i, 4 + Math.floor(i * 0.55), C.web, 1, 1));
     if (i % 3 === 0) out.push(px(8 + i, 5 + Math.floor(i * 0.55), C.webDim));
   }
-  // body — red/blue suit simplified
+  // body - red/blue suit simplified
   const body: Array<[number, number, string]> = [
     [28, 18, C.red], [29, 18, C.red], [30, 18, C.red],
     [27, 19, C.redHi], [28, 19, C.white], [29, 19, C.white], [30, 19, C.redHi], [31, 19, C.red],
@@ -319,7 +319,7 @@ export function sceneSwing(): PixelCell[] {
   return out;
 }
 
-/** Crouch landing pose — done column */
+/** Crouch landing pose - done column */
 export function sceneLand(): PixelCell[] {
   const out: PixelCell[] = [];
   // rooftop ledge
@@ -344,7 +344,7 @@ export function sceneLand(): PixelCell[] {
   return out;
 }
 
-/** Backlog — spider descending a web */
+/** Backlog - spider descending a web */
 export function sceneHang(): PixelCell[] {
   const out: PixelCell[] = [];
   out.push(...webStrand(24, 2, 30, 2));

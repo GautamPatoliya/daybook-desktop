@@ -1,7 +1,7 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 
-// Subtle pixel skyline — ambient background only, not a focal point.
+// Subtle pixel skyline - ambient background only, not a focal point.
 // Matches Spidey Tracker: dark map zone at bottom, no webs or blinking.
 
 const SHADES = ['#040810', '#060c18', '#070e1e'];

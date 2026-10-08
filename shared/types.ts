@@ -4,6 +4,8 @@ export type TaskPriority = 'low' | 'medium' | 'high';
 export interface SubItem {
   text: string;
   enhanced?: string;
+  /** Nesting depth for bullet lists (0 = top-level detail). */
+  depth?: number;
 }
 
 export interface Task {
@@ -15,13 +17,15 @@ export interface Task {
   priority: TaskPriority;
   dueDate?: string;
   subItems: SubItem[];
+  /** TipTap HTML for task details. Empty string if none. */
+  detailsHtml?: string;
   titleEnhanced?: string;
   createdAt: string;
   updatedAt: string;
   carriedFrom?: string;
   /** Source task id when this row was copied by carry-forward */
   sourceTaskId?: string;
-  /** Set on source task when copied to a later day — prevents re-carry */
+  /** Set on source task when copied to a later day - prevents re-carry */
   carriedAwayAt?: string;
 }
 
@@ -46,6 +50,8 @@ export interface AppSettings {
   defaultProject: string;
   emailDefaultProject: 'master' | string;
   categories: string[];
+  /** Must exist in `categories`. Used as New Task default. */
+  defaultCategory: string;
   timezone: string;
   workingDays: number[];
   popupHours: { hourlyStart: number; hourlyEnd: number };
@@ -53,11 +59,22 @@ export interface AppSettings {
   eodMinute: number;
   reminderIntervalMinutes: number;
   emailTo: string;
+  /** Comma-separated Cc recipients for daily email drafts. */
+  emailCc: string;
+  /** Recent To/Cc addresses for chip autocomplete (newest first, capped). */
+  emailRecipientHistory: string[];
+  /**
+   * Feature highlight clocks: id → ISO timestamp when first eligible launch started.
+   * Used for time-boxed “New” badges (see shared/featureHighlights.ts).
+   */
+  featureHighlightStarts: Record<string, string>;
   gmailComposeUrl: string;
   aiEnhanceEnabled: boolean;
   selectedModelId: string | null;
   /** When false (default), backlog (`none`) tasks are omitted from EOD email drafts. */
   includeBacklogInEmail: boolean;
+  /** Dates (YYYY-MM-DD) user marked EOD email as sent. */
+  emailSentDates?: string[];
   autostart: boolean;
   onboardingComplete: boolean;
   theme: string;
@@ -77,10 +94,16 @@ export interface DayPayload {
     projectMeta: ProjectMeta[];
     defaultProject: string;
     categories: string[];
+    defaultCategory: string;
     timezone: string;
     emailTo: string;
+    emailCc: string;
   };
-  carry?: { carried: number; from: string | null; restored?: number };
+  carry?: {
+    carried: number;
+    from: string | null;
+    restored?: number;
+  };
 }
 
 export interface EmailDraft {
@@ -88,7 +111,7 @@ export interface EmailDraft {
   body: string;
   htmlBody: string;
   gmailUrl: string;
-  /** Present when draft was built via Polish — llm | rule | none */
+  /** Present when draft was built via Polish - llm | rule | none */
   enhanceMode?: 'none' | 'rule' | 'llm';
 }
 
@@ -102,6 +125,8 @@ export interface ModelCatalogItem {
   description: string;
   recommended?: boolean;
 }
+
+export type AnalyticsRange = 'week' | '7' | '30' | '90';
 
 export interface AnalyticsSummary {
   daysWithData: number;
@@ -124,6 +149,10 @@ export interface AnalyticsSummary {
     wip: number;
     none: number;
   }>;
+  /** Inclusive range used for this summary. */
+  range: AnalyticsRange;
+  rangeFrom: string;
+  rangeTo: string;
 }
 
 export const PROJECT_COLORS = [
@@ -175,6 +204,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
     'Support / Help',
     'Other',
   ],
+  defaultCategory: 'Other',
   timezone: 'Asia/Kolkata',
   workingDays: [1, 2, 3, 4, 5],
   popupHours: { hourlyStart: 8, hourlyEnd: 18 },
@@ -182,10 +212,14 @@ export const DEFAULT_SETTINGS: AppSettings = {
   eodMinute: 45,
   reminderIntervalMinutes: 60,
   emailTo: '',
+  emailCc: '',
+  emailRecipientHistory: [],
+  featureHighlightStarts: {},
   gmailComposeUrl: 'https://mail.google.com/mail/?view=cm&fs=1',
   aiEnhanceEnabled: false,
   selectedModelId: null,
   includeBacklogInEmail: false,
+  emailSentDates: [],
   autostart: true,
   onboardingComplete: false,
   theme: 'default',
@@ -199,7 +233,7 @@ export const MODEL_CATALOG: ModelCatalogItem[] = [
     url: 'https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/qwen2.5-1.5b-instruct-q4_k_m.gguf',
     sizeBytes: 1_000_000_000,
     ramHintGb: 3,
-    description: 'Best starting point — quick on most office PCs.',
+    description: 'Best starting point - quick on most office PCs.',
     recommended: true,
   },
   {
@@ -209,7 +243,7 @@ export const MODEL_CATALOG: ModelCatalogItem[] = [
     url: 'https://huggingface.co/bartowski/Llama-3.2-1B-Instruct-GGUF/resolve/main/Llama-3.2-1B-Instruct-Q4_K_M.gguf',
     sizeBytes: 800_000_000,
     ramHintGb: 3,
-    description: 'Smallest download — light polish for everyday notes.',
+    description: 'Smallest download - light polish for everyday notes.',
   },
   {
     id: 'qwen25-3b-instruct-q4',
@@ -227,7 +261,7 @@ export const MODEL_CATALOG: ModelCatalogItem[] = [
     url: 'https://huggingface.co/microsoft/Phi-3-mini-4k-instruct-gguf/resolve/main/Phi-3-mini-4k-instruct-q4.gguf',
     sizeBytes: 2_300_000_000,
     ramHintGb: 6,
-    description: 'Strong for formal email polish — needs more memory.',
+    description: 'Strong for formal email polish - needs more memory.',
   },
   {
     id: 'gemma2-2b-it-q4',

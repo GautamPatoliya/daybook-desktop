@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Icon, I } from "../lib/icons";
 import {
   DndContext,
@@ -12,6 +13,7 @@ import {
   useDroppable,
   useDraggable,
   type DragEndEvent,
+  type DragStartEvent,
 } from "@dnd-kit/core";
 import Link from "next/link";
 import { api } from "../lib/api";
@@ -23,11 +25,29 @@ import {
   formatTime12h,
 } from "../lib/format";
 import { Select } from "../components/Select";
+import { EmailChipInput } from "../components/EmailChipInput";
+import { useDialog } from "../components/DialogProvider";
 import { DatePicker } from "../components/DatePicker";
 import PixelEmptyState from "../components/PixelEmptyState";
 import SpideyLoader from "../components/SpideyLoader";
 import BoardWebDecor from "../components/spider/BoardWebDecor";
-import { handleBulletPaste, MAX_BULLET_ROWS, PASTE_BULLET_LIMIT } from "../lib/bulletPaste";
+import { TaskDetailsEditor } from "../components/TaskDetailsEditor";
+import { Input } from "../components/ui/input";
+import Scrollbar from "../components/Scrollbar";
+import { consumeBoardAction } from "../components/GlobalActionRouter";
+import {
+  deriveSubItemsFromHtml,
+  loadDetailsHtml,
+  sanitizeDetailsHtml,
+} from "../lib/detailsHtml";
+import {
+  mergeSuggestionPool,
+  upsertEmailHistory,
+} from "../lib/emailRecipients";
+import {
+  buildGmailComposeUrl,
+  renderEmailMarkdownPreview,
+} from "../../shared/email";
 import type {
   DayPayload,
   EmailDraft,
@@ -61,16 +81,34 @@ const STATUS_META: Record<
   done: { label: "Done", icon: I.check, accent: "var(--status-done)" },
 };
 
+/** Must match DragOverlay dropAnimation.duration - keep overlay mounted until it finishes. */
+const DRAG_DROP_MS = 220;
+
+function taskStats(tasks: Task[]) {
+  return {
+    total: tasks.length,
+    done: tasks.filter((t) => t.status === "done").length,
+    wip: tasks.filter((t) => t.status === "wip").length,
+    none: tasks.filter((t) => t.status === "none").length,
+  };
+}
+
 function TaskCard({
   task,
   projectMeta,
   onOpen,
   overlay,
+  dragSize,
+  settling,
 }: {
   task: Task;
   projectMeta?: ProjectMeta[];
   onOpen: (task: Task) => void;
   overlay?: boolean;
+  /** Measured source size - keeps placeholder/overlay as a true clone. */
+  dragSize?: { width: number; height: number } | null;
+  /** Hide list instance while drop animation finishes (avoids double-card flicker). */
+  settling?: boolean;
 }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: task.id,
@@ -82,28 +120,47 @@ function TaskCard({
   const meta = STATUS_META[task.status];
   const subs = task.subItems.slice(0, 3);
 
+  /* Keep layout stable: show a slot where the card left, not a broken ghost. */
+  if ((isDragging || settling) && !overlay) {
+    return (
+      <div
+        ref={isDragging ? setNodeRef : undefined}
+        className={`card-drag-placeholder${settling ? " is-settling" : ""}`}
+        aria-hidden
+        style={
+          {
+            "--card-accent": meta.accent,
+            ...(dragSize
+              ? { height: dragSize.height, minHeight: dragSize.height }
+              : null),
+          } as CSSProperties
+        }
+      />
+    );
+  }
+
   return (
     <article
       ref={overlay ? undefined : setNodeRef}
-      className={`card status-${task.status}${isDragging && !overlay ? " dragging" : ""}${overlay ? " overlay" : ""}`}
+      data-task-id={overlay ? undefined : task.id}
+      className={`card status-${task.status}${overlay ? " card--overlay" : ""}`}
       style={{ "--card-accent": meta.accent } as CSSProperties}
     >
       <div className="card-top">
-        {!overlay && (
-          <button
-            type="button"
-            className="card-grip"
-            aria-label="Drag task"
-            {...listeners}
-            {...attributes}
-          >
-            <Icon icon={I.grip} width={16} />
-          </button>
-        )}
+        <button
+          type="button"
+          className={`card-grip${overlay ? " is-dragging" : ""}`}
+          aria-label="Drag task"
+          tabIndex={overlay ? -1 : undefined}
+          {...(overlay ? {} : { ...listeners, ...attributes })}
+        >
+          <Icon icon={I.grip} width={16} />
+        </button>
         <button
           type="button"
           className="card-body-btn"
           onClick={() => onOpen(task)}
+          tabIndex={overlay ? -1 : undefined}
         >
           <h3 className="card-title">{task.title}</h3>
           <div className="card-meta">
@@ -144,7 +201,7 @@ function TaskCard({
           <Icon icon={I.clock} width={13} />
           {formatTime12h(task.updatedAt)}
         </span>
-        {task.carriedFrom && task.status !== 'done' ? (
+        {task.carriedFrom && task.status !== "done" ? (
           <span className="carried">
             <Icon icon={I.carry} width={13} />
             from {formatShortDate(task.carriedFrom)}
@@ -162,17 +219,26 @@ function Column({
   tasks,
   projectMeta,
   onOpen,
+  activeId,
+  settlingId,
+  dragSize,
 }: {
   status: TaskStatus;
   tasks: Task[];
   projectMeta?: ProjectMeta[];
   onOpen: (t: Task) => void;
+  activeId?: string | null;
+  settlingId?: string | null;
+  dragSize?: { width: number; height: number } | null;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: `col-${status}` });
   const meta = STATUS_META[status];
 
   return (
-    <section className={`column col-${status}`} data-sv-col={status}>
+    <section
+      className={`column col-${status}${isOver ? " is-drop-target" : ""}`}
+      data-sv-col={status}
+    >
       <header className="column-header">
         <div className="column-header-inner">
           <span className="column-icon" style={{ color: meta.accent }}>
@@ -184,25 +250,40 @@ function Column({
       </header>
       <div
         ref={setNodeRef}
-        className={`column-body${isOver ? " drag-over" : ""}`}
+        className={`column-scroll-host${isOver ? " drag-over" : ""}${tasks.length === 0 ? " is-empty" : ""}`}
       >
+        {/* Empty columns fill the host directly - Radix scroll % height cannot stretch reliably. */}
         {tasks.length === 0 ? (
-          <div className="empty-container">
+          <div className={`empty-container${isOver ? " is-drop-ready" : ""}`}>
             <div className="empty empty-default">
               <Icon icon={I.empty} width={28} className="empty-icon" />
-              <p>Drop tasks here</p>
+              <p>{isOver ? "Release to drop" : "Drop tasks here"}</p>
             </div>
             <PixelEmptyState status={status} />
           </div>
         ) : (
-          tasks.map((t) => (
-            <TaskCard
-              key={t.id}
-              task={t}
-              projectMeta={projectMeta}
-              onOpen={onOpen}
-            />
-          ))
+          <Scrollbar orientation="vertical" autoHide className="column-body-scroll">
+            <div className="column-body">
+              {tasks.map((t) => (
+                <TaskCard
+                  key={t.id}
+                  task={t}
+                  projectMeta={projectMeta}
+                  onOpen={onOpen}
+                  dragSize={
+                    activeId === t.id || settlingId === t.id ? dragSize : null
+                  }
+                  settling={settlingId === t.id}
+                />
+              ))}
+              {isOver ? (
+                <div className="column-drop-slot" aria-hidden>
+                  <Icon icon={I.plus} width={14} />
+                  <span>Drop here</span>
+                </div>
+              ) : null}
+            </div>
+          </Scrollbar>
         )}
       </div>
     </section>
@@ -210,6 +291,7 @@ function Column({
 }
 
 export default function BoardPage() {
+  const { confirm } = useDialog();
   const [day, setDay] = useState<DayPayload | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [projectFilter, setProjectFilter] = useState<string | "all">("all");
@@ -218,11 +300,19 @@ export default function BoardPage() {
   const [mailOpen, setMailOpen] = useState(false);
   const [draft, setDraft] = useState<EmailDraft | null>(null);
   const [to, setTo] = useState("");
+  const [cc, setCc] = useState("");
+  const [recipientHistory, setRecipientHistory] = useState<string[]>([]);
   const [toast, setToast] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
+  /** Snapshot kept through drop animation (activeId clears earlier). */
+  const [dragOverlayTask, setDragOverlayTask] = useState<Task | null>(null);
+  const [dragSize, setDragSize] = useState<{ width: number; height: number } | null>(
+    null,
+  );
+  const dragClearTimer = useRef<number | null>(null);
   const [taskTitle, setTaskTitle] = useState("");
-  const [composerSubItems, setComposerSubItems] = useState<string[]>([""]);
-  const [drawerSubItems, setDrawerSubItems] = useState<string[]>([]);
+  const [composerDetailsHtml, setComposerDetailsHtml] = useState("");
+  const [drawerDetailsHtml, setDrawerDetailsHtml] = useState("");
   const [project, setProject] = useState("");
   const [category, setCategory] = useState("");
   const [status, setStatus] = useState<TaskStatus>("wip");
@@ -237,43 +327,46 @@ export default function BoardPage() {
   const [projectBusy, setProjectBusy] = useState(false);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const addBtnRef = useRef<HTMLButtonElement>(null);
+  const defaultProjectRef = useRef("General");
+  const defaultCategoryRef = useRef("Other");
+  /** Live composer snapshot - reminders must not wipe an in-progress draft. */
+  const composerSnapshotRef = useRef({
+    open: false,
+    title: "",
+    detailsHtml: "",
+  });
+
+  const resetComposerFields = useCallback(() => {
+    setTaskTitle("");
+    setComposerDetailsHtml("");
+    setProject(defaultProjectRef.current);
+    setCategory(defaultCategoryRef.current);
+    setStatus("wip");
+    setPriority("medium");
+  }, []);
 
   const showToast = useCallback((msg: string) => {
     setToast(msg);
     window.setTimeout(() => setToast(null), 2800);
   }, []);
 
-  const onBulletPaste = useCallback(
-    (
-      e: React.ClipboardEvent<HTMLInputElement>,
-      items: string[],
-      index: number,
-      setItems: (items: string[]) => void,
-      idPrefix: string,
-    ) => {
-      const text = e.clipboardData.getData("text/plain");
-      if (!text) return;
-      const result = handleBulletPaste(items, index, text);
-      if (result.kind === "default") return;
-      e.preventDefault();
-      setItems(result.items);
-      if (result.truncated) {
-        showToast(
-          `Added ${PASTE_BULLET_LIMIT} bullet points (paste limit — split large lists)`,
-        );
-      } else if (result.rowCapHit) {
-        showToast(`Bullet list capped at ${MAX_BULLET_ROWS} lines`);
-      } else if (result.lineCount > 1) {
-        showToast(`Added ${result.lineCount} bullet points`);
-      }
-      window.setTimeout(() => {
-        document.getElementById(`${idPrefix}-${result.focusIndex}`)?.focus();
-      }, 10);
-    },
-    [showToast],
-  );
-
   const reminderLock = useRef(false);
+
+  useEffect(() => {
+    composerSnapshotRef.current = {
+      open: composerOpen,
+      title: taskTitle,
+      detailsHtml: composerDetailsHtml,
+    };
+  }, [composerOpen, taskTitle, composerDetailsHtml]);
+
+  useEffect(() => {
+    return () => {
+      if (dragClearTimer.current != null) {
+        window.clearTimeout(dragClearTimer.current);
+      }
+    };
+  }, []);
 
   const load = useCallback(async (date?: string) => {
     try {
@@ -294,8 +387,12 @@ export default function BoardPage() {
       const payload = await api.initDay(date || today);
       setDay(payload);
       setTo(payload.config.emailTo || "");
-      setProject((prev) => prev || payload.config.defaultProject);
-      setCategory((prev) => prev || payload.config.categories[0] || "Other");
+      setCc(payload.config.emailCc || "");
+      setRecipientHistory(settings.emailRecipientHistory || []);
+      defaultProjectRef.current = payload.config.defaultProject || payload.config.projects[0] || "General";
+      defaultCategoryRef.current = payload.config.defaultCategory || payload.config.categories[0] || "Other";
+      setProject((prev) => prev || defaultProjectRef.current);
+      setCategory((prev) => prev || defaultCategoryRef.current);
     } catch (err) {
       setError((err as Error).message);
     }
@@ -308,30 +405,47 @@ export default function BoardPage() {
       if (!mode || cancelled || reminderLock.current) return;
       reminderLock.current = true;
       try {
-        if (mode === 'hourly') {
-          setComposerOpen(true);
-          setTaskTitle('');
-          setComposerSubItems(['']);
+        if (mode === "hourly") {
+          const snap = composerSnapshotRef.current;
+          const dirty =
+            snap.open &&
+            (snap.title.trim().length > 0 ||
+              sanitizeDetailsHtml(snap.detailsHtml).replace(/<[^>]*>/g, "").trim()
+                .length > 0);
+          if (dirty) {
+            // Keep the user's draft; only surface that a check-in fired.
+            showToast("Hourly reminder - finish your draft, then save");
+            return;
+          }
+          if (!snap.open) {
+            resetComposerFields();
+            setComposerOpen(true);
+          } else {
+            // Empty composer already open - leave fields alone.
+            setComposerOpen(true);
+          }
           return;
         }
-        if (mode === 'eod') {
+        if (mode === "eod") {
           setDraft(null);
           setMailBusy(true);
           setMailOpen(true);
           try {
             const settings = await api.getSettings();
-            const parts = new Intl.DateTimeFormat('en-CA', {
+            const parts = new Intl.DateTimeFormat("en-CA", {
               timeZone: settings.timezone,
-              year: 'numeric',
-              month: '2-digit',
-              day: '2-digit',
+              year: "numeric",
+              month: "2-digit",
+              day: "2-digit",
             }).formatToParts(new Date());
-            const g = (t: string) => parts.find((p) => p.type === t)?.value || '00';
-            const today = `${g('year')}-${g('month')}-${g('day')}`;
+            const g = (t: string) => parts.find((p) => p.type === t)?.value || "00";
+            const today = `${g("year")}-${g("month")}-${g("day")}`;
             const payload = await api.initDay(today);
             if (cancelled) return;
             setDay(payload);
-            setTo(payload.config.emailTo || '');
+            setTo(payload.config.emailTo || "");
+            setCc(payload.config.emailCc || "");
+            setRecipientHistory(settings.emailRecipientHistory || []);
             const d = await api.emailDraft(today, false);
             if (cancelled) return;
             setDraft(d);
@@ -351,7 +465,7 @@ export default function BoardPage() {
     void load();
     void api.consumeReminder().then((r) => applyReminder(r?.mode));
 
-    const off = window.wtt?.on('reminder:open', (payload) => {
+    const off = window.wtt?.on("reminder:open", (payload) => {
       const mode = (payload as { mode?: string })?.mode;
       void applyReminder(mode);
     });
@@ -359,16 +473,61 @@ export default function BoardPage() {
       cancelled = true;
       off?.();
     };
-  }, [load]);
+  }, [load, showToast, resetComposerFields]);
 
   useEffect(() => {
     if (editing) {
-      const texts = editing.subItems.map((s) => s.text);
-      setDrawerSubItems(texts.length ? texts : [""]);
+      setDrawerDetailsHtml(loadDetailsHtml(editing));
     } else {
-      setDrawerSubItems([]);
+      setDrawerDetailsHtml("");
     }
   }, [editing?.id]);
+
+  const openComposer = useCallback(() => {
+    resetComposerFields();
+    setComposerOpen(true);
+  }, [resetComposerFields]);
+
+  useEffect(() => {
+    function handleBoardAction(action: string) {
+      if (!day) return;
+
+      if (action === 'new-task') {
+        openComposer();
+        return;
+      }
+      if (action === 'eod') {
+        void openMail(false);
+        return;
+      }
+      if (action === 'open-yesterday') {
+        void (async () => {
+          try {
+            const dates = await api.listDates();
+            const prev = dates.filter((d) => d < day.date).sort().pop();
+            if (prev) {
+              await load(prev);
+              await openMail(false);
+            } else showToast('No previous day found');
+          } catch (err) {
+            showToast((err as Error).message);
+          }
+        })();
+      }
+    }
+
+    function runPending() {
+      const pending = consumeBoardAction();
+      if (pending?.action) handleBoardAction(pending.action);
+    }
+
+    runPending();
+    const onPending = () => runPending();
+    window.addEventListener('daybook:pending-action', onPending);
+    return () => {
+      window.removeEventListener('daybook:pending-action', onPending);
+    };
+  }, [day, openComposer, showToast, load]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -387,9 +546,54 @@ export default function BoardPage() {
     return map;
   }, [filtered]);
 
-  async function onDragEnd(event: DragEndEvent) {
+  function clearDragState(immediate = true) {
+    if (dragClearTimer.current != null) {
+      window.clearTimeout(dragClearTimer.current);
+      dragClearTimer.current = null;
+    }
     setActiveId(null);
-    if (!day || !event.over) return;
+    if (immediate) {
+      setDragOverlayTask(null);
+      setDragSize(null);
+      return;
+    }
+    // Let DragOverlay finish its drop animation before unmounting the clone.
+    dragClearTimer.current = window.setTimeout(() => {
+      setDragOverlayTask(null);
+      setDragSize(null);
+      dragClearTimer.current = null;
+    }, DRAG_DROP_MS);
+  }
+
+  function onDragStart(event: DragStartEvent) {
+    if (dragClearTimer.current != null) {
+      window.clearTimeout(dragClearTimer.current);
+      dragClearTimer.current = null;
+    }
+    const id = String(event.active.id);
+    setActiveId(id);
+    const task = day?.tasks.find((t) => t.id === id) || null;
+    setDragOverlayTask(task);
+    const initial = event.active.rect.current.initial;
+    if (initial?.width && initial?.height) {
+      setDragSize({
+        width: Math.round(initial.width),
+        height: Math.round(initial.height),
+      });
+      return;
+    }
+    const el = document.querySelector(`[data-task-id="${id.replace(/"/g, "")}"]`);
+    if (el instanceof HTMLElement) {
+      const r = el.getBoundingClientRect();
+      setDragSize({ width: Math.round(r.width), height: Math.round(r.height) });
+    }
+  }
+
+  async function onDragEnd(event: DragEndEvent) {
+    if (!day || !event.over) {
+      clearDragState(true);
+      return;
+    }
     const taskId = String(event.active.id);
     const overId = String(event.over.id);
     let next: TaskStatus | null = null;
@@ -400,7 +604,21 @@ export default function BoardPage() {
       if (overTask) next = overTask.status;
     }
     const task = day.tasks.find((t) => t.id === taskId);
-    if (!next || !task || task.status === next) return;
+    if (!next || !task || task.status === next) {
+      clearDragState(true);
+      return;
+    }
+
+    const previous = day;
+    const optimisticTasks = day.tasks.map((t) =>
+      t.id === taskId
+        ? { ...t, status: next!, updatedAt: new Date().toISOString() }
+        : t,
+    );
+    // Move the card in the board first so the drop animation lands on the real target.
+    setDay({ ...day, tasks: optimisticTasks, stats: taskStats(optimisticTasks) });
+    clearDragState(false);
+
     try {
       const payload = await api.updateTask(day.date, taskId, { status: next });
       setDay(payload);
@@ -408,24 +626,9 @@ export default function BoardPage() {
         emitSpiderFx("land", { toSelector: ".col-done .column-header" });
       }
     } catch (err) {
+      setDay(previous);
       showToast((err as Error).message);
     }
-  }
-
-  function parse(raw: string) {
-    const lines = raw
-      .split(/\r?\n/)
-      .map((l) => l.trimEnd())
-      .filter((l) => /\S/.test(l));
-    let title = "";
-    const subItems: string[] = [];
-    for (const line of lines) {
-      const m = line.match(/^\s*[-*•]\s+(.+)$/);
-      if (m) subItems.push(m[1].trim());
-      else if (!title) title = line.trim();
-      else subItems.push(line.trim());
-    }
-    return { title, subItems };
   }
 
   async function createTask() {
@@ -434,7 +637,8 @@ export default function BoardPage() {
     if (!title) return;
     setBusy(true);
     try {
-      const subItems = composerSubItems.map((s) => s.trim()).filter(Boolean);
+      const detailsHtml = sanitizeDetailsHtml(composerDetailsHtml);
+      const subItems = deriveSubItemsFromHtml(detailsHtml);
 
       const payload = await api.createTask(day.date, {
         title,
@@ -442,20 +646,21 @@ export default function BoardPage() {
         category,
         status,
         priority,
+        detailsHtml,
         subItems,
       });
       const fromEl = addBtnRef.current;
+      const createdStatus = status;
       setDay(payload);
-      setTaskTitle("");
-      setComposerSubItems([""]);
+      resetComposerFields();
       setComposerOpen(false);
       showToast("Task added");
-      if (status === "done") {
+      if (createdStatus === "done") {
         emitSpiderFx("land", { fromEl, toSelector: ".col-done .column-header" });
       } else {
         emitSpiderFx("thwip", {
           fromEl,
-          toSelector: `.col-${status} .column-body`,
+          toSelector: `.col-${createdStatus} .column-scroll-host`,
         });
       }
     } catch (err) {
@@ -469,10 +674,8 @@ export default function BoardPage() {
     if (!day || !editing) return;
     setBusy(true);
     try {
-      const parsedSubItems = drawerSubItems
-        .map((s) => s.trim())
-        .filter(Boolean)
-        .map((text) => ({ text }));
+      const detailsHtml = sanitizeDetailsHtml(drawerDetailsHtml);
+      const subItems = deriveSubItemsFromHtml(detailsHtml, editing.subItems);
 
       const prevStatus = day.tasks.find((t) => t.id === editing.id)?.status;
       const payload = await api.updateTask(day.date, editing.id, {
@@ -482,7 +685,8 @@ export default function BoardPage() {
         status: editing.status,
         priority: editing.priority || "medium",
         dueDate: null,
-        subItems: parsedSubItems,
+        detailsHtml,
+        subItems,
       });
       const landed = editing.status === "done" && prevStatus !== "done";
       setDay(payload);
@@ -503,6 +707,13 @@ export default function BoardPage() {
     setMailBusy(true);
     setMailOpen(true);
     try {
+      // Only seed recipients when opening fresh — Polish must not wipe To/Cc edits
+      if (!enhance) {
+        const settings = await api.getSettings();
+        setTo(settings.emailTo || "");
+        setCc(settings.emailCc || "");
+        setRecipientHistory(settings.emailRecipientHistory || []);
+      }
       const d = await api.emailDraft(day.date, enhance);
       setDraft(d);
       if (enhance) {
@@ -514,6 +725,17 @@ export default function BoardPage() {
     } finally {
       setMailBusy(false);
     }
+  }
+
+  const recipientSuggestions = useMemo(
+    () => mergeSuggestionPool(recipientHistory, to, cc),
+    [recipientHistory, to, cc],
+  );
+
+  function commitRecipient(email: string) {
+    const next = upsertEmailHistory(recipientHistory, email);
+    setRecipientHistory(next);
+    void api.saveSettings({ emailRecipientHistory: next });
   }
 
   async function createProjectInline() {
@@ -565,118 +787,143 @@ export default function BoardPage() {
     return (
       <div className="page">
         <SpideyLoader label="Loading your day…" />
-        {mailOpen && (
-          <>
-            <div className="overlay" />
-            <aside className="drawer" role="dialog" aria-label="Daily email draft">
-              <header className="drawer-header">
-                <strong>Daily email draft</strong>
-              </header>
-              <div className="drawer-body">
-                <p className="page-sub">Preparing your draft…</p>
-              </div>
-            </aside>
-          </>
-        )}
+        {mailOpen &&
+          typeof document !== "undefined" &&
+          createPortal(
+            <>
+              <div className="overlay mail-overlay" />
+              <aside className="drawer mail-drawer" role="dialog" aria-label="Daily email draft">
+                <header className="drawer-header">
+                  <strong>Daily Email Draft</strong>
+                </header>
+                <div className="drawer-body">
+                  <Scrollbar orientation="vertical" autoHide className="drawer-body-scroll">
+                    <div className="drawer-body-pad">
+                      <p className="page-sub">Preparing your draft…</p>
+                    </div>
+                  </Scrollbar>
+                </div>
+              </aside>
+            </>,
+            document.body,
+          )}
       </div>
     );
   }
 
-  const activeTask = day.tasks.find((t) => t.id === activeId) || null;
   const meta = day.config.projectMeta;
+  const settlingId =
+    dragOverlayTask && !activeId ? dragOverlayTask.id : null;
 
   return (
-    <>
+    <div className="board-shell">
       <div className="filters">
-        <div className="date-nav">
-          <button
-            type="button"
-            className="icon-btn"
-            aria-label="Previous day"
-            onClick={() => void load(addDays(day.date, -1))}
-          >
-            <Icon icon={I.chevronLeft} width={18} />
-          </button>
-          <div className="date-picker-anchor">
+        <div className="filters-left">
+          <div className="date-nav">
             <button
               type="button"
-              className="date-pill"
-              onClick={() => setDatePickerOpen((o) => !o)}
-              aria-expanded={datePickerOpen}
+              className="icon-btn"
+              aria-label="Previous day"
+              onClick={() => void load(addDays(day.date, -1))}
             >
-              <Icon icon={I.calendar} width={16} />
-              <span>{formatDisplayDate(day.date)}</span>
+              <Icon icon={I.chevronLeft} width={18} />
             </button>
-            {datePickerOpen && (
-              <DatePicker
-                value={day.date}
-                today={day.today}
-                onChange={(iso) => {
-                  void load(iso);
-                  setDatePickerOpen(false);
-                }}
-                onClose={() => setDatePickerOpen(false)}
-              />
+            <div className="date-picker-anchor">
+              <button
+                type="button"
+                className="date-pill"
+                onClick={() => setDatePickerOpen((o) => !o)}
+                aria-expanded={datePickerOpen}
+              >
+                <Icon icon={I.calendar} width={16} />
+                <span>{formatDisplayDate(day.date)}</span>
+              </button>
+              {datePickerOpen && (
+                <DatePicker
+                  value={day.date}
+                  today={day.today}
+                  onChange={(iso) => {
+                    void load(iso);
+                    setDatePickerOpen(false);
+                  }}
+                  onClose={() => setDatePickerOpen(false)}
+                />
+              )}
+            </div>
+            <button
+              type="button"
+              className="icon-btn"
+              aria-label="Next day"
+              disabled={day.date === day.today}
+              onClick={() => void load(addDays(day.date, 1))}
+              style={{
+                opacity: day.date === day.today ? 0.25 : 1,
+                cursor: day.date === day.today ? "not-allowed" : "pointer",
+              }}
+            >
+              <Icon icon={I.chevronRight} width={18} />
+            </button>
+            {day.date !== day.today && (
+              <button
+                type="button"
+                className="btn btn-today"
+                onClick={() => void load(day.today)}
+              >
+                <Icon icon={I.today} width={14} />
+                Today
+              </button>
             )}
           </div>
+          <span className="stat-pill">
+            <strong>{plural(day.stats.total, 'task')}</strong>
+          </span>
+          <span className="stat-pill wip">
+            <strong>{day.stats.wip}</strong> in progress
+          </span>
+          <span className="stat-pill done">
+            <strong>{day.stats.done}</strong> done
+          </span>
+        </div>
+
+        <div className="filters-projects">
           <button
             type="button"
-            className="icon-btn"
-            aria-label="Next day"
-            disabled={day.date === day.today}
-            onClick={() => void load(addDays(day.date, 1))}
-            style={{
-              opacity: day.date === day.today ? 0.25 : 1,
-              cursor: day.date === day.today ? "not-allowed" : "pointer",
-            }}
+            className={`chip filters-projects-pin${projectFilter === "all" ? " active" : ""}`}
+            onClick={() => setProjectFilter("all")}
           >
-            <Icon icon={I.chevronRight} width={18} />
+            <span className="chip-label">All projects</span>
           </button>
-          {day.date !== day.today && (
-            <button
-              type="button"
-              className="btn btn-today"
-              onClick={() => void load(day.today)}
-            >
-              <Icon icon={I.today} width={14} />
-              Today
-            </button>
-          )}
+
+          <Scrollbar
+            orientation="horizontal"
+            autoHide
+            className="filters-projects-scroll"
+            aria-label="Project filters"
+          >
+            {day.config.projects.map((p) => {
+              const color = projectColor(meta, p);
+              return (
+                <button
+                  key={p}
+                  type="button"
+                  className={`chip${projectFilter === p ? " active" : ""}`}
+                  onClick={() => setProjectFilter(p)}
+                  title={p}
+                >
+                  <span className="dot" style={{ background: color }} />
+                  <span className="chip-label">{p}</span>
+                </button>
+              );
+            })}
+          </Scrollbar>
+
+          <Link href="/projects/" className="chip filters-projects-pin">
+            <Icon icon={I.plus} width={12} />
+            <span className="chip-label">Manage projects</span>
+          </Link>
         </div>
-        <span className="stat-pill">
-          <strong>{plural(day.stats.total, 'task')}</strong>
-        </span>{" "}
-        <span className="stat-pill wip">
-          <strong>{day.stats.wip}</strong> in progress
-        </span>
-        <span className="stat-pill done">
-          <strong>{day.stats.done}</strong> done
-        </span>
-        <button
-          type="button"
-          className={`chip${projectFilter === "all" ? " active" : ""}`}
-          onClick={() => setProjectFilter("all")}
-        >
-          All projects
-        </button>
-        {day.config.projects.map((p) => {
-          const color = projectColor(meta, p);
-          return (
-            <button
-              key={p}
-              type="button"
-              className={`chip${projectFilter === p ? " active" : ""}`}
-              onClick={() => setProjectFilter(p)}
-            >
-              <span className="dot" style={{ background: color }} />
-              {p}
-            </button>
-          );
-        })}
-        <Link href="/projects/" className="chip">
-          <Icon icon={I.plus} width={12} /> Manage projects
-        </Link>
-        <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
+
+        <div className="filters-actions">
           <button
             type="button"
             className="btn"
@@ -687,7 +934,7 @@ export default function BoardPage() {
           <button
             type="button"
             className="btn btn-primary"
-            onClick={() => setComposerOpen(true)}
+            onClick={() => openComposer()}
           >
             <Icon icon={I.plus} width={16} /> New task
           </button>
@@ -699,9 +946,9 @@ export default function BoardPage() {
         <DndContext
           sensors={sensors}
           collisionDetection={closestCorners}
-          onDragStart={(e) => setActiveId(String(e.active.id))}
+          onDragStart={onDragStart}
           onDragEnd={(e) => void onDragEnd(e)}
-          onDragCancel={() => setActiveId(null)}
+          onDragCancel={() => clearDragState(true)}
         >
           <div className="board">
             <Column
@@ -709,25 +956,46 @@ export default function BoardPage() {
               tasks={byStatus.none}
               projectMeta={meta}
               onOpen={setEditing}
+              activeId={activeId}
+              settlingId={settlingId}
+              dragSize={dragSize}
             />
             <Column
               status="wip"
               tasks={byStatus.wip}
               projectMeta={meta}
               onOpen={setEditing}
+              activeId={activeId}
+              settlingId={settlingId}
+              dragSize={dragSize}
             />
             <Column
               status="done"
               tasks={byStatus.done}
               projectMeta={meta}
               onOpen={setEditing}
+              activeId={activeId}
+              settlingId={settlingId}
+              dragSize={dragSize}
             />
           </div>
-          <DragOverlay dropAnimation={null}>
-            {activeTask ? (
-              <div style={{ width: 320 }}>
+          <DragOverlay
+            dropAnimation={{
+              duration: DRAG_DROP_MS,
+              easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+            }}
+          >
+            {dragOverlayTask ? (
+              <div
+                className="card-drag-overlay-wrap"
+                style={
+                  dragSize
+                    ? { width: dragSize.width, height: dragSize.height }
+                    : undefined
+                }
+              >
                 <TaskCard
-                  task={activeTask}
+                  task={dragOverlayTask}
                   projectMeta={meta}
                   onOpen={() => undefined}
                   overlay
@@ -741,7 +1009,7 @@ export default function BoardPage() {
       {composerOpen && (
         <>
           <div className="overlay" onClick={() => setComposerOpen(false)} />
-          <div className="composer" role="dialog" aria-label="New task">
+          <div className="composer composer-task" role="dialog" aria-label="New task">
             <header className="composer-header">
               <strong>New task</strong>
               <button
@@ -754,6 +1022,8 @@ export default function BoardPage() {
               </button>
             </header>
             <div className="composer-body">
+              <Scrollbar orientation="vertical" autoHide className="composer-body-scroll">
+                <div className="composer-body-pad">
               <div className="composer-fields">
                 <Select
                   label="Project"
@@ -840,121 +1110,17 @@ export default function BoardPage() {
                     color: "var(--text-secondary)",
                   }}
                 >
-                  Details / Bullet Points
+                  Details
                 </label>
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "0.5rem",
-                    marginTop: "0.4rem",
-                    maxHeight: "200px",
-                    overflowY: "auto",
-                    paddingRight: "4px",
-                  }}
-                >
-                  {composerSubItems.map((item, index) => (
-                    <div
-                      key={index}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "0.5rem",
-                      }}
-                    >
-                      <span
-                        style={{
-                          color: "var(--accent)",
-                          fontWeight: "bold",
-                          fontSize: "1.1rem",
-                        }}
-                      >
-                        •
-                      </span>
-                      <input
-                        id={`composer-bullet-${index}`}
-                        value={item}
-                        placeholder="Add details of this task..."
-                        onChange={(e) => {
-                          const copy = [...composerSubItems];
-                          copy[index] = e.target.value;
-                          setComposerSubItems(copy);
-                        }}
-                        onPaste={(e) =>
-                          onBulletPaste(
-                            e,
-                            composerSubItems,
-                            index,
-                            setComposerSubItems,
-                            "composer-bullet",
-                          )
-                        }
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            e.preventDefault();
-                            const copy = [...composerSubItems];
-                            copy.splice(index + 1, 0, "");
-                            setComposerSubItems(copy);
-                            setTimeout(() => {
-                              const nextInput = document.getElementById(
-                                `composer-bullet-${index + 1}`,
-                              );
-                              nextInput?.focus();
-                            }, 10);
-                          } else if (e.key === "Backspace" && !item) {
-                            e.preventDefault();
-                            if (composerSubItems.length > 1) {
-                              const copy = [...composerSubItems];
-                              copy.splice(index, 1);
-                              setComposerSubItems(copy);
-                              setTimeout(() => {
-                                const prevInput = document.getElementById(
-                                  `composer-bullet-${index - 1 >= 0 ? index - 1 : 0}`,
-                                );
-                                prevInput?.focus();
-                              }, 10);
-                            }
-                          }
-                        }}
-                        style={{
-                          flexGrow: 1,
-                          background: "var(--bg-input)",
-                          border: "1px solid var(--border)",
-                          borderRadius: "6px",
-                          padding: "6px 10px",
-                          fontSize: "0.88rem",
-                          color: "var(--text)",
-                        }}
-                      />
-                      {composerSubItems.length > 1 && (
-                        <button
-                          type="button"
-                          className="icon-btn"
-                          aria-label="Remove bullet"
-                          onClick={() => {
-                            const copy = [...composerSubItems];
-                            copy.splice(index, 1);
-                            setComposerSubItems(copy);
-                          }}
-                          style={{
-                            color: "var(--status-high)",
-                            padding: "4px",
-                          }}
-                        >
-                          <Icon icon={I.close} width={14} />
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-                <button
-                  type="button"
-                  className="btn btn-add-line"
-                  onClick={() => setComposerSubItems([...composerSubItems, ""])}
-                >
-                  <Icon icon={I.plus} width={12} /> Add line (Enter)
-                </button>
+                <TaskDetailsEditor
+                  value={composerDetailsHtml}
+                  onChange={setComposerDetailsHtml}
+                  placeholder="Bullets, nested points, links…"
+                  height={180}
+                />
               </div>
+                </div>
+              </Scrollbar>
             </div>
             <footer className="composer-footer">
               <button
@@ -978,10 +1144,12 @@ export default function BoardPage() {
         </>
       )}
 
-      {editing && (
-        <>
-          <div className="overlay" onClick={() => setEditing(null)} />
-          <aside className="drawer" role="dialog" aria-label="Edit task">
+      {editing &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <>
+            <div className="overlay drawer-overlay" onClick={() => setEditing(null)} />
+            <aside className="drawer drawer-wide drawer-task" role="dialog" aria-label="Edit task">
             <header className="drawer-header">
               <strong>Edit task</strong>
               <button
@@ -994,6 +1162,8 @@ export default function BoardPage() {
               </button>
             </header>
             <div className="drawer-body">
+              <Scrollbar orientation="vertical" autoHide className="drawer-body-scroll">
+                <div className="drawer-body-pad">
               <div className="field">
                 <label>Title</label>
                 <input
@@ -1070,124 +1240,20 @@ export default function BoardPage() {
                     color: "var(--text-secondary)",
                   }}
                 >
-                  Details / Bullet Points
+                  Details
                 </label>
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "0.5rem",
-                    marginTop: "0.4rem",
-                    maxHeight: "300px",
-                    overflowY: "auto",
-                    paddingRight: "4px",
-                  }}
-                >
-                  {drawerSubItems.map((item, index) => (
-                    <div
-                      key={index}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "0.5rem",
-                      }}
-                    >
-                      <span
-                        style={{
-                          color: "var(--accent)",
-                          fontWeight: "bold",
-                          fontSize: "1.1rem",
-                        }}
-                      >
-                        •
-                      </span>
-                      <input
-                        id={`drawer-bullet-${index}`}
-                        value={item}
-                        placeholder="Add details of this task..."
-                        onChange={(e) => {
-                          const copy = [...drawerSubItems];
-                          copy[index] = e.target.value;
-                          setDrawerSubItems(copy);
-                        }}
-                        onPaste={(e) =>
-                          onBulletPaste(
-                            e,
-                            drawerSubItems,
-                            index,
-                            setDrawerSubItems,
-                            "drawer-bullet",
-                          )
-                        }
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            e.preventDefault();
-                            const copy = [...drawerSubItems];
-                            copy.splice(index + 1, 0, "");
-                            setDrawerSubItems(copy);
-                            setTimeout(() => {
-                              const nextInput = document.getElementById(
-                                `drawer-bullet-${index + 1}`,
-                              );
-                              nextInput?.focus();
-                            }, 10);
-                          } else if (e.key === "Backspace" && !item) {
-                            e.preventDefault();
-                            if (drawerSubItems.length > 1) {
-                              const copy = [...drawerSubItems];
-                              copy.splice(index, 1);
-                              setDrawerSubItems(copy);
-                              setTimeout(() => {
-                                const prevInput = document.getElementById(
-                                  `drawer-bullet-${index - 1 >= 0 ? index - 1 : 0}`,
-                                );
-                                prevInput?.focus();
-                              }, 10);
-                            }
-                          }
-                        }}
-                        style={{
-                          flexGrow: 1,
-                          background: "var(--bg-input)",
-                          border: "1px solid var(--border)",
-                          borderRadius: "6px",
-                          padding: "6px 10px",
-                          fontSize: "0.88rem",
-                          color: "var(--text)",
-                        }}
-                      />
-                      {drawerSubItems.length > 1 && (
-                        <button
-                          type="button"
-                          className="icon-btn"
-                          aria-label="Remove bullet"
-                          onClick={() => {
-                            const copy = [...drawerSubItems];
-                            copy.splice(index, 1);
-                            setDrawerSubItems(copy);
-                          }}
-                          style={{
-                            color: "var(--status-high)",
-                            padding: "4px",
-                          }}
-                        >
-                          <Icon icon={I.close} width={14} />
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-                <button
-                  type="button"
-                  className="btn btn-add-line"
-                  onClick={() => setDrawerSubItems([...drawerSubItems, ""])}
-                >
-                  <Icon icon={I.plus} width={12} /> Add line (Enter)
-                </button>
+                <TaskDetailsEditor
+                  value={drawerDetailsHtml}
+                  onChange={setDrawerDetailsHtml}
+                  placeholder="Bullets, nested points, links…"
+                  height={180}
+                />
               </div>
               <p className="field-hint">
                 Priority: {priorityLabel(editing.priority || "medium")}
               </p>
+                </div>
+              </Scrollbar>
             </div>
             <footer className="drawer-footer">
               <button
@@ -1195,8 +1261,13 @@ export default function BoardPage() {
                 className="btn btn-danger"
                 style={{ marginRight: "auto" }}
                 onClick={async () => {
-                  if (!confirm("Delete this task? This can’t be undone."))
-                    return;
+                  const ok = await confirm({
+                    title: 'Delete task',
+                    message: 'Delete this task? This can’t be undone.',
+                    confirmLabel: 'Delete',
+                    variant: 'danger',
+                  });
+                  if (!ok) return;
                   const payload = await api.deleteTask(day.date, editing.id);
                   setDay(payload);
                   setEditing(null);
@@ -1215,93 +1286,130 @@ export default function BoardPage() {
               </button>
             </footer>
           </aside>
-        </>
-      )}
+          </>,
+          document.body,
+        )}
 
-      {mailOpen && (
-        <>
-          <div className="overlay" onClick={() => setMailOpen(false)} />
-          <aside
-            className="drawer"
-            role="dialog"
-            aria-label="Daily email draft"
-          >
-            <header className="drawer-header">
-              <strong>Daily email draft</strong>
-              <button
-                type="button"
-                className="icon-btn"
-                aria-label="Close"
-                onClick={() => setMailOpen(false)}
-              >
-                <Icon icon={I.close} width={16} />
-              </button>
-            </header>
-            <div className="drawer-body">
-              {mailBusy && !draft ? (
-                <p className="page-sub">Preparing your draft…</p>
-              ) : null}
-              {!mailBusy && !draft ? (
-                <p className="page-sub">Couldn’t prepare the draft. Close and try Email draft again.</p>
-              ) : null}
-              {draft && (
-                <>
-                  <div className="field">
-                    <label>To</label>
-                    <textarea
-                      rows={2}
-                      value={to}
-                      onChange={(e) => setTo(e.target.value)}
-                      placeholder="manager@company.com"
+      {mailOpen &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <>
+            <div className="overlay mail-overlay" onClick={() => setMailOpen(false)} />
+            <aside
+              className="drawer drawer-wide mail-drawer"
+              role="dialog"
+              aria-label="Daily email draft"
+            >
+              <header className="drawer-header">
+                <strong>Daily Email Draft</strong>
+                <div className="drawer-header-actions">
+                  <button
+                    type="button"
+                    className="btn"
+                    disabled={!draft || mailBusy}
+                    onClick={async () => {
+                      if (!draft) return;
+                      await api.emailCopy(draft);
+                      showToast("Copied to clipboard");
+                    }}
+                  >
+                    <Icon icon={I.copy} width={16} /> Copy
+                  </button>
+                  <button
+                    type="button"
+                    className="icon-btn"
+                    aria-label="Close"
+                    onClick={() => setMailOpen(false)}
+                  >
+                    <Icon icon={I.close} width={16} />
+                  </button>
+                </div>
+              </header>
+              <div className="drawer-body mail-drawer-body">
+                <Scrollbar orientation="vertical" autoHide className="drawer-body-scroll">
+                  <div className="drawer-body-pad">
+                {mailBusy && !draft ? (
+                  <p className="page-sub">Preparing your draft…</p>
+                ) : null}
+                {!mailBusy && !draft ? (
+                  <p className="page-sub">Couldn’t prepare the draft. Close and try Email draft again.</p>
+                ) : null}
+                {draft && (
+                  <div className="mail-compose">
+                    <div className="mail-compose-row">
+                      <label htmlFor="mail-to">To</label>
+                      <EmailChipInput
+                        id="mail-to"
+                        value={to}
+                        suggestions={recipientSuggestions}
+                        placeholder="manager@company.com"
+                        onChange={setTo}
+                        onCommitEmail={commitRecipient}
+                      />
+                    </div>
+                    <div className="mail-compose-row">
+                      <label htmlFor="mail-cc">Cc</label>
+                      <EmailChipInput
+                        id="mail-cc"
+                        value={cc}
+                        suggestions={recipientSuggestions}
+                        placeholder="optional@company.com"
+                        onChange={setCc}
+                        onCommitEmail={commitRecipient}
+                      />
+                    </div>
+                    <div className="mail-compose-row">
+                      <label htmlFor="mail-subject">Subject</label>
+                      <Input id="mail-subject" type="text" value={draft.subject} readOnly />
+                    </div>
+                    <div className="mail-compose-preview-label">Preview</div>
+                    <div
+                      className="mail-md-preview"
+                      dangerouslySetInnerHTML={{
+                        __html: renderEmailMarkdownPreview(draft.body),
+                      }}
                     />
                   </div>
-                  <div className="field">
-                    <label>Subject</label>
-                    <input value={draft.subject} readOnly />
+                )}
                   </div>
-                  <pre className="mail-body">{draft.body}</pre>
-                </>
-              )}
-            </div>
-            <footer className="drawer-footer">
-              <button
-                type="button"
-                className="btn"
-                disabled={mailBusy}
-                onClick={() => void openMail(true)}
-              >
-                <Icon icon={I.sparkles} width={16} /> Polish wording
-              </button>
-              <button
-                type="button"
-                className="btn"
-                disabled={!draft || mailBusy}
-                onClick={async () => {
-                  if (!draft) return;
-                  await api.emailCopy(draft);
-                  showToast("Copied to clipboard");
-                }}
-              >
-                <Icon icon={I.copy} width={16} /> Copy
-              </button>
-              <button
-                type="button"
-                className="btn btn-primary"
-                disabled={!draft || mailBusy}
-                onClick={async () => {
-                  if (!draft) return;
-                  const url = new URL(draft.gmailUrl);
-                  if (to.trim()) url.searchParams.set("to", to.trim());
-                  await api.emailOpen({ ...draft, gmailUrl: url.toString() });
-                  showToast("Copied and opened Gmail");
-                }}
-              >
-                <Icon icon={I.external} width={16} /> Open Gmail
-              </button>
-            </footer>
-          </aside>
-        </>
-      )}
+                </Scrollbar>
+              </div>
+              <footer className="drawer-footer mail-drawer-footer">
+                <button
+                  type="button"
+                  className="btn"
+                  disabled={mailBusy}
+                  onClick={() => void openMail(true)}
+                >
+                  <Icon icon={I.sparkles} width={16} /> Polish wording
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  disabled={!draft || mailBusy}
+                  onClick={async () => {
+                    if (!draft || !day) return;
+                    const gmailUrl = buildGmailComposeUrl(draft.gmailUrl, {
+                      to,
+                      cc,
+                      subject: draft.subject,
+                    });
+                    const res = await api.emailOpen({ ...draft, gmailUrl });
+                    await api.markEmailSent(day.date);
+                    if (res.pasted) {
+                      showToast("Opened Gmail - marked as sent");
+                    } else {
+                      showToast(res.pasteHint || "Opened Gmail - marked as sent");
+                    }
+                  }}
+                >
+                  <Icon icon={I.external} width={16} /> Open Gmail
+                </button>
+              </footer>
+            </aside>
+          </>,
+          document.body,
+        )}
 
       {newProjectOpen && (
         <>
@@ -1372,6 +1480,6 @@ export default function BoardPage() {
           {toast}
         </div>
       )}
-    </>
+    </div>
   );
 }

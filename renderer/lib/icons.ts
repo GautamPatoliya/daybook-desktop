@@ -1,5 +1,5 @@
 /**
- * Offline icons — bundled at build time. Never fetch api.iconify.design at runtime.
+ * Offline icons - bundled at build time. Never fetch api.iconify.design at runtime.
  * Uses a trimmed Solar subset (see solar-used.json), not the full icon pack.
  */
 import { addCollection, Icon } from '@iconify/react/offline';
@@ -35,7 +35,7 @@ export const I = {
   user: 'solar:user-bold-duotone',
   warning: 'solar:danger-triangle-bold-duotone',
   toastCheck: 'solar:check-circle-bold',
-  edit: 'solar:pen-2-bold-duotone',
+  edit: 'solar:pen-bold-duotone',
   carry: 'solar:undo-left-round-bold-duotone',
   loading: 'solar:refresh-bold-duotone',
   calendar: 'solar:calendar-bold-duotone',
@@ -50,6 +50,20 @@ export const I = {
   success: 'solar:verified-check-bold-duotone',
   info: 'solar:info-circle-bold-duotone',
   pause: 'solar:pause-circle-bold-duotone',
+  expand: 'solar:full-screen-bold-duotone',
+  collapse: 'solar:quit-full-screen-bold-duotone',
+  undo: 'solar:undo-left-round-bold-duotone',
+  redo: 'solar:undo-right-round-bold-duotone',
+  bold: 'solar:text-bold-bold-duotone',
+  italic: 'solar:text-italic-bold-duotone',
+  underline: 'solar:text-underline-bold-duotone',
+  link: 'solar:link-bold-duotone',
+  bulletList: 'solar:list-bold-duotone',
+  numberedList: 'solar:list-down-bold-duotone',
+  indentLess: 'solar:square-double-alt-arrow-left-bold-duotone',
+  indentMore: 'solar:square-double-alt-arrow-right-bold-duotone',
+  quote: 'solar:chat-square-2-bold-duotone',
+  clearFormat: 'solar:eraser-bold-duotone',
 } as const;
 
 addCollection(solarUsed);

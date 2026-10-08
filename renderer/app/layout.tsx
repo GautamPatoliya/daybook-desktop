@@ -3,11 +3,14 @@
 import './globals.css';
 import './spider-verse.css';
 import '../lib/bridge';
-import SpiderLogoPixel from '../components/SpiderLogoPixel';
 import PixelSkylineScene from '../components/PixelSkylineScene';
 import SpiderVerseDecor from '../components/SpiderVerseDecor';
 import ScreenWebDecor from '../components/spider/ScreenWebDecor';
 import ActionCast from '../components/spider/ActionCast';
+import { UpdateModal } from '../components/UpdateModal';
+import { GlobalActionRouter } from '../components/GlobalActionRouter';
+import { DialogProvider } from '../components/DialogProvider';
+import BrandMark from '../components/BrandMark';
 import Link from 'next/link';
 import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
@@ -56,7 +59,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body>
-        {/* Pixel-art NYC skyline — only renders when spider-verse is active */}
+        <DialogProvider>
+        {/* Pixel-art NYC skyline - only renders when spider-verse is active */}
         <PixelSkylineScene />
 
         <div className={`app-shell${hideChrome ? ' app-shell--onboarding' : ''}`}>
@@ -65,12 +69,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <header className="topbar">
               <div className="brand">
                 <div className="brand-mark" aria-hidden>
-                  {/* Default theme icon */}
-                  <Icon icon={I.logo} width={18} className="brand-mark-default" />
-                  {/* Spider-Verse: real pixel-art 16×16 spider sprite */}
-                  <span className="brand-mark-spider">
-                    <SpiderLogoPixel size={20} />
-                  </span>
+                  <BrandMark size={36} />
                 </div>
                 <div>
                   <div className="brand-name">Daybook</div>
@@ -102,6 +101,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </div>
         </div>
         <ActionCast />
+        <UpdateModal />
+        <GlobalActionRouter />
+        </DialogProvider>
       </body>
     </html>
   );

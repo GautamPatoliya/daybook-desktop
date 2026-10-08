@@ -1,4 +1,4 @@
-/** Max bullets added in one paste — avoids accidental 500-line paste from a doc. */
+/** Max bullets added in one paste - avoids accidental 500-line paste from a doc. */
 export const PASTE_BULLET_LIMIT = 40;
 
 /** Hard cap on total bullet rows in the composer/drawer. */

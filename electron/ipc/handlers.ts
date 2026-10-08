@@ -4,7 +4,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {
   DataRoot,
+  addCategory,
   appendAudit,
+  deleteCategory,
   deleteProject,
   displayDate,
   ensureProject,
@@ -17,6 +19,9 @@ import {
   normalizeSubItems,
   readSettings,
   readStore,
+  renameCategory,
+  reorderCategories,
+  setDefaultCategory,
   setProjectArchived,
   statsOf,
   todayDate,
@@ -26,7 +31,7 @@ import {
 } from '../../shared/store';
 import { activeProjectNames } from '../../shared/types';
 import { buildEmailDraft } from '../../shared/email';
-import { analyticsToCsv, computeAnalytics, writeEmailArtifacts } from '../../shared/analytics';
+import { buildAnalyticsCsv, computeAnalytics, writeEmailArtifacts } from '../../shared/analytics';
 import {
   cancelDownload,
   deleteModel,
@@ -44,12 +49,48 @@ import {
   clearLlamaModuleCache,
 } from '../llm/engine';
 import type { AppSettings, SubItem, Task, TaskPriority, TaskStatus } from '../../shared/types';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+
+const execFileAsync = promisify(execFile);
+
+async function simulatePasteShortcut(): Promise<boolean> {
+  try {
+    if (process.platform === 'win32') {
+      // SendKeys to the foreground window (Gmail in the browser)
+      await execFileAsync(
+        'powershell.exe',
+        [
+          '-NoProfile',
+          '-Command',
+          'Add-Type -AssemblyName System.Windows.Forms; Start-Sleep -Milliseconds 1500; [System.Windows.Forms.SendKeys]::SendWait("^v")',
+        ],
+        { windowsHide: true, timeout: 8000 },
+      );
+      return true;
+    }
+    if (process.platform === 'darwin') {
+      await execFileAsync(
+        'osascript',
+        ['-e', 'delay 1.5', '-e', 'tell application "System Events" to keystroke "v" using command down'],
+        { timeout: 8000 },
+      );
+      return true;
+    }
+  } catch {
+    return false;
+  }
+  return false;
+}
 
 type Deps = {
   getRoot: () => DataRoot;
   getWindow: () => BrowserWindow | null;
   applyAutostart: (enabled: boolean) => void;
   createWindow: (mode?: string) => Promise<BrowserWindow>;
+  setRemindersPaused?: (paused: boolean) => void;
+  getRemindersPaused?: () => boolean;
+  rebuildTray?: () => void;
 };
 
 /** Shared updater state so UI never shows "Restart & install" on errors. */
@@ -59,8 +100,17 @@ let lastUpdateError: string | null = null;
 /** Reminder mode waiting for the board page to mount (hourly | eod). */
 let pendingReminderMode: string | null = null;
 
+/** Queue a reminder for the next board mount (`reminder:consume`). */
 export function queueReminder(mode: string) {
   pendingReminderMode = mode;
+}
+
+/**
+ * Clear any queued reminder. Call when the reminder is delivered live so a later
+ * board remount cannot reopen a modal the user already dismissed.
+ */
+export function clearPendingReminder() {
+  pendingReminderMode = null;
 }
 
 export function markUpdateReady(ready: boolean) {
@@ -85,7 +135,14 @@ function friendlyUpdateError(raw: string): string {
   return msg;
 }
 
-function dayPayload(root: DataRoot, date: string, carry?: { carried: number; from: string | null }) {
+function dayPayload(
+  root: DataRoot,
+  date: string,
+  carry?: {
+    carried: number;
+    from: string | null;
+  },
+) {
   const settings = readSettings(root);
   const store = readStore(root, date);
   return {
@@ -102,8 +159,10 @@ function dayPayload(root: DataRoot, date: string, carry?: { carried: number; fro
       projectMeta: settings.projects.filter((p) => !p.archived),
       defaultProject: settings.defaultProject,
       categories: settings.categories,
+      defaultCategory: settings.defaultCategory,
       timezone: settings.timezone,
       emailTo: settings.emailTo,
+      emailCc: settings.emailCc || '',
     },
     ...(carry ? { carry } : {}),
   };
@@ -112,20 +171,25 @@ function dayPayload(root: DataRoot, date: string, carry?: { carried: number; fro
 export function registerIpc(deps: Deps) {
   ipcMain.handle('app:getVersion', () => app.getVersion());
 
-  ipcMain.handle('app:setThemeIcon', (_e, theme: string) => {
+  ipcMain.handle('shell:openExternal', async (_e, url: string) => {
+    const u = String(url || '').trim();
+    if (!/^https?:\/\//i.test(u)) throw new Error('Invalid URL');
+    await shell.openExternal(u);
+    return { ok: true };
+  });
+
+  /** Window / Dock icon always uses the Daybook notebook mark (no theme swap). */
+  ipcMain.handle('app:setThemeIcon', () => {
     try {
-      const isSpider = theme === 'spider-verse';
-      const iconName = isSpider ? 'spider-icon.png' : 'app-icon.png';
-      
       const candidates = [
-        path.join(__dirname, '..', 'assets', iconName),
-        path.join(process.cwd(), 'electron', 'assets', iconName),
-        path.join(app.getAppPath(), 'dist-electron', 'electron', 'assets', iconName),
-        path.join(process.resourcesPath || '', 'app.asar', 'dist-electron', 'electron', 'assets', iconName),
-        path.join(process.resourcesPath || '', 'app.asar', 'electron', 'assets', iconName),
-        path.join(__dirname, '..', '..', 'build', iconName === 'app-icon.png' ? 'icon.png' : iconName),
+        path.join(__dirname, '..', 'assets', 'app-icon.png'),
+        path.join(process.cwd(), 'electron', 'assets', 'app-icon.png'),
+        path.join(app.getAppPath(), 'dist-electron', 'electron', 'assets', 'app-icon.png'),
+        path.join(process.resourcesPath || '', 'app.asar', 'dist-electron', 'electron', 'assets', 'app-icon.png'),
+        path.join(process.resourcesPath || '', 'app.asar', 'electron', 'assets', 'app-icon.png'),
+        path.join(__dirname, '..', '..', 'build', 'icon.png'),
       ];
-      
+
       let imgPath: string | null = null;
       for (const candidate of candidates) {
         if (candidate && fs.existsSync(candidate)) {
@@ -133,7 +197,7 @@ export function registerIpc(deps: Deps) {
           break;
         }
       }
-      
+
       if (imgPath) {
         const img = nativeImage.createFromPath(imgPath);
         if (!img.isEmpty()) {
@@ -146,7 +210,7 @@ export function registerIpc(deps: Deps) {
           }
         }
       } else {
-        console.warn(`[app:setThemeIcon] Could not find icon: ${iconName}`);
+        console.warn('[app:setThemeIcon] Could not find app-icon.png');
       }
     } catch (err) {
       console.error('Failed to set theme icon:', err);
@@ -213,6 +277,7 @@ export function registerIpc(deps: Deps) {
         priority?: TaskPriority;
         dueDate?: string;
         subItems?: Array<string | SubItem>;
+        detailsHtml?: string;
       },
     ) => {
       const root = deps.getRoot();
@@ -222,15 +287,17 @@ export function registerIpc(deps: Deps) {
       const project = (payload.project || settings.defaultProject).trim();
       ensureProject(root, project);
       const time = hhmm(settings.timezone);
+      const detailsHtml = typeof payload.detailsHtml === 'string' ? payload.detailsHtml : undefined;
       const task: Task = {
         id: newId(),
         project,
-        category: (payload.category || 'Other').trim(),
+        category: (payload.category || settings.defaultCategory || 'Other').trim(),
         title,
         status: normalizeStatus(payload.status ?? 'wip'),
         priority: normalizePriority(payload.priority),
         dueDate: payload.dueDate || undefined,
         subItems: normalizeSubItems(payload.subItems),
+        detailsHtml,
         createdAt: time,
         updatedAt: time,
       };
@@ -267,6 +334,7 @@ export function registerIpc(deps: Deps) {
           priority: TaskPriority;
           dueDate: string | null;
           subItems: SubItem[];
+          detailsHtml: string;
         }>;
       },
     ) => {
@@ -297,6 +365,7 @@ export function registerIpc(deps: Deps) {
         task.dueDate = payload.patch.dueDate || undefined;
       }
       if (payload.patch.subItems !== undefined) task.subItems = normalizeSubItems(payload.patch.subItems);
+      if (payload.patch.detailsHtml !== undefined) task.detailsHtml = payload.patch.detailsHtml;
       task.updatedAt = hhmm(settings.timezone);
       store.tasks[idx] = task;
       writeStore(root, payload.date, store);
@@ -321,7 +390,7 @@ export function registerIpc(deps: Deps) {
     if (payload.enhance) {
       const engineOk = getEngineStatus(root).installed;
       // Polish button uses Local AI whenever engine + a GGUF are available.
-      // Do not require the Settings toggle — "Use for Polish" / any installed model is enough.
+      // Do not require the Settings toggle - "Use for Polish" / any installed model is enough.
       const modelId = engineOk ? resolvePolishModelId(root, settings.selectedModelId) : null;
       const useLlm = Boolean(modelId);
 
@@ -358,9 +427,23 @@ export function registerIpc(deps: Deps) {
       }
     }
 
-    const draft = buildEmailDraft(payload.date, displayDate(payload.date), store.tasks, settings);
+    const draft = buildEmailDraft(
+      payload.date,
+      displayDate(payload.date),
+      store.tasks,
+      settings,
+    );
     writeEmailArtifacts(root, payload.date, draft);
     return { ...draft, enhanceMode };
+  });
+
+  ipcMain.handle('email:markSent', (_e, date: string) => {
+    const root = deps.getRoot();
+    const settings = readSettings(root);
+    const dates = new Set(settings.emailSentDates || []);
+    dates.add(date);
+    writeSettings(root, { ...settings, emailSentDates: [...dates].sort() });
+    return readSettings(root);
   });
 
   ipcMain.handle('email:copy', (_e, draft: { htmlBody: string; body: string; subject: string }) => {
@@ -376,8 +459,46 @@ export function registerIpc(deps: Deps) {
       html: `<!DOCTYPE html><html><body><!--StartFragment-->${draft.htmlBody}<!--EndFragment--></body></html>`,
       text: draft.body,
     });
-    await shell.openExternal(draft.gmailUrl);
-    return { ok: true };
+    // Subject + To only - never put body in the Gmail URL
+    let gmailUrl = draft.gmailUrl;
+    try {
+      const u = new URL(draft.gmailUrl);
+      u.searchParams.delete('body');
+      gmailUrl = u.toString();
+    } catch {
+      /* keep original */
+    }
+    await shell.openExternal(gmailUrl);
+    const pasted = await simulatePasteShortcut();
+    return {
+      ok: true,
+      pasted,
+      pasteHint:
+        process.platform === 'darwin'
+          ? 'Copied. In Gmail, press ⌘V once to paste your update.'
+          : 'Copied. In Gmail, press Ctrl+V once to paste your update.',
+    };
+  });
+
+  ipcMain.handle('categories:add', (_e, name: string) => {
+    const settings = addCategory(deps.getRoot(), name);
+    return { categories: settings.categories, defaultCategory: settings.defaultCategory };
+  });
+  ipcMain.handle('categories:rename', (_e, payload: { from: string; to: string }) => {
+    const settings = renameCategory(deps.getRoot(), payload.from, payload.to);
+    return { categories: settings.categories, defaultCategory: settings.defaultCategory };
+  });
+  ipcMain.handle('categories:reorder', (_e, order: string[]) => {
+    const settings = reorderCategories(deps.getRoot(), order);
+    return { categories: settings.categories, defaultCategory: settings.defaultCategory };
+  });
+  ipcMain.handle('categories:delete', (_e, name: string) => {
+    const settings = deleteCategory(deps.getRoot(), name);
+    return { categories: settings.categories, defaultCategory: settings.defaultCategory };
+  });
+  ipcMain.handle('settings:setDefaultCategory', (_e, name: string) => {
+    const settings = setDefaultCategory(deps.getRoot(), name);
+    return { categories: settings.categories, defaultCategory: settings.defaultCategory };
   });
 
   ipcMain.handle('models:list', () => listLocalModels(deps.getRoot()));
@@ -410,10 +531,15 @@ export function registerIpc(deps: Deps) {
     return { mode };
   });
 
-  ipcMain.handle('analytics:get', () => computeAnalytics(deps.getRoot()));
-  ipcMain.handle('analytics:csv', () => {
-    const summary = computeAnalytics(deps.getRoot());
-    return analyticsToCsv(summary);
+  ipcMain.handle('analytics:get', (_e, range?: string) => {
+    const allowed = new Set(['week', '7', '30', '90']);
+    const r = allowed.has(String(range)) ? (range as 'week' | '7' | '30' | '90') : '30';
+    return computeAnalytics(deps.getRoot(), r);
+  });
+  ipcMain.handle('analytics:csv', (_e, range?: string) => {
+    const allowed = new Set(['week', '7', '30', '90']);
+    const r = allowed.has(String(range)) ? (range as 'week' | '7' | '30' | '90') : '30';
+    return buildAnalyticsCsv(deps.getRoot(), r);
   });
 
   ipcMain.handle('dates:list', () => listExistingDates(deps.getRoot()));
@@ -457,7 +583,7 @@ export function registerIpc(deps: Deps) {
       lastUpdateError = null;
 
       // checkForUpdates() returns null when the updater is inactive.
-      // When active, always prefer isUpdateAvailable — updateInfo is present even when up to date.
+      // When active, always prefer isUpdateAvailable - updateInfo is present even when up to date.
       if (!result) {
         return {
           ok: false,
@@ -484,7 +610,7 @@ export function registerIpc(deps: Deps) {
           ? updateReady
             ? `Version ${remoteVersion} is ready to install.`
             : downloading
-              ? `Version ${remoteVersion} found — downloading…`
+              ? `Version ${remoteVersion} found - downloading…`
               : `Version ${remoteVersion} is available.`
           : `You’re on the latest version (${app.getVersion()}${
               remoteVersion ? `; feed ${remoteVersion}` : ''
@@ -510,11 +636,92 @@ export function registerIpc(deps: Deps) {
         error: 'Install from a packaged build before applying updates.',
       };
     }
+    if (process.platform === 'darwin') {
+      return {
+        ok: false,
+        error:
+          'Automatic update isn’t available for this Mac build yet (unsigned). Use Download DMG and the xattr command on the Updates page.',
+      };
+    }
     if (!updateReady) {
       return { ok: false, error: 'No update is ready to install yet.' };
     }
-    autoUpdater.quitAndInstall();
-    return { ok: true };
+    // isSilent=false, isForceRunAfter=true - relaunch after install (Cursor-like)
+    try {
+      autoUpdater.quitAndInstall(false, true);
+      return { ok: true };
+    } catch (err) {
+      return {
+        ok: false,
+        error: `${(err as Error).message}. Download the Setup from GitHub Releases if restart fails.`,
+      };
+    }
+  });
+
+  ipcMain.handle('updater:getMacAssist', (_e, version?: string) => {
+    const verNum = (typeof version === 'string' && version.trim() ? version.trim() : app.getVersion()).replace(
+      /^v/,
+      '',
+    );
+    const tag = `v${verNum}`;
+    const arch = process.arch === 'arm64' ? 'arm64' : 'x64';
+    return {
+      unsigned: process.platform === 'darwin',
+      platform: process.platform,
+      xattrCommand: 'xattr -cr /Applications/Daybook.app',
+      dmgUrl: `https://github.com/GautamPatoliya/daybook-desktop/releases/download/${tag}/Daybook-${verNum}-${arch}.dmg`,
+      releasesUrl: 'https://github.com/GautamPatoliya/daybook-desktop/releases',
+      setupUrl: `https://github.com/GautamPatoliya/daybook-desktop/releases/download/${tag}/Daybook-Setup-${verNum}.exe`,
+    };
+  });
+
+  ipcMain.handle('updater:checkOnLaunch', async () => {
+    const settings = readSettings(deps.getRoot());
+    const base = {
+      deferred: !settings.onboardingComplete,
+      packaged: app.isPackaged,
+      platform: process.platform,
+      version: app.getVersion(),
+      ready: updateReady,
+      error: lastUpdateError ? friendlyUpdateError(lastUpdateError) : null,
+    };
+    if (!settings.onboardingComplete || !app.isPackaged) {
+      return { ...base, ok: true, isUpdateAvailable: false };
+    }
+    try {
+      if (!autoUpdater.isUpdaterActive()) {
+        return {
+          ...base,
+          ok: false,
+          isUpdateAvailable: false,
+          error:
+            process.platform === 'darwin'
+              ? 'Automatic update isn’t available for this Mac build yet (unsigned).'
+              : 'The updater is disabled in this build.',
+        };
+      }
+      const result = await autoUpdater.checkForUpdates();
+      lastUpdateError = null;
+      if (!result) {
+        return { ...base, ok: false, isUpdateAvailable: false, error: 'Updater did not run.' };
+      }
+      return {
+        ...base,
+        ok: true,
+        isUpdateAvailable: Boolean(result.isUpdateAvailable),
+        updateInfo: result.updateInfo?.version ? { version: result.updateInfo.version } : null,
+        ready: updateReady,
+      };
+    } catch (err) {
+      const raw = (err as Error).message;
+      markUpdateError(raw);
+      return {
+        ...base,
+        ok: false,
+        isUpdateAvailable: false,
+        error: friendlyUpdateError(raw),
+      };
+    }
   });
 
   ipcMain.handle('shell:openPath', async (_e, target: string) => shell.openPath(target));
@@ -533,6 +740,12 @@ export function registerIpc(deps: Deps) {
     const root = deps.getRoot();
     return shell.openPath(root.root);
   });
+
+  ipcMain.handle('reminders:setPaused', (_e, paused: boolean) => {
+    deps.setRemindersPaused?.(Boolean(paused));
+    return { ok: true, paused: Boolean(paused) };
+  });
+  ipcMain.handle('reminders:getPaused', () => ({ paused: Boolean(deps.getRemindersPaused?.()) }));
 }
 
 function appPathFallback() {

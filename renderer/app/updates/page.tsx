@@ -3,6 +3,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Icon, I } from '../../lib/icons';
 import { api } from '../../lib/api';
+import { parseIsoDate } from '../../lib/format';
+import { Scrollbar } from '../../components/Scrollbar';
+import {
+  isUpdateUiPreview,
+  runMockUpdateDownload,
+  UPDATE_PREVIEW,
+} from '../../lib/updatePreview';
 
 type Phase = 'idle' | 'checking' | 'up-to-date' | 'available' | 'downloading' | 'ready' | 'error' | 'unavailable';
 
@@ -75,7 +82,7 @@ function parseReleaseNotes(text: string): ReleaseNote[] {
     const line = raw.trim();
     if (!line || line.startsWith('# ') && !line.startsWith('## ')) continue;
 
-    const versionMatch = line.match(/^##\s+(\d+\.\d+(?:\.\d+)?)(?:\s*[—–-]\s*(.+))?$/);
+    const versionMatch = line.match(/^##\s+(\d+\.\d+(?:\.\d+)?)(?:\s*[-–-]\s*(.+))?$/);
     if (versionMatch) {
       pushSection();
       if (current) releases.push(current);
@@ -115,6 +122,17 @@ function sectionIcon(title: string): string {
   return I.list;
 }
 
+/** Format changelog dates as en-IN; keep labels like "in progress" as-is. */
+function formatReleaseDate(raw: string): string {
+  const iso = raw.trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return raw;
+  return parseIsoDate(iso).toLocaleDateString('en-IN', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
 export default function UpdatesPage() {
   const [version, setVersion] = useState('');
   const [changelog, setChangelog] = useState('');
@@ -122,19 +140,39 @@ export default function UpdatesPage() {
   const [message, setMessage] = useState('We’ll let you know when something new is available.');
   const [progress, setProgress] = useState(0);
   const [checking, setChecking] = useState(false);
+  const [macAssist, setMacAssist] = useState<{
+    unsigned: boolean;
+    xattrCommand: string;
+    dmgUrl: string;
+  } | null>(null);
+  const [availableVersion, setAvailableVersion] = useState<string | null>(null);
 
   const releases = useMemo(() => parseReleaseNotes(changelog), [changelog]);
 
   useEffect(() => {
-    void api.getVersion().then(setVersion);
     void api.changelog().then(setChangelog);
+
+    if (isUpdateUiPreview()) {
+      setVersion(UPDATE_PREVIEW.currentVersion);
+      setAvailableVersion(UPDATE_PREVIEW.nextVersion);
+      setPhase('available');
+      setMessage(
+        `Preview mode: pretend ${UPDATE_PREVIEW.nextVersion} is available. Click “Check for updates” to simulate download.`,
+      );
+      return;
+    }
+
+    void api.getVersion().then(setVersion);
+    void api.getMacAssist().then((a) => {
+      if (a.unsigned) setMacAssist(a);
+    });
     void api.updaterStatus().then((s) => {
       if (s.ready) {
         setPhase('ready');
         setMessage('An update is downloaded and ready. Restart to finish installing.');
       } else if (s.error) {
         setPhase(
-          /not configured|not set up|YOUR_GITHUB|packaged install|Updater did not run/i.test(s.error)
+          /not configured|not set up|YOUR_GITHUB|packaged install|Updater did not run|unsigned/i.test(s.error)
             ? 'unavailable'
             : 'error',
         );
@@ -150,6 +188,7 @@ export default function UpdatesPage() {
       };
       if (e.type === 'available') {
         setPhase('downloading');
+        if (e.info?.version) setAvailableVersion(e.info.version);
         const v = e.info?.version ? ` (${e.info.version})` : '';
         setMessage(`A newer version was found${v}. Downloading in the background…`);
       }
@@ -166,12 +205,13 @@ export default function UpdatesPage() {
       if (e.type === 'downloaded') {
         setPhase('ready');
         setProgress(100);
+        if (e.info?.version) setAvailableVersion(e.info.version);
         setMessage('Update ready. Restart the app to install it.');
       }
       if (e.type === 'error') {
         const friendly = friendlyEventError(e.message);
         setPhase(
-          /not set up|not configured|packaged install|Updater did not run/i.test(friendly)
+          /not set up|not configured|packaged install|Updater did not run|unsigned/i.test(friendly)
             ? 'unavailable'
             : 'error',
         );
@@ -180,6 +220,11 @@ export default function UpdatesPage() {
     });
     return () => off?.();
   }, []);
+
+  useEffect(() => {
+    if (!availableVersion || !macAssist) return;
+    void api.getMacAssist(availableVersion).then((a) => setMacAssist(a));
+  }, [availableVersion]);
 
   const getStatusColor = () => {
     if (phase === 'ready') return 'var(--status-done)';
@@ -200,136 +245,202 @@ export default function UpdatesPage() {
     return 'Up to date';
   };
 
+  async function onCheck() {
+    setChecking(true);
+    setPhase('checking');
+    setMessage('Looking for a newer version…');
+
+    if (isUpdateUiPreview()) {
+      setAvailableVersion(UPDATE_PREVIEW.nextVersion);
+      setPhase('downloading');
+      setProgress(0);
+      setMessage(`Preview: downloading Daybook ${UPDATE_PREVIEW.nextVersion}…`);
+      setChecking(false);
+      runMockUpdateDownload(
+        (pct) => {
+          setProgress(pct);
+          setMessage(`Preview: downloading update… ${pct}%`);
+        },
+        () => {
+          setPhase('ready');
+          setProgress(100);
+          setMessage(`Preview: Daybook ${UPDATE_PREVIEW.nextVersion} ready. Restart & install is mocked.`);
+        },
+      );
+      return;
+    }
+
+    try {
+      const res = await api.checkUpdates();
+      if (!res.ok) {
+        const err = res.error || 'Check failed';
+        setPhase(
+          /not set up|not configured|provided one|packaged install|Updater did not run/i.test(err)
+            ? 'unavailable'
+            : 'error',
+        );
+        setMessage(err);
+      } else if (res.ready) {
+        setPhase('ready');
+        setMessage(res.message || 'An update is ready to install.');
+      } else if (res.isUpdateAvailable) {
+        const downloading = /downloading/i.test(res.message || '');
+        setPhase(downloading ? 'downloading' : 'available');
+        setMessage(res.message || 'Update found.');
+      } else {
+        setPhase('up-to-date');
+        setMessage(res.message || 'You’re on the latest version.');
+      }
+    } catch (err) {
+      setPhase('error');
+      setMessage(err instanceof Error ? err.message : 'Check failed');
+    }
+    setChecking(false);
+  }
+
+  const latestNotes = releases[0]?.version || '—';
+  const statusColor = getStatusColor();
+  const statusLabel = getStatusLabel();
+  const heroTone =
+    phase === 'ready'
+      ? 'is-ready'
+      : phase === 'error'
+        ? 'is-error'
+        : phase === 'available' || phase === 'downloading'
+          ? 'is-available'
+          : '';
+
   return (
-    <div className="page page-updates">
-      <div className="page-header">
-        <h1>Updates</h1>
-        <p className="page-sub">Check for new builds and read what changed in each release.</p>
-      </div>
-
-      <div className="updater-layout">
-        <aside className="update-status-card">
-          <div className="version-badge-container">
-            <div className="version-badge-pulse" style={{ backgroundColor: getStatusColor() }} />
-            <div
-              className="version-badge-main"
-              style={{ background: `linear-gradient(135deg, ${getStatusColor()}, var(--status-done))` }}
-            >
-              {version || '—'}
-            </div>
-          </div>
-
-          <h2 className="update-status-title">Daybook Desktop</h2>
-
-          <div
+    <div className="page page-updates animate-fade-in">
+      <header className={`updates-hero ${heroTone}`.trim()}>
+        <div className="updates-hero-copy">
+          <p className="updates-kicker">Updates</p>
+          <h1>{statusLabel}</h1>
+          <p className="updates-sub">{message}</p>
+        </div>
+        <div className="updates-hero-actions">
+          <span
             className="update-status-pill"
             style={{
-              color: getStatusColor(),
-              background: `${getStatusColor()}15`,
-              borderColor: `${getStatusColor()}25`,
+              color: statusColor,
+              background: `${statusColor}18`,
+              borderColor: `${statusColor}33`,
             }}
           >
-            <span className="update-status-dot-pulse" style={{ backgroundColor: getStatusColor() }} />
-            {getStatusLabel()}
-          </div>
-
-          <p className="update-status-msg">{message}</p>
-
-          <div className="update-status-actions">
+            <span className="update-status-dot-pulse" style={{ backgroundColor: statusColor }} />
+            {version ? `v${version.replace(/^v/i, '')}` : '—'}
+          </span>
+          <button
+            type="button"
+            className="btn btn-primary"
+            disabled={checking || phase === 'downloading'}
+            onClick={() => void onCheck()}
+          >
+            <Icon
+              icon={I.refresh}
+              width={15}
+              style={{ animation: checking ? 'spin 1s linear infinite' : 'none' }}
+            />
+            {checking ? 'Checking…' : 'Check for updates'}
+          </button>
+          {phase === 'ready' && !macAssist ? (
             <button
               type="button"
-              className="btn btn-primary"
-              style={{ width: '100%', justifyContent: 'center', padding: '0.65rem' }}
-              disabled={checking || phase === 'downloading'}
+              className="btn"
               onClick={async () => {
-                setChecking(true);
-                setPhase('checking');
-                setMessage('Looking for a newer version…');
-                try {
-                  const res = await api.checkUpdates();
-                  if (!res.ok) {
-                    const err = res.error || 'Check failed';
-                    setPhase(
-                      /not set up|not configured|provided one|packaged install|Updater did not run/i.test(err)
-                        ? 'unavailable'
-                        : 'error',
-                    );
-                    setMessage(err);
-                  } else if (res.ready) {
-                    setPhase('ready');
-                    setMessage(res.message || 'An update is ready to install.');
-                  } else if (res.isUpdateAvailable) {
-                    const downloading = /downloading/i.test(res.message || '');
-                    setPhase(downloading ? 'downloading' : 'available');
-                    setMessage(res.message || 'Update found.');
-                  } else {
-                    setPhase('up-to-date');
-                    setMessage(res.message || 'You’re on the latest version.');
-                  }
-                } catch (err) {
-                  setPhase('error');
-                  setMessage(err instanceof Error ? err.message : 'Check failed');
+                if (isUpdateUiPreview()) {
+                  setMessage('Preview only — Restart & install is mocked (app will not quit).');
+                  return;
                 }
-                setChecking(false);
+                const res = await api.installUpdate();
+                if (!res.ok) setMessage(res.error || 'No update is ready yet.');
               }}
             >
-              <Icon
-                icon={I.refresh}
-                width={16}
-                style={{ animation: checking ? 'spin 1s linear infinite' : 'none' }}
-              />
-              {checking ? 'Checking…' : 'Check for updates'}
+              <Icon icon={I.download} width={15} />
+              Restart & install
             </button>
-
-            {phase === 'ready' && (
+          ) : null}
+        </div>
+        {phase === 'downloading' ? (
+          <div className="update-download-bar">
+            <div className="update-download-meta">
+              <span>Downloading package</span>
+              <strong>{progress}%</strong>
+            </div>
+            <div
+              className="update-download-track"
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={progress}
+            >
+              <span className="update-download-fill" style={{ width: `${progress}%` }} />
+            </div>
+          </div>
+        ) : null}
+        {macAssist ? (
+          <div className="mac-assist-panel">
+            <p className="field-hint">Automatic update isn’t available for this Mac build yet (unsigned).</p>
+            <ol className="update-mac-steps">
+              <li>Open the DMG and replace Daybook in Applications.</li>
+              <li>If macOS blocks the app, open Terminal and run:</li>
+            </ol>
+            <pre className="update-xattr-code">{macAssist.xattrCommand}</pre>
+            <div className="updates-mac-actions">
               <button
                 type="button"
                 className="btn"
-                style={{
-                  width: '100%',
-                  justifyContent: 'center',
-                  padding: '0.65rem',
-                  background: 'linear-gradient(135deg, var(--status-done), var(--success))',
-                  borderColor: 'rgba(255,255,255,0.1)',
-                  color: '#fff',
-                }}
                 onClick={async () => {
-                  const res = await api.installUpdate();
-                  if (!res.ok) setMessage(res.error || 'No update is ready yet.');
+                  await navigator.clipboard.writeText(macAssist.xattrCommand);
+                  setMessage('xattr command copied');
                 }}
               >
-                <Icon icon={I.success} width={16} />
-                Restart & install
+                <Icon icon={I.copy} width={14} /> Copy command
               </button>
-            )}
-          </div>
-
-          {phase === 'downloading' && (
-            <div className="update-download-bar">
-              <div className="update-download-meta">
-                <span>Downloading…</span>
-                <strong>{progress}%</strong>
-              </div>
-              <div className="progress" style={{ margin: 0 }}>
-                <span style={{ width: `${progress}%` }} />
-              </div>
+              <button type="button" className="btn btn-primary" onClick={() => void api.openExternal(macAssist.dmgUrl)}>
+                <Icon icon={I.download} width={14} /> Download DMG
+              </button>
             </div>
-          )}
-        </aside>
+          </div>
+        ) : null}
+      </header>
 
-        <section className="updater-releases" aria-label="Release notes">
-          <div className="updater-releases-head">
-            <Icon icon={I.empty} width={18} />
+      <section className="updates-metrics" aria-label="Version summary">
+        <div className="updates-metric">
+          <span className="updates-metric-label">Installed</span>
+          <strong className="updates-metric-value">{version || '—'}</strong>
+          <span className="updates-metric-hint">This build</span>
+        </div>
+        <div className="updates-metric">
+          <span className="updates-metric-label">Status</span>
+          <strong className="updates-metric-value updates-metric-value--sm">{statusLabel}</strong>
+          <span className="updates-metric-hint">{phase === 'ready' ? 'Restart to finish' : 'Desktop updater'}</span>
+        </div>
+        <div className="updates-metric">
+          <span className="updates-metric-label">Latest notes</span>
+          <strong className="updates-metric-value">{latestNotes}</strong>
+          <span className="updates-metric-hint">
+            {availableVersion ? `Available: ${availableVersion}` : `${releases.length} versions on file`}
+          </span>
+        </div>
+      </section>
+
+      <section className="updater-releases" aria-label="Release notes">
+        <div className="updater-releases-head">
+          <div>
             <h2>Release notes</h2>
-            <span className="updater-releases-count">{releases.length} versions</span>
+            <p>What shipped in each Daybook build</p>
           </div>
+          <span className="updater-releases-count">{releases.length} versions</span>
+        </div>
 
-          {!releases.length ? (
-            <div className="release-card release-card--empty">
-              <Icon icon={I.info} width={22} />
-              <p>No release notes available for this install.</p>
-            </div>
-          ) : (
+        {!releases.length ? (
+          <div className="release-card release-card--empty">
+            <Icon icon={I.info} width={22} />
+            <p>No release notes available for this install.</p>
+          </div>
+        ) : (
+          <Scrollbar className="updater-releases-scroll" orientation="vertical" autoHide aria-label="Release notes">
             <div className="release-card-stack">
               {releases.map((rel, idx) => {
                 const isCurrent =
@@ -338,7 +449,7 @@ export default function UpdatesPage() {
                 return (
                   <article
                     key={`${rel.version}-${idx}`}
-                    className={`release-card${isCurrent ? ' release-card--current' : ''}`}
+                    className={`release-card${isCurrent ? ' release-card--current' : ''}${idx === 0 ? ' release-card--latest' : ''}`}
                   >
                     <header className="release-card-header">
                       <div className="release-card-icon" aria-hidden>
@@ -348,12 +459,13 @@ export default function UpdatesPage() {
                         <div className="release-card-title-row">
                           <h3>{rel.version}</h3>
                           {isCurrent && <span className="release-badge">Installed</span>}
-                          {idx === 0 && !isCurrent && <span className="release-badge release-badge--new">Latest notes</span>}
+                          {idx === 0 && !isCurrent && (
+                            <span className="release-badge release-badge--new">Latest notes</span>
+                          )}
                         </div>
-                        {rel.date ? <p className="release-card-date">{rel.date}</p> : null}
+                        {rel.date ? <p className="release-card-date">{formatReleaseDate(rel.date)}</p> : null}
                       </div>
                     </header>
-
                     <div className="release-card-body">
                       {rel.sections.map((sec, sIdx) => (
                         <div key={`${rel.version}-s-${sIdx}`} className="release-section">
@@ -377,9 +489,9 @@ export default function UpdatesPage() {
                 );
               })}
             </div>
-          )}
-        </section>
-      </div>
+          </Scrollbar>
+        )}
+      </section>
     </div>
   );
 }

@@ -5,7 +5,7 @@
 # 2) Upload ONLY distributable files (never unpacked app folders)
 # 3) One publish job creates/replaces the GitHub Release and attaches assets
 #
-# electron-builder --publish is intentionally NOT used in CI — it is fragile
+# electron-builder --publish is intentionally NOT used in CI - it is fragile
 # under rate limits, TLS issues on macOS runners, and partial release conflicts.
 
 name: Release
@@ -53,6 +53,12 @@ jobs:
           cache: npm
 
       - run: npm ci
+
+      # Catch renderer→Node (`node:crypto` / fs) leaks before webpack / packaging.
+      - name: Guard renderer imports + typecheck
+        run: |
+          npm run check:renderer-imports
+          npm run typecheck
 
       - name: Build installer (unsigned, no publish)
         env:
@@ -120,19 +126,46 @@ jobs:
             sleep 8
           fi
 
+          # Release body from CHANGELOG.md for this version (falls back to generate-notes)
+          notes_file="$(mktemp)"
+          {
+            echo "## Daybook ${version}"
+            echo
+            awk -v ver="$version" '
+              $0 ~ "^## " ver "([ -]|$)" { flag=1; next }
+              /^## / { flag=0 }
+              flag { print }
+            ' CHANGELOG.md
+          } > "$notes_file"
+          if ! grep -q '^\*' "$notes_file"; then
+            echo "CHANGELOG section for ${version} was empty - using generated notes"
+            rm -f "$notes_file"
+            notes_file=""
+          else
+            echo "Release notes from CHANGELOG.md:"
+            cat "$notes_file"
+          fi
+
           # Retry create for transient GitHub secondary rate limits
           for attempt in 1 2 3 4 5 6; do
             echo "Creating release ${tag} (attempt ${attempt})..."
-            if gh release create "$tag" "${files[@]}" \
-              --repo "$repo" \
-              --title "Daybook ${version}" \
-              --generate-notes \
-              --latest; then
+            create_args=(
+              "$tag" "${files[@]}"
+              --repo "$repo"
+              --title "Daybook ${version}"
+              --latest
+            )
+            if [ -n "$notes_file" ]; then
+              create_args+=(--notes-file "$notes_file")
+            else
+              create_args+=(--generate-notes)
+            fi
+            if gh release create "${create_args[@]}"; then
               echo "Release ${tag} published with ${#files[@]} assets"
               exit 0
             fi
             wait=$((attempt * 45))
-            echo "Publish failed — waiting ${wait}s before retry..."
+            echo "Publish failed - waiting ${wait}s before retry..."
             sleep "$wait"
           done
 

@@ -18,7 +18,7 @@ if (-not (Test-Path $htmlPath)) {
 }
 
 $html = Get-Content -Path $htmlPath -Raw -Encoding UTF8
-$subject = "Daybook v1.1.1 — The Spider-Verse theme is here. Switch today."
+$subject = "Daybook v1.1.1 - The Spider-Verse theme is here. Switch today."
 
 try {
   $outlook = New-Object -ComObject Outlook.Application
@@ -39,5 +39,5 @@ if ($Send) {
   Write-Host "Sent to: $To"
 } else {
   $mail.Display()
-  Write-Host "Outlook draft opened — review images/links, add recipients, then click Send."
+  Write-Host "Outlook draft opened - review images/links, add recipients, then click Send."
 }

@@ -4,7 +4,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 /**
- * Dedicated UI port — kept far from common developer ports
+ * Dedicated UI port - kept far from common developer ports
  * (3000, 5173, 8080, 4200, 5000, etc.).
  * Packaged app and `npm run dev` both use this.
  */
@@ -122,10 +122,15 @@ export function rendererOutDir(): string {
   // packaged: .../app.asar/dist-electron/electron -> .../app.asar/renderer/out
   const fromAsar = path.join(__dirname, '..', '..', 'renderer', 'out');
   if (fs.existsSync(path.join(fromAsar, 'index.html'))) return fromAsar;
-  // dev/fallback
+  // repo checkout / unpackaged electron .
   const fromCwd = path.join(process.cwd(), 'renderer', 'out');
   if (fs.existsSync(path.join(fromCwd, 'index.html'))) return fromCwd;
   return fromAsar;
+}
+
+/** True when a static Next export is present (index.html at export root). */
+export function hasRendererExport(root = rendererOutDir()): boolean {
+  return fs.existsSync(path.join(root, 'index.html'));
 }
 
 /** Useful for debugging load failures. */

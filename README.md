@@ -1,8 +1,9 @@
-# Work Task Tracker — Office Desktop App
+# Work Task Tracker - Office Desktop App
 
 Offline Electron + Next.js app for employee task tracking, daily email drafts, local LLM polish, reminders, analytics, and GitHub Releases auto-update.
 
-**Full product overview:** [docs/PROJECT_OVERVIEW.md](docs/PROJECT_OVERVIEW.md) — purpose, usage, features, architecture, data, and distribution.
+**Full product overview:** [docs/PROJECT_OVERVIEW.md](docs/PROJECT_OVERVIEW.md) - purpose, usage, features, architecture, data, and distribution.  
+**Daybook 2.0 (next major):** [docs/daybook-2.0/README.md](docs/daybook-2.0/README.md) - phase-wise implementation specs.
 
 ## Requirements
 
@@ -64,6 +65,6 @@ See [docs/PILOT.md](docs/PILOT.md) for CEO-office rollout checklist.
 
 ## Architecture
 
-- `electron/` — main process, IPC, scheduler, updater, LLM download
-- `renderer/` — Next.js static export UI
-- `shared/` — types, store, email builder, analytics
+- `electron/` - main process, IPC, scheduler, updater, LLM download
+- `renderer/` - Next.js static export UI
+- `shared/` - types, store, email builder, analytics

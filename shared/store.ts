@@ -3,6 +3,12 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import type { AppSettings, ProjectMeta, SubItem, Task, TaskPriority, TaskStatus, TaskStore } from './types';
 import { DEFAULT_SETTINGS, PROJECT_COLORS, activeProjectNames, normalizeProjects } from './types';
+import {
+  normalizeRecipientHistory,
+  parseEmailList,
+  serializeEmailList,
+} from './emailRecipients';
+import { normalizeFeatureHighlightStarts } from './featureHighlights';
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -44,10 +50,36 @@ export function readSettings(root: DataRoot): AppSettings {
     projects?: unknown;
   };
   const projects = normalizeProjects(raw.projects);
+  const categories =
+    Array.isArray(raw.categories) && raw.categories.length
+      ? raw.categories.map((c) => String(c).trim()).filter(Boolean)
+      : [...DEFAULT_SETTINGS.categories];
+  const defaultCategory =
+    raw.defaultCategory && categories.some((c) => c === raw.defaultCategory)
+      ? raw.defaultCategory
+      : categories.includes('Other')
+        ? 'Other'
+        : categories[0];
   const merged: AppSettings = {
     ...DEFAULT_SETTINGS,
     ...raw,
     projects,
+    categories,
+    defaultCategory,
+    emailTo:
+      typeof raw.emailTo === 'string'
+        ? serializeEmailList(parseEmailList(raw.emailTo))
+        : DEFAULT_SETTINGS.emailTo,
+    emailCc:
+      typeof raw.emailCc === 'string'
+        ? serializeEmailList(parseEmailList(raw.emailCc))
+        : DEFAULT_SETTINGS.emailCc,
+    emailRecipientHistory: normalizeRecipientHistory(
+      raw.emailRecipientHistory,
+      typeof raw.emailTo === 'string' ? raw.emailTo : DEFAULT_SETTINGS.emailTo,
+      typeof raw.emailCc === 'string' ? raw.emailCc : DEFAULT_SETTINGS.emailCc,
+    ),
+    featureHighlightStarts: normalizeFeatureHighlightStarts(raw.featureHighlightStarts),
     defaultProject:
       raw.defaultProject && projects.some((p) => p.name === raw.defaultProject && !p.archived)
         ? raw.defaultProject
@@ -348,4 +380,98 @@ export function normalizeSubItems(items: Array<string | SubItem> | undefined): S
   return (items || [])
     .map((s) => (typeof s === 'string' ? { text: s.trim() } : { text: (s.text || '').trim(), enhanced: s.enhanced }))
     .filter((s) => s.text);
+}
+
+function assertCategoryName(name: string): string {
+  const trimmed = name.trim();
+  if (!trimmed) throw new Error('Category name is required');
+  if (trimmed.length > 60) throw new Error('Category names max 60 characters');
+  return trimmed;
+}
+
+export function addCategory(root: DataRoot, name: string): AppSettings {
+  const settings = readSettings(root);
+  const next = assertCategoryName(name);
+  if (settings.categories.some((c) => c.toLowerCase() === next.toLowerCase())) {
+    throw new Error('A category with that name already exists');
+  }
+  settings.categories = [...settings.categories, next];
+  writeSettings(root, settings);
+  return readSettings(root);
+}
+
+export function renameCategory(root: DataRoot, from: string, to: string): AppSettings {
+  const settings = readSettings(root);
+  const source = from.trim();
+  const next = assertCategoryName(to);
+  const idx = settings.categories.findIndex((c) => c === source);
+  if (idx < 0) throw new Error('Category not found');
+  if (settings.categories.some((c, i) => i !== idx && c.toLowerCase() === next.toLowerCase())) {
+    throw new Error('A category with that name already exists');
+  }
+  settings.categories[idx] = next;
+  if (settings.defaultCategory === source) settings.defaultCategory = next;
+  for (const date of listExistingDates(root)) {
+    const store = readStore(root, date);
+    let changed = false;
+    store.tasks = store.tasks.map((t) => {
+      if (t.category !== source) return t;
+      changed = true;
+      return { ...t, category: next };
+    });
+    if (changed) writeStore(root, date, store);
+  }
+  writeSettings(root, settings);
+  return readSettings(root);
+}
+
+export function reorderCategories(root: DataRoot, order: string[]): AppSettings {
+  const settings = readSettings(root);
+  if (!Array.isArray(order) || order.length !== settings.categories.length) {
+    throw new Error('Invalid category order');
+  }
+  const set = new Set(settings.categories);
+  if (order.some((c) => !set.has(c)) || new Set(order).size !== order.length) {
+    throw new Error('Invalid category order');
+  }
+  settings.categories = order;
+  writeSettings(root, settings);
+  return readSettings(root);
+}
+
+export function setDefaultCategory(root: DataRoot, name: string): AppSettings {
+  const settings = readSettings(root);
+  const next = name.trim();
+  if (!settings.categories.includes(next)) throw new Error('Category not found');
+  settings.defaultCategory = next;
+  writeSettings(root, settings);
+  return readSettings(root);
+}
+
+/** Delete category and reassign all matching tasks to Other across day files. */
+export function deleteCategory(root: DataRoot, name: string): AppSettings {
+  const settings = readSettings(root);
+  const target = name.trim();
+  if (!settings.categories.includes(target)) throw new Error('Category not found');
+  if (settings.categories.length <= 1) throw new Error('Keep at least one category');
+
+  if (!settings.categories.includes('Other')) {
+    settings.categories = [...settings.categories, 'Other'];
+  }
+
+  for (const date of listExistingDates(root)) {
+    const store = readStore(root, date);
+    let changed = false;
+    store.tasks = store.tasks.map((t) => {
+      if (t.category !== target) return t;
+      changed = true;
+      return { ...t, category: 'Other' };
+    });
+    if (changed) writeStore(root, date, store);
+  }
+
+  settings.categories = settings.categories.filter((c) => c !== target);
+  if (settings.defaultCategory === target) settings.defaultCategory = 'Other';
+  writeSettings(root, settings);
+  return readSettings(root);
 }

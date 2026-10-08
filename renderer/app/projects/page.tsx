@@ -1,21 +1,29 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Icon, I } from '../../lib/icons';
 import { api } from '../../lib/api';
+import SpideyLoader from '../../components/SpideyLoader';
+import { useDialog } from '../../components/DialogProvider';
+import { Input } from '../../components/ui/input';
+import { Scrollbar } from '../../components/Scrollbar';
 import { PROJECT_COLORS, type ProjectMeta } from '../../../shared/types';
 
 export default function ProjectsPage() {
+  const { confirm } = useDialog();
   const [projects, setProjects] = useState<ProjectMeta[]>([]);
   const [defaultProject, setDefaultProject] = useState('General');
   const [toast, setToast] = useState<string | null>(null);
   const [showArchived, setShowArchived] = useState(false);
+  const [query, setQuery] = useState('');
   const [editing, setEditing] = useState<ProjectMeta | null>(null);
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState('');
   const [color, setColor] = useState(PROJECT_COLORS[0]);
   const [notes, setNotes] = useState('');
   const [busy, setBusy] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function refresh() {
     const s = await api.getSettings();
@@ -24,12 +32,20 @@ export default function ProjectsPage() {
   }
 
   useEffect(() => {
-    void refresh().catch((err) => setToast((err as Error).message));
+    void refresh()
+      .then(() => setError(null))
+      .catch((err) => setError((err as Error).message))
+      .finally(() => setLoaded(true));
   }, []);
 
   function showToast(msg: string) {
     setToast(msg);
     window.setTimeout(() => setToast(null), 2400);
+  }
+
+  function closeComposer() {
+    setCreating(false);
+    setEditing(null);
   }
 
   function openCreate() {
@@ -69,8 +85,7 @@ export default function ProjectsPage() {
         setProjects(res.projects);
         showToast('Project updated');
       }
-      setCreating(false);
-      setEditing(null);
+      closeComposer();
     } catch (err) {
       showToast((err as Error).message);
     } finally {
@@ -78,102 +93,188 @@ export default function ProjectsPage() {
     }
   }
 
-  const visible = projects.filter((p) => (showArchived ? p.archived : !p.archived));
+  const activeCount = projects.filter((p) => !p.archived).length;
+  const archivedCount = projects.filter((p) => p.archived).length;
+  const defaultMeta = projects.find((p) => p.name === defaultProject && !p.archived);
 
-  return (
-    <div className="page">
-      <div className="projects-header-actions">
-        <div>
-          <h1 style={{ fontSize: '2rem', fontWeight: 850, letterSpacing: '-0.02em', margin: '0 0 0.4rem 0' }}>
-            Initiatives & Projects
-          </h1>
-          <p className="page-sub" style={{ margin: 0 }}>
-            Organize and group tasks by client, team, or work stream. Default project is automatically selected for new tasks.
-          </p>
-        </div>
-        <div style={{ display: 'flex', gap: '0.75rem' }}>
-          <button type="button" className={`btn ${showArchived ? '' : 'btn-primary'}`} onClick={() => setShowArchived((v) => !v)}>
-            <Icon icon={showArchived ? I.success : I.archive} width={16} />
-            {showArchived ? 'Show active' : 'Show archived'}
-          </button>
-          <button type="button" className="btn btn-primary" onClick={openCreate}>
-            <Icon icon={I.plus} width={16} /> New project
-          </button>
+  const visible = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return projects.filter((p) => {
+      if (showArchived ? !p.archived : p.archived) return false;
+      if (!q) return true;
+      return p.name.toLowerCase().includes(q) || (p.notes || '').toLowerCase().includes(q);
+    });
+  }, [projects, showArchived, query]);
+
+  if (!loaded) {
+    return (
+      <div className="page pj-loading">
+        <SpideyLoader label="Loading projects…" />
+      </div>
+    );
+  }
+
+  if (error && !projects.length) {
+    return (
+      <div className="page">
+        <div className="pj-hero">
+          <div className="pj-hero-copy">
+            <p className="pj-kicker">Projects</p>
+            <h1>Couldn’t load projects</h1>
+            <p className="pj-sub" style={{ color: 'var(--status-high)' }}>
+              {error}
+            </p>
+          </div>
         </div>
       </div>
+    );
+  }
 
-      <h2 style={{ fontSize: '1.20rem', fontWeight: 700, marginBottom: '1.25rem' }}>
-        {showArchived ? 'Archived Projects' : 'Active Projects'}
-      </h2>
-
-      {visible.length === 0 ? (
-        <div className="empty" style={{ padding: '4rem 2rem', background: '#0f172a', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.04)' }}>
-          <Icon icon={I.empty} width={40} className="empty-icon" style={{ color: 'var(--text-dim)' }} />
-          <p style={{ marginTop: '1rem', color: 'var(--text-secondary)' }}>
-            {showArchived
-              ? 'No archived projects found.'
-              : 'No projects logged yet. Create your first project to start organizing!'}
+  return (
+    <div className="page pj-page animate-fade-in">
+      <header className="pj-hero">
+        <div className="pj-hero-copy">
+          <p className="pj-kicker">Projects</p>
+          <h1>Initiatives</h1>
+          <p className="pj-sub">
+            Group work by client, team, or stream. The default project is pre-selected when you add a task.
           </p>
         </div>
-      ) : (
-        <div className="table-panel">
-          <table className="table">
-            <thead>
-              <tr>
-                <th style={{ width: '240px' }}>Project</th>
-                <th>Notes & Context</th>
-                <th style={{ width: '140px', textAlign: 'center' }}>Status</th>
-                <th style={{ width: '420px', textAlign: 'right' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
+        <div className="pj-hero-actions">
+          <div className="pj-tabs" role="tablist" aria-label="Project list">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={!showArchived}
+              className={`pj-tab${!showArchived ? ' is-active' : ''}`}
+              onClick={() => setShowArchived(false)}
+            >
+              Active
+              <span className="pj-tab-count">{activeCount}</span>
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={showArchived}
+              className={`pj-tab${showArchived ? ' is-active' : ''}`}
+              onClick={() => setShowArchived(true)}
+            >
+              Archived
+              <span className="pj-tab-count">{archivedCount}</span>
+            </button>
+          </div>
+          <button type="button" className="btn btn-primary" onClick={openCreate}>
+            <Icon icon={I.plus} width={15} />
+            New project
+          </button>
+        </div>
+      </header>
+
+      <section className="pj-panel">
+        <div className="pj-panel-head">
+          <div>
+            <h2>{showArchived ? 'Archived' : 'Active projects'}</h2>
+            <p>
+              {defaultMeta ? (
+                <>
+                  Default for new tasks: <strong>{defaultMeta.name}</strong>
+                </>
+              ) : (
+                'Set a default so new tasks land in the right stream.'
+              )}
+            </p>
+          </div>
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search…"
+            aria-label="Search projects"
+            className="pj-search"
+          />
+        </div>
+
+        {visible.length === 0 ? (
+          <div className="pj-empty">
+            <Icon icon={I.projects} width={36} />
+            <h2>{query.trim() ? 'No matches' : showArchived ? 'Nothing archived' : 'No projects yet'}</h2>
+            <p>
+              {query.trim()
+                ? 'Try a different name or note.'
+                : showArchived
+                  ? 'Archive a project when that stream is done — you can restore it later.'
+                  : 'Create a project to group tasks by client, team, or work stream.'}
+            </p>
+            {!showArchived && !query.trim() ? (
+              <button type="button" className="btn btn-primary" onClick={openCreate}>
+                <Icon icon={I.plus} width={15} />
+                New project
+              </button>
+            ) : null}
+          </div>
+        ) : (
+          <Scrollbar
+            className="pj-list-scroll"
+            orientation="vertical"
+            autoHide
+            stretchContent={false}
+            aria-label={showArchived ? 'Archived projects' : 'Active projects'}
+          >
+            <ul className="pj-list">
               {visible.map((p) => {
-                const isDefault = defaultProject === p.name;
+                const isDefault = defaultProject === p.name && !p.archived;
+                const note = p.notes?.trim();
                 return (
-                  <tr key={p.name}>
-                    <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <span className="project-swatch" style={{ background: p.color }} />
-                        <span className="project-name">{p.name}</span>
-                      </div>
-                    </td>
-                    <td style={{ lineHeight: '1.4' }}>
-                      {p.notes?.trim() || <span style={{ color: 'var(--text-dim)', fontStyle: 'italic' }}>No description provided.</span>}
-                    </td>
-                    <td style={{ textAlign: 'center' }}>
-                      {isDefault ? (
-                        <span className="project-status-badge">Default</span>
-                      ) : (
-                        <span className={p.archived ? 'project-archive-badge' : 'project-active-badge'}>
-                          {p.archived ? 'Archived' : 'Active'}
+                  <li
+                    key={p.name}
+                    className={`pj-row${isDefault ? ' is-default' : ''}${p.archived ? ' is-archived' : ''}`}
+                  >
+                    <span className="pj-swatch" style={{ background: p.color }} aria-hidden />
+                    <div className="pj-row-copy">
+                      <span className="pj-row-name" title={p.name}>
+                        {p.name}
+                      </span>
+                      {note ? (
+                        <span className="pj-row-notes" title={note}>
+                          {note}
                         </span>
-                      )}
-                    </td>
-                    <td style={{ textAlign: 'right' }}>
-                      <div className="table-actions">
-                        {!p.archived && !isDefault && (
+                      ) : null}
+                    </div>
+                    <div className="pj-row-end">
+                      {isDefault ? (
+                        <span className="pj-badge pj-badge--default">Default</span>
+                      ) : p.archived ? (
+                        <span className="pj-badge pj-badge--archived">Archived</span>
+                      ) : null}
+                      <div className="pj-row-actions" role="group" aria-label={`${p.name} actions`}>
+                        {!p.archived && !isDefault ? (
                           <button
                             type="button"
-                            className="btn"
+                            className="pj-icon-btn"
+                            aria-label={`Make ${p.name} the default`}
+                            title="Make default"
                             onClick={async () => {
                               await api.saveSettings({ defaultProject: p.name });
                               setDefaultProject(p.name);
                               showToast(`${p.name} is now the default`);
                             }}
                           >
-                            Make Default
+                            <Icon icon={I.flag} width={16} />
                           </button>
-                        )}
+                        ) : null}
                         <button
                           type="button"
-                          className="btn"
+                          className="pj-icon-btn"
+                          aria-label={`Edit ${p.name}`}
+                          title="Edit"
                           onClick={() => openEdit(p)}
                         >
-                          <Icon icon={I.edit} width={13} /> Edit
+                          <Icon icon={I.edit} width={16} />
                         </button>
                         <button
                           type="button"
-                          className="btn"
+                          className="pj-icon-btn"
+                          aria-label={p.archived ? `Restore ${p.name}` : `Archive ${p.name}`}
+                          title={p.archived ? 'Restore' : 'Archive'}
                           onClick={async () => {
                             try {
                               const res = await api.archiveProject(p.name, !p.archived);
@@ -184,15 +285,22 @@ export default function ProjectsPage() {
                             }
                           }}
                         >
-                          <Icon icon={I.archive} width={13} /> {p.archived ? 'Restore' : 'Archive'}
+                          <Icon icon={p.archived ? I.refresh : I.archive} width={16} />
                         </button>
+                        <span className="pj-actions-sep" aria-hidden />
                         <button
                           type="button"
-                          className="btn btn-danger"
+                          className="pj-icon-btn pj-icon-btn--danger"
+                          aria-label={`Delete ${p.name}`}
+                          title="Delete"
                           onClick={async () => {
-                            if (!confirm(`Permanently delete “${p.name}”? Existing tasks keep the name, but the project will disappear from lists.`)) {
-                              return;
-                            }
+                            const ok = await confirm({
+                              title: 'Delete project',
+                              message: `Permanently delete “${p.name}”? Existing tasks keep the name, but the project will disappear from lists.`,
+                              confirmLabel: 'Delete project',
+                              variant: 'danger',
+                            });
+                            if (!ok) return;
                             try {
                               const res = await api.deleteProject(p.name);
                               setProjects(res.projects);
@@ -202,41 +310,48 @@ export default function ProjectsPage() {
                             }
                           }}
                         >
-                          <Icon icon={I.trash} width={13} />
+                          <Icon icon={I.trash} width={16} />
                         </button>
                       </div>
-                    </td>
-                  </tr>
+                    </div>
+                  </li>
                 );
               })}
-            </tbody>
-          </table>
-        </div>
-      )}
+            </ul>
+          </Scrollbar>
+        )}
+      </section>
 
       {(creating || editing) && (
         <>
-          <div className="overlay" onClick={() => { setCreating(false); setEditing(null); }} />
+          <div className="overlay" onClick={closeComposer} />
           <div className="composer" role="dialog" aria-label={creating ? 'New project' : 'Edit project'}>
             <header className="composer-header">
               <strong>{creating ? 'New project' : 'Edit project'}</strong>
-              <button
-                type="button"
-                className="icon-btn"
-                aria-label="Close"
-                onClick={() => { setCreating(false); setEditing(null); }}
-              >
+              <button type="button" className="icon-btn" aria-label="Close" onClick={closeComposer}>
                 <Icon icon={I.close} width={16} />
               </button>
             </header>
             <div className="composer-body">
               <div className="field">
-                <label>Name</label>
-                <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Website redesign" autoFocus />
+                <label htmlFor="pj-name">Name</label>
+                <input
+                  id="pj-name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      void save();
+                    }
+                  }}
+                  placeholder="e.g. Website redesign"
+                  autoFocus
+                />
               </div>
               <div className="field">
                 <label>Color</label>
-                <div className="color-grid">
+                <div className="color-grid" role="listbox" aria-label="Project color">
                   {PROJECT_COLORS.map((c) => (
                     <button
                       key={c}
@@ -244,18 +359,25 @@ export default function ProjectsPage() {
                       className={`color-swatch${color === c ? ' selected' : ''}`}
                       style={{ background: c }}
                       aria-label={`Color ${c}`}
+                      aria-selected={color === c}
                       onClick={() => setColor(c)}
                     />
                   ))}
                 </div>
               </div>
               <div className="field">
-                <label>Notes (optional)</label>
-                <textarea rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Who owns this? Any useful context…" />
+                <label htmlFor="pj-notes">Notes (optional)</label>
+                <textarea
+                  id="pj-notes"
+                  rows={3}
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Who owns this? Any useful context…"
+                />
               </div>
             </div>
             <footer className="composer-footer">
-              <button type="button" className="btn" onClick={() => { setCreating(false); setEditing(null); }}>
+              <button type="button" className="btn" onClick={closeComposer}>
                 Cancel
               </button>
               <button type="button" className="btn btn-primary" disabled={busy} onClick={() => void save()}>

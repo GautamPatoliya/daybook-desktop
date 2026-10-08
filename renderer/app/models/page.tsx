@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Icon, I } from '../../lib/icons';
 import { api } from '../../lib/api';
+import { useDialog } from '../../components/DialogProvider';
 import type { AppSettings, ModelCatalogItem } from '../../../shared/types';
 
 type ModelRow = ModelCatalogItem & {
@@ -36,6 +37,7 @@ function formatBytes(n: number) {
 }
 
 export default function ModelsPage() {
+  const { confirm } = useDialog();
   const [models, setModels] = useState<ModelRow[]>([]);
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [progress, setProgress] = useState<Record<string, LiveProgress>>({});
@@ -127,7 +129,7 @@ export default function ModelsPage() {
               reason: 'paused',
             },
           }));
-          setToast('Download paused — you can resume anytime');
+          setToast('Download paused - you can resume anytime');
           void refresh();
           return;
         }
@@ -191,7 +193,7 @@ export default function ModelsPage() {
     };
   }, [refresh]);
 
-  // Poll only while a download/install is active — not every 5s forever
+  // Poll only while a download/install is active - not every 5s forever
   const anyDownloading = models.some((m) => m.downloading) || Object.keys(progress).length > 0;
   useEffect(() => {
     if (!engineBusy && !engine?.installing && !anyDownloading) return;
@@ -204,7 +206,7 @@ export default function ModelsPage() {
       <div className="page-header">
         <h1>Local AI</h1>
         <p className="page-sub">
-          Optional. Daybook stays light by default — install the AI engine only if you want on-device
+          Optional. Daybook stays light by default - install the AI engine only if you want on-device
           wording polish. Models download separately and stay on this PC.
         </p>
       </div>
@@ -216,7 +218,7 @@ export default function ModelsPage() {
           <p>
             {engine?.installed
               ? `CPU engine v${engine.version || '?'} is installed in your app data (not in the Daybook installer).`
-              : 'The base Daybook installer does not include Local AI. Install a small CPU engine (~45–100 MB) when you want polish. If a previous install failed, click Install again — it will replace the broken files.'}
+              : 'The base Daybook installer does not include Local AI. Install a small CPU engine (~45–100 MB) when you want polish. If a previous install failed, click Install again - it will replace the broken files.'}
           </p>
           {(engineBusy || engine?.installing) && (
             <div style={{ marginTop: '0.6rem' }}>
@@ -265,7 +267,14 @@ export default function ModelsPage() {
               type="button"
               className="btn"
               onClick={async () => {
-                if (!confirm('Remove the Local AI engine from this PC? Downloaded models are kept.')) return;
+                const ok = await confirm({
+                  title: 'Remove Local AI engine',
+                  message:
+                    'Remove the Local AI engine from this PC? Downloaded models are kept.',
+                  confirmLabel: 'Remove engine',
+                  variant: 'warning',
+                });
+                if (!ok) return;
                 await api.uninstallEngine();
                 await api.saveSettings({ aiEnhanceEnabled: false, selectedModelId: null });
                 setToast('AI engine removed');
@@ -507,12 +516,13 @@ export default function ModelsPage() {
                         style={{ padding: '0.55rem', borderRadius: '8px' }}
                         title="Remove model"
                         onClick={async () => {
-                          if (
-                            !confirm(
-                              `Remove ${m.name} from this PC? You can download it again later.`,
-                            )
-                          )
-                            return;
+                          const ok = await confirm({
+                            title: 'Remove model',
+                            message: `Remove ${m.name} from this PC? You can download it again later.`,
+                            confirmLabel: 'Remove',
+                            variant: 'danger',
+                          });
+                          if (!ok) return;
                           await api.deleteModel(m.id);
                           if (selected) await api.saveSettings({ selectedModelId: null });
                           await refresh();
@@ -616,7 +626,13 @@ export default function ModelsPage() {
                           }}
                           disabled={busyId === m.id}
                           onClick={async () => {
-                            if (!confirm(`Discard the partial download for ${m.name}?`)) return;
+                            const ok = await confirm({
+                              title: 'Discard download',
+                              message: `Discard the partial download for ${m.name}?`,
+                              confirmLabel: 'Discard',
+                              variant: 'warning',
+                            });
+                            if (!ok) return;
                             setBusyId(m.id);
                             try {
                               await api.cancelDownload(m.id);

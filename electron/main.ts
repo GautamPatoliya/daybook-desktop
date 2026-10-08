@@ -4,6 +4,7 @@ import {
   Notification,
   Tray,
   Menu,
+  dialog,
   nativeImage,
   powerMonitor,
 } from 'electron';
@@ -11,11 +12,22 @@ import fs from 'node:fs';
 import path from 'node:path';
 import AutoLaunch from 'auto-launch';
 import { autoUpdater } from 'electron-updater';
-import { DataRoot, readSettings } from '../shared/store';
+import { DataRoot, readSettings, readStore, todayDate, statsOf } from '../shared/store';
 import { shouldFireReminder } from './scheduler/reminders';
-import { markUpdateError, markUpdateReady, queueReminder, registerIpc } from './ipc/handlers';
+import {
+  clearPendingReminder,
+  markUpdateError,
+  markUpdateReady,
+  queueReminder,
+  registerIpc,
+} from './ipc/handlers';
 import { adoptExistingEngine } from './llm/engine';
-import { rendererOutDir, startStaticServer, WTT_UI_PORT } from './static-server';
+import {
+  hasRendererExport,
+  rendererOutDir,
+  startStaticServer,
+  WTT_UI_PORT,
+} from './static-server';
 
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
@@ -27,17 +39,19 @@ let powerMonitorBound = false;
 let staticBaseUrl: string | null = null;
 let closeStaticServer: (() => void) | null = null;
 let isQuitting = false;
+/** Session-only pause reminders (cleared on quit). */
+let remindersPaused = false;
 
 const isDev = process.env.ELECTRON_DEV === '1';
 const APP_USER_MODEL_ID = 'com.bcreative.worktasktracker';
 
-/** Windows toast header + icon — must run before app.ready. */
+/** Windows toast header + icon - must run before app.ready. */
 if (process.platform === 'win32') {
   app.setAppUserModelId(APP_USER_MODEL_ID);
 }
 app.setName('Daybook');
 
-/** Only one Daybook process — prevents duplicate windows + tray icons on Windows. */
+/** Only one Daybook process - prevents duplicate windows + tray icons on Windows. */
 const gotSingleInstanceLock = app.requestSingleInstanceLock();
 if (!gotSingleInstanceLock) {
   app.quit();
@@ -48,7 +62,7 @@ if (!gotSingleInstanceLock) {
 }
 
 // Keep Chromium defaults for background throttling (better for low-end PCs).
-// Avoid aggressive disableHardwareAcceleration — it helps some GPUs and hurts others.
+// Avoid aggressive disableHardwareAcceleration - it helps some GPUs and hurts others.
 
 function getDataRoot(): DataRoot {
   const root = new DataRoot(path.join(app.getPath('userData')));
@@ -106,7 +120,7 @@ function loadAppIcon(): Electron.NativeImage | undefined {
   return undefined;
 }
 
-/** Windows tray needs a small opaque icon; empty/transparent icons look missing. */
+/** Tray icons from `npm run icons:generate` (tray-16 / tray-32). */
 function loadTrayIcon(): Electron.NativeImage {
   const trayFile = process.platform === 'win32' ? 'tray-16.png' : 'tray-32.png';
   const candidates = [
@@ -141,7 +155,12 @@ function loadTrayIcon(): Electron.NativeImage {
   );
 }
 
+/**
+ * Push a reminder to the live board renderer. Clears any queued pending mode so
+ * a later remount cannot replay a reminder the user already saw/dismissed.
+ */
 function deliverReminder(mode: string) {
+  clearPendingReminder();
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.webContents.send('reminder:open', { mode });
   }
@@ -157,6 +176,26 @@ function isBoardUrl(url: string) {
   }
 }
 
+/**
+ * Reminder delivery protocol (exactly once):
+ * - Board already mounted → live `reminder:open` only (no pending queue).
+ * - Navigating / cold start → queue for `reminder:consume` on board mount only.
+ * Never queue + deliver together - that left pending set after dismiss and
+ * reopened the composer when returning to the board.
+ */
+async function routeReminder(mode: string): Promise<void> {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  if (!isBoardUrl(mainWindow.webContents.getURL())) {
+    queueReminder(mode);
+    await new Promise<void>((resolve) => {
+      mainWindow!.webContents.once('did-finish-load', () => resolve());
+      void mainWindow!.loadURL(rendererUrl('/'));
+    });
+    return;
+  }
+  deliverReminder(mode);
+}
+
 async function focusMainWindow(mode?: string): Promise<BrowserWindow> {
   if (!mainWindow || mainWindow.isDestroyed()) {
     return createWindow(mode);
@@ -165,21 +204,13 @@ async function focusMainWindow(mode?: string): Promise<BrowserWindow> {
   mainWindow.show();
   mainWindow.focus();
   if (mode === 'hourly' || mode === 'eod') {
-    queueReminder(mode);
-    if (!isBoardUrl(mainWindow.webContents.getURL())) {
-      await new Promise<void>((resolve) => {
-        mainWindow!.webContents.once('did-finish-load', () => resolve());
-        void mainWindow!.loadURL(rendererUrl('/'));
-      });
-    }
-    setTimeout(() => deliverReminder(mode), 150);
+    await routeReminder(mode);
   }
   return mainWindow;
 }
 
 async function createWindow(mode?: string): Promise<BrowserWindow> {
   const isReminder = mode === 'hourly' || mode === 'eod';
-  if (isReminder) queueReminder(mode);
 
   if (mainWindow && !mainWindow.isDestroyed()) {
     if (mainWindow.isMinimized()) mainWindow.restore();
@@ -189,17 +220,13 @@ async function createWindow(mode?: string): Promise<BrowserWindow> {
       await mainWindow.loadURL(rendererUrl('/onboarding/'));
       return mainWindow;
     }
-    if (isReminder) {
-      if (!isBoardUrl(mainWindow.webContents.getURL())) {
-        await new Promise<void>((resolve) => {
-          mainWindow!.webContents.once('did-finish-load', () => resolve());
-          void mainWindow!.loadURL(rendererUrl('/'));
-        });
-      }
-      setTimeout(() => deliverReminder(mode!), 150);
+    if (isReminder && mode) {
+      await routeReminder(mode);
     }
     return mainWindow;
   }
+
+  if (isReminder && mode) queueReminder(mode);
 
   const appIcon = loadAppIcon();
   mainWindow = new BrowserWindow({
@@ -229,12 +256,6 @@ async function createWindow(mode?: string): Promise<BrowserWindow> {
     mainWindow?.show();
   });
 
-  if (isReminder && mode) {
-    mainWindow.webContents.once('did-finish-load', () => {
-      setTimeout(() => deliverReminder(mode), 250);
-    });
-  }
-
   const startRoute = mode === 'onboarding' ? '/onboarding/' : '/';
   await mainWindow.loadURL(rendererUrl(startRoute));
 
@@ -253,6 +274,80 @@ async function createWindow(mode?: string): Promise<BrowserWindow> {
   return mainWindow;
 }
 
+function resolveWorkingOnTitle(): string {
+  try {
+    const settings = readSettings(dataRoot);
+    const date = todayDate(settings.timezone);
+    const store = readStore(dataRoot, date);
+    const wip = store.tasks
+      .filter((t) => t.status === 'wip')
+      .sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''));
+    if (wip[0]) return wip[0].title;
+  } catch {
+    /* ignore */
+  }
+  return 'Nothing yet';
+}
+
+function todayProgressLabel(): string {
+  try {
+    const settings = readSettings(dataRoot);
+    const date = todayDate(settings.timezone);
+    const store = readStore(dataRoot, date);
+    const stats = statsOf(store.tasks);
+    return `${stats.done} done · ${stats.wip} active`;
+  } catch {
+    return '-';
+  }
+}
+
+function sendTrayAction(action: string, payload?: Record<string, unknown>) {
+  void focusMainWindow().then((win) => {
+    win?.webContents.send('tray:action', { action, ...payload });
+  });
+}
+
+function rebuildTrayMenu() {
+  if (!tray) return;
+  const working = resolveWorkingOnTitle();
+  tray.setContextMenu(
+    Menu.buildFromTemplate([
+      { label: 'Daybook', enabled: false },
+      { label: `● Working on: ${working.slice(0, 48)}`, enabled: false },
+      { type: 'separator' },
+      {
+        label: '+ New Task',
+        click: () => sendTrayAction('new-task'),
+      },
+      {
+        label: remindersPaused ? '▶ Resume Reminders' : '⏸ Pause Reminders',
+        type: 'checkbox',
+        checked: remindersPaused,
+        click: () => {
+          remindersPaused = !remindersPaused;
+          rebuildTrayMenu();
+        },
+      },
+      { type: 'separator' },
+      { label: "Today's Progress", enabled: false },
+      { label: `  ${todayProgressLabel()}`, enabled: false },
+      { type: 'separator' },
+      { label: 'Open Daybook', click: () => void focusMainWindow() },
+      {
+        label: 'Generate EOD',
+        click: () => sendTrayAction('eod'),
+      },
+      {
+        label: 'Quit Daybook',
+        click: () => {
+          isQuitting = true;
+          app.quit();
+        },
+      },
+    ]),
+  );
+}
+
 function setupTray() {
   if (tray) {
     try {
@@ -265,25 +360,13 @@ function setupTray() {
 
   tray = new Tray(loadTrayIcon());
   tray.setToolTip('Daybook');
-  tray.setContextMenu(
-    Menu.buildFromTemplate([
-      { label: 'Open board', click: () => void focusMainWindow() },
-      { label: 'Hourly reminder now', click: () => void createWindow('hourly') },
-      { label: 'EOD email now', click: () => void createWindow('eod') },
-      { type: 'separator' },
-      {
-        label: 'Quit Daybook',
-        click: () => {
-          isQuitting = true;
-          app.quit();
-        },
-      },
-    ]),
-  );
+  rebuildTrayMenu();
   tray.on('double-click', () => void focusMainWindow());
   tray.on('click', () => {
     if (process.platform === 'win32') void focusMainWindow();
   });
+  // Refresh working-on / progress periodically
+  setInterval(() => rebuildTrayMenu(), 60_000);
 }
 
 /**
@@ -327,18 +410,19 @@ function showReminderNotification(body: string) {
 }
 
 function tickReminders() {
+  if (remindersPaused) return;
   const settings = readSettings(dataRoot);
   const hourly = shouldFireReminder(settings, 'hourly', lastHourlyKey);
   if (hourly.fire) {
     lastHourlyKey = hourly.key;
     void createWindow('hourly');
-    showReminderNotification('Hourly check-in — update your tasks.');
+    showReminderNotification('Hourly check-in - update your tasks.');
   }
   const eod = shouldFireReminder(settings, 'eod', lastEodKey);
   if (eod.fire) {
     lastEodKey = eod.key;
     void createWindow('eod');
-    showReminderNotification('End of day — review and send your email draft.');
+    showReminderNotification('End of day - review and send your email draft.');
   }
 }
 
@@ -407,6 +491,22 @@ if (gotSingleInstanceLock) {
 
     if (!isDev) {
       const outDir = rendererOutDir();
+      if (!hasRendererExport(outDir)) {
+        dialog.showErrorBox(
+          'Daybook UI is missing',
+          [
+            `No static export found at:\n${outDir}`,
+            '',
+            'For local development run:',
+            '  npm run dev',
+            '',
+            'To rebuild the packaged UI:',
+            '  npm run build:renderer',
+          ].join('\n'),
+        );
+        app.quit();
+        return;
+      }
       const server = await startStaticServer(outDir);
       staticBaseUrl = `http://127.0.0.1:${server.port}`;
       closeStaticServer = server.close;
@@ -418,6 +518,12 @@ if (gotSingleInstanceLock) {
       getWindow: () => mainWindow,
       applyAutostart,
       createWindow,
+      setRemindersPaused: (paused) => {
+        remindersPaused = paused;
+        rebuildTrayMenu();
+      },
+      getRemindersPaused: () => remindersPaused,
+      rebuildTray: () => rebuildTrayMenu(),
     });
 
     // One-shot: adopt leftover engine packages after a failed verify (never on every status poll)

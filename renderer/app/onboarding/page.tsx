@@ -1,12 +1,18 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Icon, I } from '../../lib/icons';
 import SpideyLoader from '../../components/SpideyLoader';
+import BrandMark from '../../components/BrandMark';
+import { EmailChipInput } from '../../components/EmailChipInput';
 import { api } from '../../lib/api';
 import { TimePicker } from '../../components/TimePicker';
 import { formatHourLabel } from '../../lib/time';
+import {
+  mergeSuggestionPool,
+  upsertEmailHistory,
+} from '../../lib/emailRecipients';
 import type { AppSettings } from '../../../shared/types';
 
 const DAYS = [
@@ -42,9 +48,31 @@ export default function OnboardingPage() {
     );
   }
 
+  const recipientSuggestions = useMemo(
+    () =>
+      settings
+        ? mergeSuggestionPool(
+            settings.emailRecipientHistory,
+            settings.emailTo || '',
+            settings.emailCc || '',
+          )
+        : [],
+    [settings],
+  );
+
   async function finish() {
     setBusy(true);
-    await api.saveSettings({ ...settings!, onboardingComplete: true, autostart: true });
+    const seededHistory = mergeSuggestionPool(
+      settings!.emailRecipientHistory,
+      settings!.emailTo || '',
+      settings!.emailCc || '',
+    );
+    await api.saveSettings({
+      ...settings!,
+      emailRecipientHistory: seededHistory,
+      onboardingComplete: true,
+      autostart: true,
+    });
     setBusy(false);
     router.replace('/');
   }
@@ -54,10 +82,10 @@ export default function OnboardingPage() {
       <div className="onboarding-card">
         <div className="onboarding-brand">
           <div className="onboarding-brand-mark">
-            <Icon icon={I.logo} width={24} style={{ color: '#fff' }} />
+            <BrandMark size={44} />
           </div>
           <h1>Welcome to Daybook</h1>
-          <p className="page-sub">Let&apos;s configure your local daily workspace companion.</p>
+          <p className="page-sub">Let&apos;s set up your local daily workspace.</p>
         </div>
 
         <div className="onboarding-steps" aria-hidden>
@@ -85,14 +113,26 @@ export default function OnboardingPage() {
               </div>
 
               <div className="field">
-                <label>EOD Email Recipient(s)</label>
-                <textarea
-                  rows={2}
+                <label htmlFor="onboarding-email-to">EOD Email Recipient(s)</label>
+                <EmailChipInput
+                  id="onboarding-email-to"
                   value={settings.emailTo}
-                  onChange={(e) => setSettings({ ...settings, emailTo: e.target.value })}
-                  placeholder="manager@company.com, team@company.com"
+                  suggestions={recipientSuggestions}
+                  placeholder="manager@company.com"
+                  onChange={(next) => setSettings({ ...settings, emailTo: next })}
+                  onCommitEmail={(email) =>
+                    setSettings({
+                      ...settings,
+                      emailRecipientHistory: upsertEmailHistory(
+                        settings.emailRecipientHistory,
+                        email,
+                      ),
+                    })
+                  }
                 />
-                <span className="field-hint">Separate multiple emails with commas.</span>
+                <span className="field-hint">
+                  Add your manager or lead. Press Enter after each address.
+                </span>
               </div>
             </>
           )}

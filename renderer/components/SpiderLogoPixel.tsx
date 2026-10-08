@@ -1,7 +1,7 @@
 'use client';
 import React from 'react';
 
-// 16x16 pixel spider art — each cell is one pixel
+// 16x16 pixel spider art - each cell is one pixel
 // 0=transparent, 1=body(red), 2=highlight(light), 3=shadow(dark), 4=eye(white), 5=web(light red)
 const SPIDER_PIXELS: number[][] = [
   [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],

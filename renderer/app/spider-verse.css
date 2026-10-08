@@ -1,5 +1,5 @@
 /* ============================================================
-   SPIDER-VERSE THEME v4 — Spidey Tracker pixel HUD
+   SPIDER-VERSE THEME v4 - Spidey Tracker pixel HUD
    Reference: chunky black outlines, blue CRT frame, cream CTAs.
    No dashed borders. One font. One border language.
    ============================================================ */
@@ -69,7 +69,7 @@
   --sv-pix-r: 8px;
   --sv-pix-bd: 3px;
   --sv-pix-drop: 4px;
-  /* Two-step pixel corners — matches reference HUD pill buttons */
+  /* Two-step pixel corners - matches reference HUD pill buttons */
   --sv-pix-clip: polygon(
     8px 0,
     calc(100% - 8px) 0,
@@ -115,7 +115,7 @@
     5px 3px
   );
   --sv-pix-shadow-press: drop-shadow(1px 1px 0 #000);
-  /* Cheap outline — 4 shadows, not 12. Extra layers freeze Electron on hover/scroll. */
+  /* Cheap outline - 4 shadows, not 12. Extra layers freeze Electron on hover/scroll. */
   --sv-pix-outline:
     drop-shadow(2px 0 0 #000)
     drop-shadow(-2px 0 0 #000)
@@ -145,6 +145,283 @@
     6px 6px,
     12px 6px
   );
+  /* 3px HUD stroke that follows clip-lg stairs (inset box-shadow cannot). */
+  --sv-pix-ring-lg: polygon(
+    50% 0,
+    calc(100% - 12px) 0,
+    calc(100% - 12px) 6px,
+    calc(100% - 6px) 6px,
+    calc(100% - 6px) 12px,
+    100% 12px,
+    100% calc(100% - 12px),
+    calc(100% - 6px) calc(100% - 12px),
+    calc(100% - 6px) calc(100% - 6px),
+    calc(100% - 12px) calc(100% - 6px),
+    calc(100% - 12px) 100%,
+    12px 100%,
+    12px calc(100% - 6px),
+    6px calc(100% - 6px),
+    6px calc(100% - 12px),
+    0 calc(100% - 12px),
+    0 12px,
+    6px 12px,
+    6px 6px,
+    12px 6px,
+    12px 0,
+    50% 0,
+    50% 3px,
+    15px 3px,
+    15px 9px,
+    9px 9px,
+    9px 15px,
+    3px 15px,
+    3px calc(100% - 15px),
+    9px calc(100% - 15px),
+    9px calc(100% - 9px),
+    15px calc(100% - 9px),
+    15px calc(100% - 3px),
+    calc(100% - 15px) calc(100% - 3px),
+    calc(100% - 15px) calc(100% - 9px),
+    calc(100% - 9px) calc(100% - 9px),
+    calc(100% - 9px) calc(100% - 15px),
+    calc(100% - 3px) calc(100% - 15px),
+    calc(100% - 3px) 15px,
+    calc(100% - 9px) 15px,
+    calc(100% - 9px) 9px,
+    calc(100% - 15px) 9px,
+    calc(100% - 15px) 3px,
+    50% 3px
+  );
+  --sv-pix-ring-lg-4: polygon(
+    50% 0,
+    calc(100% - 12px) 0,
+    calc(100% - 12px) 6px,
+    calc(100% - 6px) 6px,
+    calc(100% - 6px) 12px,
+    100% 12px,
+    100% calc(100% - 12px),
+    calc(100% - 6px) calc(100% - 12px),
+    calc(100% - 6px) calc(100% - 6px),
+    calc(100% - 12px) calc(100% - 6px),
+    calc(100% - 12px) 100%,
+    12px 100%,
+    12px calc(100% - 6px),
+    6px calc(100% - 6px),
+    6px calc(100% - 12px),
+    0 calc(100% - 12px),
+    0 12px,
+    6px 12px,
+    6px 6px,
+    12px 6px,
+    12px 0,
+    50% 0,
+    50% 4px,
+    16px 4px,
+    16px 10px,
+    10px 10px,
+    10px 16px,
+    4px 16px,
+    4px calc(100% - 16px),
+    10px calc(100% - 16px),
+    10px calc(100% - 10px),
+    16px calc(100% - 10px),
+    16px calc(100% - 4px),
+    calc(100% - 16px) calc(100% - 4px),
+    calc(100% - 16px) calc(100% - 10px),
+    calc(100% - 10px) calc(100% - 10px),
+    calc(100% - 10px) calc(100% - 16px),
+    calc(100% - 4px) calc(100% - 16px),
+    calc(100% - 4px) 16px,
+    calc(100% - 10px) 16px,
+    calc(100% - 10px) 10px,
+    calc(100% - 16px) 10px,
+    calc(100% - 16px) 4px,
+    50% 4px
+  );
+  --sv-pix-ring: polygon(
+    50% 0,
+    calc(100% - 8px) 0,
+    calc(100% - 8px) 4px,
+    calc(100% - 4px) 4px,
+    calc(100% - 4px) 8px,
+    100% 8px,
+    100% calc(100% - 8px),
+    calc(100% - 4px) calc(100% - 8px),
+    calc(100% - 4px) calc(100% - 4px),
+    calc(100% - 8px) calc(100% - 4px),
+    calc(100% - 8px) 100%,
+    8px 100%,
+    8px calc(100% - 4px),
+    4px calc(100% - 4px),
+    4px calc(100% - 8px),
+    0 calc(100% - 8px),
+    0 8px,
+    4px 8px,
+    4px 4px,
+    8px 4px,
+    8px 0,
+    50% 0,
+    50% 2px,
+    10px 2px,
+    10px 6px,
+    6px 6px,
+    6px 10px,
+    2px 10px,
+    2px calc(100% - 10px),
+    6px calc(100% - 10px),
+    6px calc(100% - 6px),
+    10px calc(100% - 6px),
+    10px calc(100% - 2px),
+    calc(100% - 10px) calc(100% - 2px),
+    calc(100% - 10px) calc(100% - 6px),
+    calc(100% - 6px) calc(100% - 6px),
+    calc(100% - 6px) calc(100% - 10px),
+    calc(100% - 2px) calc(100% - 10px),
+    calc(100% - 2px) 10px,
+    calc(100% - 6px) 10px,
+    calc(100% - 6px) 6px,
+    calc(100% - 10px) 6px,
+    calc(100% - 10px) 2px,
+    50% 2px
+  );
+  --sv-pix-ring-3: polygon(
+    50% 0,
+    calc(100% - 8px) 0,
+    calc(100% - 8px) 4px,
+    calc(100% - 4px) 4px,
+    calc(100% - 4px) 8px,
+    100% 8px,
+    100% calc(100% - 8px),
+    calc(100% - 4px) calc(100% - 8px),
+    calc(100% - 4px) calc(100% - 4px),
+    calc(100% - 8px) calc(100% - 4px),
+    calc(100% - 8px) 100%,
+    8px 100%,
+    8px calc(100% - 4px),
+    4px calc(100% - 4px),
+    4px calc(100% - 8px),
+    0 calc(100% - 8px),
+    0 8px,
+    4px 8px,
+    4px 4px,
+    8px 4px,
+    8px 0,
+    50% 0,
+    50% 3px,
+    11px 3px,
+    11px 7px,
+    7px 7px,
+    7px 11px,
+    3px 11px,
+    3px calc(100% - 11px),
+    7px calc(100% - 11px),
+    7px calc(100% - 7px),
+    11px calc(100% - 7px),
+    11px calc(100% - 3px),
+    calc(100% - 11px) calc(100% - 3px),
+    calc(100% - 11px) calc(100% - 7px),
+    calc(100% - 7px) calc(100% - 7px),
+    calc(100% - 7px) calc(100% - 11px),
+    calc(100% - 3px) calc(100% - 11px),
+    calc(100% - 3px) 11px,
+    calc(100% - 7px) 11px,
+    calc(100% - 7px) 7px,
+    calc(100% - 11px) 7px,
+    calc(100% - 11px) 3px,
+    50% 3px
+  );
+  --sv-pix-ring-sm: polygon(
+    50% 0,
+    calc(100% - 5px) 0,
+    calc(100% - 5px) 3px,
+    calc(100% - 3px) 3px,
+    calc(100% - 3px) 5px,
+    100% 5px,
+    100% calc(100% - 5px),
+    calc(100% - 3px) calc(100% - 5px),
+    calc(100% - 3px) calc(100% - 3px),
+    calc(100% - 5px) calc(100% - 3px),
+    calc(100% - 5px) 100%,
+    5px 100%,
+    5px calc(100% - 3px),
+    3px calc(100% - 3px),
+    3px calc(100% - 5px),
+    0 calc(100% - 5px),
+    0 5px,
+    3px 5px,
+    3px 3px,
+    5px 3px,
+    5px 0,
+    50% 0,
+    50% 2px,
+    7px 2px,
+    7px 5px,
+    5px 5px,
+    5px 7px,
+    2px 7px,
+    2px calc(100% - 7px),
+    5px calc(100% - 7px),
+    5px calc(100% - 5px),
+    7px calc(100% - 5px),
+    7px calc(100% - 2px),
+    calc(100% - 7px) calc(100% - 2px),
+    calc(100% - 7px) calc(100% - 5px),
+    calc(100% - 5px) calc(100% - 5px),
+    calc(100% - 5px) calc(100% - 7px),
+    calc(100% - 2px) calc(100% - 7px),
+    calc(100% - 2px) 7px,
+    calc(100% - 5px) 7px,
+    calc(100% - 5px) 5px,
+    calc(100% - 7px) 5px,
+    calc(100% - 7px) 2px,
+    50% 2px
+  );
+  --sv-pix-ring-sm-3: polygon(
+    50% 0,
+    calc(100% - 5px) 0,
+    calc(100% - 5px) 3px,
+    calc(100% - 3px) 3px,
+    calc(100% - 3px) 5px,
+    100% 5px,
+    100% calc(100% - 5px),
+    calc(100% - 3px) calc(100% - 5px),
+    calc(100% - 3px) calc(100% - 3px),
+    calc(100% - 5px) calc(100% - 3px),
+    calc(100% - 5px) 100%,
+    5px 100%,
+    5px calc(100% - 3px),
+    3px calc(100% - 3px),
+    3px calc(100% - 5px),
+    0 calc(100% - 5px),
+    0 5px,
+    3px 5px,
+    3px 3px,
+    5px 3px,
+    5px 0,
+    50% 0,
+    50% 3px,
+    8px 3px,
+    8px 6px,
+    6px 6px,
+    6px 8px,
+    3px 8px,
+    3px calc(100% - 8px),
+    6px calc(100% - 8px),
+    6px calc(100% - 6px),
+    8px calc(100% - 6px),
+    8px calc(100% - 3px),
+    calc(100% - 8px) calc(100% - 3px),
+    calc(100% - 8px) calc(100% - 6px),
+    calc(100% - 6px) calc(100% - 6px),
+    calc(100% - 6px) calc(100% - 8px),
+    calc(100% - 3px) calc(100% - 8px),
+    calc(100% - 3px) 8px,
+    calc(100% - 6px) 8px,
+    calc(100% - 6px) 6px,
+    calc(100% - 8px) 6px,
+    calc(100% - 8px) 3px,
+    50% 3px
+  );
   --sv-pix-shadow-sm: var(--sv-pix-outline) drop-shadow(2px 2px 0 #000);
   --sv-pix-shadow-sm-hover: var(--sv-pix-outline) drop-shadow(3px 3px 0 #000);
   --sv-pix-shadow-lg: var(--sv-pix-outline) drop-shadow(4px 4px 0 #000);
@@ -158,13 +435,14 @@
     inset 3px 3px 0 0 rgba(255, 255, 255, 0.06);
 }
 
-/* Pixel-rounded controls — clip-path + drop-shadow (shadow follows shape) */
+/* Pixel-rounded controls - clip-path + drop-shadow (shadow follows shape) */
 [data-theme='spider-verse'] .btn,
 [data-theme='spider-verse'] .btn-add-line,
 [data-theme='spider-verse'] .icon-btn,
 [data-theme='spider-verse'] .nav-link.active,
 [data-theme='spider-verse'] .chip,
-[data-theme='spider-verse'] .chip.active {
+[data-theme='spider-verse'] .chip.active,
+[data-theme='spider-verse'] .day-badge-btn {
   position: relative;
   clip-path: var(--sv-pix-clip);
   -webkit-clip-path: var(--sv-pix-clip);
@@ -196,7 +474,7 @@
     inset 0 -3px 0 0 rgba(0, 0, 0, 0.4) !important;
 }
 
-/* Pixel-rounded surfaces — cards, pills, inputs, tags */
+/* Pixel-rounded surfaces - cards, pills, inputs, tags */
 [data-theme='spider-verse'] .stat-pill,
 [data-theme='spider-verse'] .date-pill,
 [data-theme='spider-verse'] .tag,
@@ -223,7 +501,6 @@
   border: none !important;
   filter: none !important;
   box-shadow:
-    inset 0 0 0 2px var(--sv-black),
     inset 0 2px 0 0 rgba(255, 255, 255, 0.06),
     inset 0 -3px 0 0 rgba(0, 0, 0, 0.35) !important;
 }
@@ -257,7 +534,6 @@
 
 [data-theme='spider-verse'] .composer,
 [data-theme='spider-verse'] .onboarding-card,
-[data-theme='spider-verse'] .settings-panel,
 [data-theme='spider-verse'] .date-picker,
 [data-theme='spider-verse'] .ui-select-menu,
 [data-theme='spider-verse'] .settings-nav,
@@ -266,6 +542,164 @@
   -webkit-clip-path: var(--sv-pix-clip-lg);
   border: none !important;
   filter: none !important;
+}
+[data-theme='spider-verse'] .settings-panel {
+  clip-path: var(--sv-pix-clip-lg);
+  -webkit-clip-path: var(--sv-pix-clip-lg);
+  overflow: hidden !important;
+}
+
+[data-theme='spider-verse'] .an-hero,
+[data-theme='spider-verse'] .an-panel,
+[data-theme='spider-verse'] .pj-hero,
+[data-theme='spider-verse'] .pj-panel,
+[data-theme='spider-verse'] .settings-panel,
+[data-theme='spider-verse'] .settings-nav,
+[data-theme='spider-verse'] .updates-hero,
+[data-theme='spider-verse'] .updater-releases,
+[data-theme='spider-verse'] .composer,
+[data-theme='spider-verse'] .onboarding-card,
+[data-theme='spider-verse'] .date-picker,
+[data-theme='spider-verse'] .ui-select-menu {
+  position: relative;
+}
+[data-theme='spider-verse'] .an-hero::after,
+[data-theme='spider-verse'] .an-panel::after,
+[data-theme='spider-verse'] .pj-hero::after,
+[data-theme='spider-verse'] .pj-panel::after,
+[data-theme='spider-verse'] .settings-panel::after,
+[data-theme='spider-verse'] .settings-nav::after,
+[data-theme='spider-verse'] .updates-hero::after,
+[data-theme='spider-verse'] .updater-releases::after,
+[data-theme='spider-verse'] .date-picker::after,
+[data-theme='spider-verse'] .ui-select-menu::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 8;
+  background: var(--sv-frame);
+  clip-path: var(--sv-pix-ring-lg);
+  -webkit-clip-path: var(--sv-pix-ring-lg);
+}
+[data-theme='spider-verse'] .composer::after,
+[data-theme='spider-verse'] .onboarding-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 8;
+  background: var(--sv-frame);
+  clip-path: var(--sv-pix-ring-lg-4);
+  -webkit-clip-path: var(--sv-pix-ring-lg-4);
+}
+
+[data-theme='spider-verse'] .card,
+[data-theme='spider-verse'] .premium-metric-card,
+[data-theme='spider-verse'] .chart-card,
+[data-theme='spider-verse'] .update-status-card,
+[data-theme='spider-verse'] .release-card,
+[data-theme='spider-verse'] .model-card,
+[data-theme='spider-verse'] .theme-card,
+[data-theme='spider-verse'] .toast,
+[data-theme='spider-verse'] .empty,
+[data-theme='spider-verse'] .onboarding-banner,
+[data-theme='spider-verse'] .sv-suit-banner,
+[data-theme='spider-verse'] .sv-empty-art,
+[data-theme='spider-verse'] .email-chip-shell,
+[data-theme='spider-verse'] .email-chip-menu,
+[data-theme='spider-verse'] .mail-md-preview,
+[data-theme='spider-verse'] .ui-select-trigger,
+[data-theme='spider-verse'] .time-picker-trigger,
+[data-theme='spider-verse'] .time-popover,
+[data-theme='spider-verse'] .schedule-card,
+[data-theme='spider-verse'] .settings-switch-row,
+[data-theme='spider-verse'] .category-list,
+[data-theme='spider-verse'] .settings-danger-box,
+[data-theme='spider-verse'] .tiptap-shell,
+[data-theme='spider-verse'] .tiptap-shell-parked,
+[data-theme='spider-verse'] .theme-preview,
+[data-theme='spider-verse'] .an-metric,
+[data-theme='spider-verse'] .updates-metric,
+[data-theme='spider-verse'] .pj-tabs {
+  position: relative;
+}
+[data-theme='spider-verse'] .card::after,
+[data-theme='spider-verse'] .premium-metric-card::after,
+[data-theme='spider-verse'] .chart-card::after,
+[data-theme='spider-verse'] .update-status-card::after,
+[data-theme='spider-verse'] .release-card::after,
+[data-theme='spider-verse'] .model-card::after,
+[data-theme='spider-verse'] .theme-card::after,
+[data-theme='spider-verse'] .toast::after,
+[data-theme='spider-verse'] .empty::after,
+[data-theme='spider-verse'] .onboarding-banner::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+  background: var(--sv-black);
+  clip-path: var(--sv-pix-ring);
+  -webkit-clip-path: var(--sv-pix-ring);
+}
+[data-theme='spider-verse'] .sv-empty-art::after,
+[data-theme='spider-verse'] .sv-suit-banner::after,
+[data-theme='spider-verse'] .theme-card.theme-active::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+  background: var(--sv-frame);
+  clip-path: var(--sv-pix-ring-3);
+  -webkit-clip-path: var(--sv-pix-ring-3);
+}
+[data-theme='spider-verse'] .sv-empty-art::after {
+  background: var(--sv-frame-dark);
+}
+[data-theme='spider-verse'] .email-chip-shell::after,
+[data-theme='spider-verse'] .mail-md-preview::after,
+[data-theme='spider-verse'] .ui-select-trigger::after,
+[data-theme='spider-verse'] .time-picker-trigger::after,
+[data-theme='spider-verse'] .schedule-card::after,
+[data-theme='spider-verse'] .settings-switch-row::after,
+[data-theme='spider-verse'] .category-list::after,
+[data-theme='spider-verse'] .tiptap-shell::after,
+[data-theme='spider-verse'] .tiptap-shell-parked::after,
+[data-theme='spider-verse'] .theme-preview::after,
+[data-theme='spider-verse'] .an-metric::after,
+[data-theme='spider-verse'] .updates-metric::after,
+[data-theme='spider-verse'] .pj-tabs::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+  background: var(--sv-black);
+  clip-path: var(--sv-pix-ring-sm);
+  -webkit-clip-path: var(--sv-pix-ring-sm);
+}
+[data-theme='spider-verse'] .email-chip-menu::after,
+[data-theme='spider-verse'] .time-popover::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 8;
+  background: var(--sv-frame);
+  clip-path: var(--sv-pix-ring-sm-3);
+  -webkit-clip-path: var(--sv-pix-ring-sm-3);
+}
+[data-theme='spider-verse'] .settings-danger-box::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+  background: var(--sv-red);
+  clip-path: var(--sv-pix-ring-sm-3);
+  -webkit-clip-path: var(--sv-pix-ring-sm-3);
 }
 
 [data-theme='spider-verse'] .settings-nav-item {
@@ -276,7 +710,7 @@
   transition: transform 60ms steps(1), filter 60ms steps(1) !important;
 }
 
-/* Form fields — clip only (no filter: keeps Hindi/English text crisp while typing) */
+/* Form fields - clip only (no filter: keeps Hindi/English text crisp while typing) */
 [data-theme='spider-verse'] input:not([type='hidden']),
 [data-theme='spider-verse'] textarea,
 [data-theme='spider-verse'] select {
@@ -307,7 +741,7 @@
   image-rendering: crisp-edges;
 }
 
-/* Lock the viewport — cobwebs / CRT chrome must never create a page scrollbar */
+/* Lock the viewport - cobwebs / CRT chrome must never create a page scrollbar */
 [data-theme='spider-verse'] html,
 [data-theme='spider-verse'] body {
   height: 100%;
@@ -320,7 +754,7 @@
   background: #02060c !important;
 }
 
-/* Outer HUD bezel — Spidey Tracker light-blue frame around the whole app */
+/* Outer HUD bezel - Spidey Tracker light-blue frame around the whole app */
 [data-theme='spider-verse'] html::before {
   content: '';
   position: fixed;
@@ -333,7 +767,7 @@
     inset 0 0 0 7px var(--sv-frame-dark);
 }
 
-/* CRT edge is the window chrome — no outer black gutter */
+/* CRT edge is the window chrome - no outer black gutter */
 [data-theme='spider-verse'] .app-shell {
   position: relative;
   isolation: isolate;
@@ -360,7 +794,7 @@
 }
 .sv-blink { animation: sv-blink 3s steps(1) infinite; }
 
-/* ── 5. TOPBAR — HUD TITLE BAR ─────────────────────────────── */
+/* ── 5. TOPBAR - HUD TITLE BAR ─────────────────────────────── */
 [data-theme='spider-verse'] .topbar {
   background: var(--sv-frame-dark) !important;
   border-bottom: 4px solid var(--sv-black) !important;
@@ -378,17 +812,20 @@
   display: none;
 }
 
-.brand-mark-spider { display: none; }
-[data-theme='spider-verse'] .brand-mark-default { display: none !important; }
-[data-theme='spider-verse'] .brand-mark-spider { display: flex !important; }
-
 [data-theme='spider-verse'] .brand-mark {
-  background: var(--sv-red);
-  clip-path: var(--sv-pix-clip-sm);
-  -webkit-clip-path: var(--sv-pix-clip-sm);
+  background: transparent !important;
   border: none !important;
-  filter: var(--sv-pix-shadow-sm) !important;
+  clip-path: none !important;
+  -webkit-clip-path: none !important;
   box-shadow: none !important;
+}
+[data-theme='spider-verse'] .brand-mark .brand-logo {
+  image-rendering: auto;
+  filter:
+    drop-shadow(2px 2px 0 #000)
+    drop-shadow(0 0 8px rgba(26, 127, 196, 0.55))
+    saturate(1.15)
+    brightness(1.1) !important;
 }
 [data-theme='spider-verse'] .brand-name {
   text-transform: uppercase;
@@ -399,7 +836,7 @@
   font-weight: 400;
 }
 
-/* ── 6. NAV — PIXEL TABS ───────────────────────────────────── */
+/* ── 6. NAV - PIXEL TABS ───────────────────────────────────── */
 [data-theme='spider-verse'] .nav-link {
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -437,7 +874,7 @@
   transform: translate(-1px, -1px);
 }
 
-/* ── 7. BUTTONS — PIXEL-ROUNDED GAME BUTTONS ───────────────── */
+/* ── 7. BUTTONS - PIXEL-ROUNDED GAME BUTTONS ───────────────── */
 [data-theme='spider-verse'] .btn {
   background: var(--sv-panel-raised) !important;
   color: var(--sv-cream) !important;
@@ -493,6 +930,20 @@
   overflow: visible !important;
   position: relative;
   z-index: 45 !important;
+  flex-wrap: nowrap !important;
+}
+[data-theme='spider-verse'] .filters-projects {
+  min-width: 0;
+  overflow: hidden;
+}
+[data-theme='spider-verse'] .filters-projects-scroll {
+  min-width: 0;
+}
+[data-theme='spider-verse'] .ui-scroll-thumb {
+  background: rgba(212, 160, 23, 0.45) !important;
+}
+[data-theme='spider-verse'] .ui-scroll-bar:hover .ui-scroll-thumb {
+  background: rgba(212, 160, 23, 0.75) !important;
 }
 [data-theme='spider-verse'] .date-nav,
 [data-theme='spider-verse'] .date-picker-anchor {
@@ -537,9 +988,10 @@
   background: var(--sv-panel) !important;
 }
 
-/* ── 9. KANBAN COLUMNS — GAME PANELS ───────────────────────── */
+/* ── 9. KANBAN COLUMNS - GAME PANELS ───────────────────────── */
 [data-theme='spider-verse'] .main,
-[data-theme='spider-verse'] .board {
+[data-theme='spider-verse'] .board,
+[data-theme='spider-verse'] .board-shell {
   background: transparent;
   position: relative;
   z-index: 1;
@@ -550,10 +1002,15 @@
 [data-theme='spider-verse'] .board {
   padding: 6px 10px 12px 6px;
   box-sizing: border-box;
+  min-height: 0;
+}
+[data-theme='spider-verse'] .board-shell {
+  min-height: 0;
 }
 
 [data-theme='spider-verse'] .column {
   position: relative;
+  height: 100%;
   background: var(--sv-panel) !important;
   clip-path: var(--sv-pix-clip-lg);
   -webkit-clip-path: var(--sv-pix-clip-lg);
@@ -566,15 +1023,16 @@
   content: '';
   position: absolute;
   inset: 0;
-  clip-path: var(--sv-pix-clip-lg);
-  -webkit-clip-path: var(--sv-pix-clip-lg);
+  clip-path: var(--sv-pix-ring-lg);
+  -webkit-clip-path: var(--sv-pix-ring-lg);
   pointer-events: none;
   z-index: 4;
-  box-shadow: inset 0 0 0 3px var(--sv-frame-dark);
+  background: var(--sv-frame-dark);
+  box-shadow: none;
 }
-[data-theme='spider-verse'] .col-none::after { box-shadow: inset 0 0 0 3px #3a5070; }
-[data-theme='spider-verse'] .col-wip::after { box-shadow: inset 0 0 0 3px #a07818; }
-[data-theme='spider-verse'] .col-done::after { box-shadow: inset 0 0 0 3px var(--sv-frame); }
+[data-theme='spider-verse'] .col-none::after { background: #3a5070; }
+[data-theme='spider-verse'] .col-wip::after { background: #a07818; }
+[data-theme='spider-verse'] .col-done::after { background: var(--sv-frame); }
 
 [data-theme='spider-verse'] .column-header {
   border-bottom: 4px solid var(--sv-black) !important;
@@ -608,43 +1066,59 @@
   position: relative;
   z-index: 1;
 }
-[data-theme='spider-verse'] .column-body.drag-over {
-  background: rgba(26, 127, 196, 0.08) !important;
-  outline: 4px solid var(--sv-frame) !important;
-  outline-offset: -6px;
+[data-theme='spider-verse'] .column.is-drop-target {
+  box-shadow: none;
+}
+[data-theme='spider-verse'] .column-scroll-host.drag-over {
+  background: rgba(26, 127, 196, 0.1) !important;
+  box-shadow: inset 0 0 0 3px var(--sv-frame) !important;
+}
+[data-theme='spider-verse'] .column-drop-slot {
+  border-color: var(--sv-frame);
+  background: rgba(26, 127, 196, 0.12);
+  color: var(--sv-cream);
+  clip-path: var(--sv-pix-clip);
+  -webkit-clip-path: var(--sv-pix-clip);
+  border-style: solid;
+  animation: none;
+}
+[data-theme='spider-verse'] .card-drag-placeholder {
+  border-color: var(--sv-frame);
+  background: rgba(26, 127, 196, 0.1);
+  clip-path: var(--sv-pix-clip);
+  -webkit-clip-path: var(--sv-pix-clip);
+}
+[data-theme='spider-verse'] .card-drag-overlay-wrap .card.card--overlay {
+  transform: translate(-2px, -4px) !important;
 }
 
 /* ── 10. TASK CARDS ────────────────────────────────────────── */
 [data-theme='spider-verse'] .card {
   background: var(--sv-panel-raised) !important;
   box-shadow:
-    inset 0 0 0 2px var(--sv-black),
     inset 0 2px 0 0 rgba(255, 255, 255, 0.06),
     inset 0 -3px 0 0 rgba(0, 0, 0, 0.35) !important;
 }
-[data-theme='spider-verse'] .card:hover:not(.dragging):not(.overlay) {
+[data-theme='spider-verse'] .card:hover:not(.card--overlay) {
   transform: translate(-1px, -1px) !important;
   filter: none !important;
 }
-[data-theme='spider-verse'] .card.dragging {
-  opacity: 0.35 !important;
-  transform: none !important;
-  filter: none !important;
-  cursor: grabbing;
-}
-[data-theme='spider-verse'] .card.overlay {
+[data-theme='spider-verse'] .card.card--overlay {
   opacity: 1 !important;
-  transform: rotate(1deg) scale(1.02) !important;
+  transform: translate(-2px, -4px) !important;
   filter: none !important;
   cursor: grabbing;
   z-index: 60;
+  border-color: transparent !important;
   box-shadow:
     inset 0 0 0 2px var(--sv-black),
-    inset 0 2px 0 0 rgba(255, 255, 255, 0.1),
-    inset 0 -3px 0 0 rgba(0, 0, 0, 0.35) !important;
+    inset 0 2px 0 0 rgba(255, 255, 255, 0.12),
+    inset 0 -3px 0 0 rgba(0, 0, 0, 0.35),
+    0 0 0 3px var(--sv-frame),
+    6px 12px 0 rgba(0, 0, 0, 0.55) !important;
 }
-[data-theme='spider-verse'] .card.overlay:hover {
-  transform: rotate(1deg) scale(1.02) !important;
+[data-theme='spider-verse'] .card.card--overlay:hover {
+  transform: translate(-2px, -4px) !important;
   filter: none !important;
 }
 [data-theme='spider-verse'] .card-title {
@@ -702,12 +1176,17 @@
   justify-content: center;
   gap: 14px;
   padding: 20px 12px 28px;
-  flex: 1;
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: 100%;
+  box-sizing: border-box;
 }
 [data-theme='spider-verse'] .sv-empty-art {
   padding: 10px;
   background: linear-gradient(180deg, #0a1628 0%, #060e1a 100%);
-  box-shadow: inset 0 0 0 3px var(--sv-frame-dark) !important;
+  box-shadow:
+    inset 0 2px 0 0 rgba(255, 255, 255, 0.06),
+    inset 0 -3px 0 0 rgba(0, 0, 0, 0.35) !important;
 }
 [data-theme='spider-verse'] .sv-empty-art--open {
   overflow: visible;
@@ -731,14 +1210,67 @@
 }
 
 /* ── 12. OVERLAY / COMPOSER / DRAWER ───────────────────────── */
-/* Preserve fixed positioning — never inherit app-shell relative stacking */
+/* Preserve fixed positioning - never inherit app-shell relative stacking */
+/* CRT pause + spider-sense — not frosted glass */
+[data-theme='spider-verse'] .overlay,
+[data-theme='spider-verse'] .tiptap-expand-overlay,
+[data-theme='spider-verse'] .upd-backdrop {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  overflow: hidden;
+  isolation: isolate;
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0.42) 0,
+      rgba(0, 0, 0, 0.42) 1px,
+      transparent 1px,
+      transparent 3px
+    ),
+    radial-gradient(circle, rgba(5, 10, 20, 0.35) 1px, transparent 1.6px),
+    repeating-conic-gradient(
+      from 0deg at 50% 42%,
+      transparent 0 14deg,
+      rgba(223, 42, 47, 0.05) 14deg 15deg
+    ),
+    radial-gradient(ellipse at 50% 38%, rgba(223, 42, 47, 0.22) 0, transparent 48%),
+    radial-gradient(ellipse at 50% 100%, rgba(5, 10, 20, 0.78) 0, transparent 58%),
+    linear-gradient(180deg, rgba(5, 10, 20, 0.48), rgba(5, 10, 20, 0.78)) !important;
+  background-size:
+    auto,
+    5px 5px,
+    auto,
+    auto,
+    auto,
+    auto;
+  box-shadow:
+    inset 0 0 0 3px var(--sv-frame),
+    inset 0 0 0 7px rgba(0, 0, 0, 0.55);
+}
+[data-theme='spider-verse'] .overlay::after,
+[data-theme='spider-verse'] .tiptap-expand-overlay::after,
+[data-theme='spider-verse'] .upd-backdrop::after {
+  content: '';
+  position: absolute;
+  inset: 10px;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.85;
+  animation: sv-sense-pulse 2.6s steps(2, end) infinite;
+  background:
+    linear-gradient(var(--sv-frame), var(--sv-frame)) top left / 22px 3px no-repeat,
+    linear-gradient(var(--sv-frame), var(--sv-frame)) top left / 3px 22px no-repeat,
+    linear-gradient(var(--sv-cream), var(--sv-cream)) top right / 22px 3px no-repeat,
+    linear-gradient(var(--sv-cream), var(--sv-cream)) top right / 3px 22px no-repeat,
+    linear-gradient(var(--sv-cream), var(--sv-cream)) bottom left / 22px 3px no-repeat,
+    linear-gradient(var(--sv-cream), var(--sv-cream)) bottom left / 3px 22px no-repeat,
+    linear-gradient(var(--sv-frame), var(--sv-frame)) bottom right / 22px 3px no-repeat,
+    linear-gradient(var(--sv-frame), var(--sv-frame)) bottom right / 3px 22px no-repeat;
+}
 [data-theme='spider-verse'] .overlay {
   position: fixed !important;
   inset: 0 !important;
   z-index: 50 !important;
-  background: rgba(5, 10, 20, 0.88) !important;
-  backdrop-filter: none !important;
-  animation: none !important;
 }
 
 [data-theme='spider-verse'] .composer {
@@ -754,7 +1286,7 @@
   display: flex !important;
   flex-direction: column !important;
   background: var(--sv-panel) !important;
-  box-shadow: inset 0 0 0 4px var(--sv-frame) !important;
+  box-shadow: none !important;
   overflow: hidden !important;
 }
 [data-theme='spider-verse'] .composer-header {
@@ -771,16 +1303,19 @@
   background: var(--sv-panel) !important;
   flex: 1 1 auto !important;
   min-height: 0 !important;
-  overflow-y: auto !important;
-  overflow-x: hidden !important;
-  -webkit-overflow-scrolling: touch;
+  overflow: hidden !important;
+}
+[data-theme='spider-verse'] .composer-body-pad {
+  background: transparent;
 }
 [data-theme='spider-verse'] .composer-footer {
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
   background: var(--sv-panel-inset) !important;
   border-top: 4px solid var(--sv-black) !important;
   overflow: visible !important;
-  padding-bottom: 0.35rem;
+  padding: 0.85rem 1.15rem !important;
 }
 [data-theme='spider-verse'] .composer label,
 [data-theme='spider-verse'] .composer-fields label,
@@ -791,6 +1326,10 @@
   color: var(--sv-frame-light) !important;
 }
 
+[data-theme='spider-verse'] .mail-overlay,
+[data-theme='spider-verse'] .drawer-overlay {
+  z-index: 200 !important;
+}
 [data-theme='spider-verse'] .drawer {
   position: fixed !important;
   top: 0 !important;
@@ -798,35 +1337,156 @@
   bottom: 0 !important;
   left: auto !important;
   width: min(440px, 100%) !important;
-  z-index: 51 !important;
+  z-index: 210 !important;
   display: flex !important;
   flex-direction: column !important;
   background: var(--sv-panel) !important;
-  border-left: 4px solid var(--sv-black) !important;
-  box-shadow: inset 4px 0 0 0 var(--sv-frame), -6px 0 0 var(--sv-black) !important;
+  border: none !important;
+  box-shadow: none !important;
   clip-path: none !important;
   -webkit-clip-path: none !important;
   filter: none !important;
   backdrop-filter: none !important;
+  overflow: hidden !important;
+}
+[data-theme='spider-verse'] .drawer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 12;
+  box-shadow: inset 0 0 0 3px var(--sv-frame);
+}
+[data-theme='spider-verse'] .mail-drawer,
+[data-theme='spider-verse'] .drawer.mail-drawer {
+  z-index: 210 !important;
 }
 [data-theme='spider-verse'] .drawer-header {
   flex-shrink: 0;
+  align-items: center !important;
   background: var(--sv-frame-dark) !important;
-  border-bottom: 4px solid var(--sv-black) !important;
+  padding: 0.55rem 1rem !important;
+  min-height: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
   text-transform: uppercase;
   letter-spacing: 2px;
   color: var(--sv-cream);
+}
+[data-theme='spider-verse'] .drawer-header strong {
+  font-size: 1.15rem !important;
+  font-weight: 400 !important;
+  letter-spacing: 2px;
+  text-shadow: 2px 2px 0 var(--sv-black);
+}
+[data-theme='spider-verse'] .drawer-header .btn {
+  padding: 0.28rem 0.7rem !important;
+  font-size: 0.95rem !important;
+}
+[data-theme='spider-verse'] .drawer-header .icon-btn {
+  width: 2rem !important;
+  height: 2rem !important;
 }
 [data-theme='spider-verse'] .drawer-body {
   background: var(--sv-panel) !important;
   flex: 1 1 auto !important;
   min-height: 0 !important;
-  overflow-y: auto !important;
+  overflow: hidden !important;
 }
 [data-theme='spider-verse'] .drawer-footer {
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
   background: var(--sv-panel-inset) !important;
-  border-top: 4px solid var(--sv-black) !important;
+  border-top: none !important;
+  overflow: visible !important;
+  padding: 0.85rem 1.15rem !important;
+}
+[data-theme='spider-verse'] .drawer.mail-drawer {
+  width: min(560px, 100%) !important;
+}
+[data-theme='spider-verse'] .drawer.drawer-task {
+  width: min(720px, 100%) !important;
+}
+[data-theme='spider-verse'] .mail-compose-row label,
+[data-theme='spider-verse'] .mail-compose-preview-label {
+  text-transform: uppercase !important;
+  letter-spacing: 2px !important;
+  font-size: 0.95rem !important;
+  color: var(--sv-frame-light) !important;
+  font-weight: 400 !important;
+}
+[data-theme='spider-verse'] .email-chip-shell {
+  clip-path: var(--sv-pix-clip-sm);
+  -webkit-clip-path: var(--sv-pix-clip-sm);
+  border: none !important;
+  border-radius: 0 !important;
+  background: var(--sv-panel-inset) !important;
+  box-shadow: inset 3px 3px 0 rgba(0, 0, 0, 0.5) !important;
+  filter: none !important;
+}
+[data-theme='spider-verse'] .email-chip-shell.is-focused {
+  box-shadow: inset 3px 3px 0 rgba(0, 0, 0, 0.5) !important;
+}
+[data-theme='spider-verse'] .email-chip-shell.is-focused::after {
+  background: var(--sv-frame);
+  clip-path: var(--sv-pix-ring-sm-3);
+  -webkit-clip-path: var(--sv-pix-ring-sm-3);
+}
+[data-theme='spider-verse'] input.email-chip-input {
+  clip-path: none !important;
+  -webkit-clip-path: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  filter: none !important;
+  min-width: 5ch !important;
+  flex: 1 1 5ch !important;
+}
+[data-theme='spider-verse'] .email-chip {
+  clip-path: var(--sv-pix-clip-sm);
+  -webkit-clip-path: var(--sv-pix-clip-sm);
+  border: none !important;
+  border-radius: 0 !important;
+  background: var(--sv-frame-dark) !important;
+  color: var(--sv-cream) !important;
+  box-shadow: inset 0 0 0 2px var(--sv-black) !important;
+  height: 1.7rem;
+}
+[data-theme='spider-verse'] .email-chip.is-invalid {
+  background: var(--sv-red) !important;
+  color: var(--sv-cream) !important;
+}
+[data-theme='spider-verse'] .email-chip-dismiss {
+  color: var(--sv-cream) !important;
+}
+[data-theme='spider-verse'] .email-chip-menu {
+  clip-path: var(--sv-pix-clip-sm);
+  -webkit-clip-path: var(--sv-pix-clip-sm);
+  border: none !important;
+  border-radius: 0 !important;
+  background: var(--sv-panel) !important;
+  box-shadow: none !important;
+}
+[data-theme='spider-verse'] .email-chip-option:hover,
+[data-theme='spider-verse'] .email-chip-option.is-active {
+  background: var(--sv-frame-dark) !important;
+  color: var(--sv-cream) !important;
+}
+[data-theme='spider-verse'] .mail-md-preview {
+  clip-path: var(--sv-pix-clip-sm);
+  -webkit-clip-path: var(--sv-pix-clip-sm);
+  border: none !important;
+  border-radius: 0 !important;
+  background: var(--sv-panel-inset) !important;
+  box-shadow: inset 3px 3px 0 rgba(0, 0, 0, 0.5) !important;
+  color: var(--text) !important;
+}
+[data-theme='spider-verse'] .mail-md-preview strong {
+  color: var(--sv-cream) !important;
+  text-shadow: 1px 1px 0 var(--sv-black);
+}
+[data-theme='spider-verse'] .mail-md-preview li::marker {
+  color: var(--sv-red-bright);
 }
 
 /* ── 13. FORM INPUTS ───────────────────────────────────────── */
@@ -869,15 +1529,18 @@
 }
 [data-theme='spider-verse'] .ui-select-trigger.open {
   filter: none !important;
-  box-shadow:
-    inset 0 0 0 2px var(--sv-frame),
-    inset 3px 3px 0 rgba(0, 0, 0, 0.45) !important;
+  box-shadow: inset 3px 3px 0 rgba(0, 0, 0, 0.45) !important;
+}
+[data-theme='spider-verse'] .ui-select-trigger.open::after {
+  background: var(--sv-frame);
+  clip-path: var(--sv-pix-ring-sm-3);
+  -webkit-clip-path: var(--sv-pix-ring-sm-3);
 }
 [data-theme='spider-verse'] .ui-select-menu {
   background: var(--sv-panel) !important;
-  overflow: hidden;
-  padding: 0.35rem !important;
-  box-shadow: inset 0 0 0 3px var(--sv-frame) !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  box-shadow: none !important;
 }
 [data-theme='spider-verse'] .ui-select-option {
   margin: 2px 4px;
@@ -930,7 +1593,7 @@
   z-index: 80 !important;
   position: absolute !important;
   background: var(--sv-panel) !important;
-  box-shadow: inset 0 0 0 3px var(--sv-frame) !important;
+  box-shadow: none !important;
 }
 [data-theme='spider-verse'] .date-picker-header {
   background: var(--sv-frame-dark) !important;
@@ -989,6 +1652,7 @@
 [data-theme='spider-verse'] .settings-nav {
   background: var(--sv-panel-inset) !important;
   border-right: none !important;
+  box-shadow: none !important;
 }
 [data-theme='spider-verse'] .settings-nav-item {
   text-transform: uppercase;
@@ -1013,15 +1677,127 @@
   transform: translate(-1px, -1px);
   filter: var(--sv-pix-shadow-sm-hover) !important;
 }
+[data-theme='spider-verse'] .settings-nav-icon {
+  clip-path: var(--sv-pix-clip-sm);
+  -webkit-clip-path: var(--sv-pix-clip-sm);
+  border: none !important;
+  background: var(--sv-panel-raised) !important;
+  color: var(--sv-cream) !important;
+  box-shadow: inset 0 0 0 2px var(--sv-black) !important;
+}
+[data-theme='spider-verse'] .settings-nav-item.is-active .settings-nav-icon {
+  background: var(--sv-black) !important;
+  color: var(--sv-cream) !important;
+}
+[data-theme='spider-verse'] .settings-nav-label {
+  color: var(--sv-cream) !important;
+  text-shadow: 1px 1px 0 var(--sv-black);
+}
+[data-theme='spider-verse'] .settings-nav-item.is-active .settings-nav-label {
+  color: var(--sv-black) !important;
+  text-shadow: none !important;
+}
+[data-theme='spider-verse'] .settings-nav-badge {
+  clip-path: var(--sv-pix-clip-sm);
+  -webkit-clip-path: var(--sv-pix-clip-sm);
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: inset 0 0 0 2px var(--sv-black) !important;
+  font-weight: 400 !important;
+  letter-spacing: 1px;
+  height: 1.25rem;
+}
+[data-theme='spider-verse'] .settings-nav-badge--new,
+[data-theme='spider-verse'] .settings-nav-item.is-active .settings-nav-badge--new {
+  background: var(--sv-red) !important;
+  color: var(--sv-cream) !important;
+}
+[data-theme='spider-verse'] .settings-nav-badge--updated,
+[data-theme='spider-verse'] .settings-nav-item.is-active .settings-nav-badge--updated {
+  background: var(--sv-frame-dark) !important;
+  color: var(--sv-cream) !important;
+}
 [data-theme='spider-verse'] .settings-panel {
   background: var(--sv-panel) !important;
-  box-shadow: inset 0 0 0 3px var(--sv-frame-dark) !important;
+  box-shadow: none !important;
+  overflow: hidden !important;
+  clip-path: var(--sv-pix-clip-lg);
+  -webkit-clip-path: var(--sv-pix-clip-lg);
+}
+[data-theme='spider-verse'] .settings-panel-body {
+  overflow: hidden !important;
+  background: var(--sv-panel) !important;
+}
+[data-theme='spider-verse'] .page-settings {
+  overflow: hidden !important;
 }
 [data-theme='spider-verse'] .settings-panel-header {
   background: var(--sv-frame-dark) !important;
   border-bottom: 4px solid var(--sv-black) !important;
   text-transform: uppercase;
   color: var(--sv-cream);
+}
+[data-theme='spider-verse'] .settings-panel-icon {
+  clip-path: var(--sv-pix-clip-sm);
+  -webkit-clip-path: var(--sv-pix-clip-sm);
+  border-radius: 0 !important;
+  background: var(--sv-red) !important;
+  color: var(--sv-cream) !important;
+  box-shadow: inset 0 0 0 2px var(--sv-black) !important;
+}
+[data-theme='spider-verse'] .settings-panel-footer {
+  background: var(--sv-panel-inset) !important;
+  border-top: 3px solid var(--sv-frame) !important;
+  box-shadow:
+    inset 0 2px 0 0 rgba(255, 255, 255, 0.04),
+    inset 0 -3px 0 0 rgba(0, 0, 0, 0.28) !important;
+  backdrop-filter: none !important;
+  overflow: visible !important;
+  z-index: 2;
+}
+[data-theme='spider-verse'] .settings-panel-footer .btn-primary {
+  box-shadow:
+    inset 0 3px 0 0 rgba(255, 255, 255, 0.45),
+    inset 0 -5px 0 0 var(--sv-cream-dark) !important;
+}
+[data-theme='spider-verse'] .settings-unsaved-badge {
+  clip-path: var(--sv-pix-clip-sm);
+  -webkit-clip-path: var(--sv-pix-clip-sm);
+  border: none !important;
+  border-radius: 0 !important;
+  background: var(--sv-red) !important;
+  color: var(--sv-cream) !important;
+  box-shadow: inset 0 0 0 2px var(--sv-black) !important;
+}
+[data-theme='spider-verse'] .settings-unsaved-dot {
+  background: var(--sv-cream) !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+[data-theme='spider-verse'] .settings-saved-hint {
+  color: var(--sv-mint) !important;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+[data-theme='spider-verse'] .settings-switch-row {
+  clip-path: var(--sv-pix-clip-sm);
+  -webkit-clip-path: var(--sv-pix-clip-sm);
+  border: none !important;
+  border-radius: 0 !important;
+  background: var(--sv-panel-inset) !important;
+  box-shadow: inset 3px 3px 0 rgba(0, 0, 0, 0.35) !important;
+}
+[data-theme='spider-verse'] .settings-switch-row.is-on {
+  box-shadow: inset 3px 3px 0 rgba(0, 0, 0, 0.35) !important;
+}
+[data-theme='spider-verse'] .settings-switch-row.is-on::after {
+  background: var(--sv-frame);
+  clip-path: var(--sv-pix-ring-sm-3);
+  -webkit-clip-path: var(--sv-pix-ring-sm-3);
+}
+[data-theme='spider-verse'] .settings-switch-label {
+  color: var(--sv-cream) !important;
+  text-shadow: 1px 1px 0 var(--sv-black);
 }
 [data-theme='spider-verse'] .theme-card {
   background: var(--sv-panel-raised);
@@ -1036,7 +1812,9 @@
   background: var(--sv-panel) !important;
 }
 [data-theme='spider-verse'] .theme-card.theme-active {
-  box-shadow: inset 0 0 0 3px var(--sv-frame) !important;
+  box-shadow:
+    inset 0 2px 0 0 rgba(255, 255, 255, 0.06),
+    inset 0 -3px 0 0 rgba(0, 0, 0, 0.35) !important;
 }
 [data-theme='spider-verse'] .sv-suit-banner {
   display: flex;
@@ -1046,7 +1824,7 @@
   padding: 0.85rem 1rem;
   background: var(--sv-frame-dark);
   color: var(--sv-cream);
-  box-shadow: inset 0 0 0 3px var(--sv-frame) !important;
+  box-shadow: none !important;
 }
 [data-theme='spider-verse'] .sv-suit-banner strong {
   display: block;
@@ -1065,7 +1843,7 @@
   -webkit-clip-path: var(--sv-pix-clip-sm);
   border: none !important;
   filter: none !important;
-  box-shadow: inset 0 0 0 2px var(--sv-black) !important;
+  box-shadow: none !important;
 }
 [data-theme='spider-verse'] .theme-preview-spidey {
   display: flex;
@@ -1096,7 +1874,7 @@
     inset 0 -2px 0 0 var(--sv-cream-dark) !important;
 }
 
-/* ── 16. PAGES — TYPOGRAPHY ────────────────────────────────── */
+/* ── 16. PAGES - TYPOGRAPHY ────────────────────────────────── */
 [data-theme='spider-verse'] .page h1,
 [data-theme='spider-verse'] .page h2,
 [data-theme='spider-verse'] .page h3,
@@ -1203,14 +1981,15 @@
   content: '';
   position: absolute;
   inset: 0;
-  clip-path: var(--sv-pix-clip-lg);
-  -webkit-clip-path: var(--sv-pix-clip-lg);
+  clip-path: var(--sv-pix-ring-lg);
+  -webkit-clip-path: var(--sv-pix-ring-lg);
   pointer-events: none;
   z-index: 1;
-  box-shadow: inset 0 0 0 3px var(--sv-frame-dark);
+  background: var(--sv-frame-dark);
+  box-shadow: none;
 }
 [data-theme='spider-verse'] .table-scroll {
-  overflow-x: auto;
+  overflow: hidden;
 }
 [data-theme='spider-verse'] .table .project-name {
   color: var(--sv-cream) !important;
@@ -1281,6 +2060,21 @@
   background: var(--sv-frame);
   border: 2px solid var(--sv-black);
 }
+/* Never paint native bars inside overlay scroll regions */
+[data-theme='spider-verse'] [data-radix-scroll-area-viewport]::-webkit-scrollbar,
+[data-theme='spider-verse'] .ui-scroll-viewport::-webkit-scrollbar,
+[data-theme='spider-verse'] .ui-select-menu-viewport::-webkit-scrollbar,
+[data-theme='spider-verse'] .ui-overlay-scroll-viewport::-webkit-scrollbar,
+[data-theme='spider-verse'] .ui-scrollbar-mobile::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+[data-theme='spider-verse'] .ui-select-menu-thumb,
+[data-theme='spider-verse'] .ui-overlay-scroll-thumb {
+  background: rgba(212, 160, 23, 0.55) !important;
+  border-radius: 0 !important;
+}
 [data-theme='spider-verse'] .bullet-row-dot,
 [data-theme='spider-verse'] .bullet-dot {
   background: var(--sv-red) !important;
@@ -1304,7 +2098,7 @@
 }
 [data-theme='spider-verse'] .onboarding-card {
   background: var(--sv-panel) !important;
-  box-shadow: inset 0 0 0 4px var(--sv-frame) !important;
+  box-shadow: none !important;
 }
 [data-theme='spider-verse'] .onboarding-brand h1,
 [data-theme='spider-verse'] .onboarding-body h2 {
@@ -1315,10 +2109,11 @@
   text-shadow: 2px 2px 0 var(--sv-black);
 }
 [data-theme='spider-verse'] .onboarding-brand-mark {
-  clip-path: var(--sv-pix-clip-sm);
-  -webkit-clip-path: var(--sv-pix-clip-sm);
+  background: transparent !important;
+  clip-path: none !important;
+  -webkit-clip-path: none !important;
   border: none !important;
-  filter: var(--sv-pix-shadow-sm) !important;
+  filter: drop-shadow(3px 3px 0 #000) !important;
   box-shadow: none !important;
 }
 [data-theme='spider-verse'] .onboarding-day {
@@ -1357,6 +2152,7 @@
 [data-theme='spider-verse'] .settings-nav {
   background: var(--sv-panel-inset) !important;
   padding: 0.35rem !important;
+  box-shadow: none !important;
 }
 [data-theme='spider-verse'] .settings-nav-item--danger.is-active {
   background: var(--sv-cream) !important;
@@ -1502,8 +2298,18 @@
   filter: var(--sv-pix-shadow-hover) !important;
 }
 [data-theme='spider-verse'] .btn-danger {
-  color: var(--sv-red-bright) !important;
-  background: var(--sv-panel-raised) !important;
+  background: var(--sv-red) !important;
+  color: var(--sv-cream) !important;
+  text-shadow: 2px 2px 0 var(--sv-black);
+  box-shadow:
+    inset 0 3px 0 0 rgba(255, 255, 255, 0.18),
+    inset 0 -4px 0 0 rgba(0, 0, 0, 0.45) !important;
+}
+[data-theme='spider-verse'] .btn-danger:hover:not(:disabled) {
+  background: var(--sv-red-bright) !important;
+  color: var(--sv-cream) !important;
+  transform: translate(-1px, -1px);
+  filter: var(--sv-pix-shadow-hover) !important;
 }
 [data-theme='spider-verse'] .btn-ghost {
   color: var(--sv-cream) !important;
@@ -1545,11 +2351,11 @@
   border-radius: 0 !important;
 }
 [data-theme='spider-verse'] .onboarding-brand-mark {
-  background: var(--sv-red) !important;
+  background: transparent !important;
   border-radius: 0 !important;
 }
 
-/* ── 25. CORNER WEB DECOR — pinned above scrolling pages ── */
+/* ── 25. CORNER WEB DECOR - pinned above scrolling pages ── */
 .sv-decor-layer { display: none; }
 [data-theme='spider-verse'] .sv-decor-layer {
   display: block;
@@ -1781,8 +2587,13 @@
 [data-theme='spider-verse'] .page-sub {
   color: #c5d8ec !important;
 }
-[data-theme='spider-verse'] .empty-container {
-  min-height: 220px;
+[data-theme='spider-verse'] .column-scroll-host.is-empty > .empty-container {
+  min-height: 0;
+  height: 100%;
+}
+[data-theme='spider-verse'] .column-scroll-host.is-empty .sv-empty-state {
+  flex: 1 1 auto;
+  min-height: 100%;
 }
 [data-theme='spider-verse'] .col-none .sv-empty-label { color: #8aa8c8; }
 [data-theme='spider-verse'] .col-wip .sv-empty-label { color: #d4a017; }
@@ -1828,6 +2639,10 @@
   0% { opacity: 1; }
   55% { opacity: 1; }
   100% { opacity: 0; }
+}
+@keyframes sv-sense-pulse {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
 }
 @keyframes sv-mask-thwip {
   0% { transform: scale(0.4); opacity: 0; }
@@ -1881,71 +2696,155 @@ html.sv-entering .sv-stage { animation: sv-pop-in 0.45s 0.38s both; }
   align-items: center;
   justify-content: center;
   min-height: 70vh;
-  padding: 1.5rem 1rem 2rem;
+  padding: 1.75rem 1rem 2.25rem;
 }
 .sv-loader-stage {
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.35rem;
-  width: min(100%, 38rem);
-  min-height: 260px;
-  padding: 0.5rem 1rem 1rem;
-  overflow: visible;
+  gap: 0.2rem;
+  width: min(100%, 28rem);
+  min-height: 320px;
+  padding: 1.75rem 1.5rem 1.6rem;
+  overflow: hidden;
+  clip-path: var(--sv-pix-clip-lg);
+  -webkit-clip-path: var(--sv-pix-clip-lg);
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0.28) 0,
+      rgba(0, 0, 0, 0.28) 1px,
+      transparent 1px,
+      transparent 3px
+    ),
+    radial-gradient(ellipse at 50% 28%, rgba(223, 42, 47, 0.22) 0%, transparent 48%),
+    radial-gradient(ellipse at 50% 100%, rgba(26, 127, 196, 0.14) 0%, transparent 55%),
+    linear-gradient(180deg, #0a1628 0%, #050a14 100%);
+  box-shadow: 6px 6px 0 #000;
 }
-.sv-loader-troupe {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  gap: 1.4rem;
-  width: 100%;
-  min-height: 210px;
-  padding-top: 6px;
+.sv-loader-stage::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 4;
+  background: var(--sv-frame);
+  clip-path: var(--sv-pix-ring-lg-4);
+  -webkit-clip-path: var(--sv-pix-ring-lg-4);
 }
 .sv-loader-web {
   position: absolute;
   pointer-events: none;
   z-index: 0;
   line-height: 0;
+  opacity: 0.9;
 }
-.sv-loader-web--tl { top: 0; left: 0; }
-.sv-loader-web--tr { top: 0; right: 0; }
+.sv-loader-web--tl { top: 4px; left: 4px; }
+.sv-loader-web--tr { top: 4px; right: 4px; }
+.sv-loader-web--bl { bottom: 4px; left: 4px; }
+.sv-loader-web--br { bottom: 4px; right: 4px; }
+.sv-loader-hero {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: 120px;
+  margin-bottom: 0.35rem;
+}
+.sv-loader-hero--brand {
+  min-height: 110px;
+  padding-top: 0.35rem;
+}
+.sv-loader-brand-mark {
+  width: 88px !important;
+  height: 88px !important;
+  filter: drop-shadow(3px 3px 0 #000);
+  animation: sv-loader-mask 2.8s var(--ease) infinite;
+}
+.sv-loader-brand {
+  position: relative;
+  z-index: 1;
+  margin: 0.15rem 0 0;
+  font-size: clamp(1.85rem, 4vw, 2.35rem);
+  letter-spacing: 0.18em;
+  color: var(--sv-cream, #f0dfa8);
+  text-shadow: 3px 3px 0 #000;
+  animation: sv-pop-in 0.45s 0.08s both;
+}
 .sv-loader-kicker {
   position: relative;
   z-index: 1;
-  margin: 0.85rem 0 0;
-  font-size: 1.35rem;
-  letter-spacing: 0.32em;
+  margin: 0.15rem 0 0;
+  font-size: 1.15rem;
+  letter-spacing: 0.38em;
   color: #df2a2f;
-  text-shadow: 3px 3px 0 #000;
+  text-shadow: 2px 2px 0 #000;
+  animation: sv-loader-thwip 1.8s steps(2, end) infinite;
 }
 .sv-loader-label {
   position: relative;
   z-index: 1;
-  margin: 0;
+  margin: 0.55rem 0 0;
   text-transform: uppercase;
   letter-spacing: 0.14em;
-  color: var(--sv-cream, #f0dfa8);
+  color: var(--sv-frame-light, #8eb0d0);
   text-shadow: 2px 2px 0 #000;
-  font-size: 0.95rem;
+  font-size: 0.92rem;
   text-align: center;
+  max-width: 20rem;
 }
 .sv-loader-label::after {
   content: '';
   animation: sv-loader-dots 1.2s steps(4, end) infinite;
 }
-.sv-loader--plain {
-  min-height: auto;
-}
-.sv-loader--plain .sv-loader-dot {
-  width: 10px;
+.sv-loader-bar {
+  position: relative;
+  z-index: 1;
+  margin-top: 1rem;
+  width: min(14rem, 70%);
   height: 10px;
-  border-radius: 99px;
-  background: var(--accent);
-  animation: pulse 1.5s infinite;
+  background: #050a14;
+  box-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.65);
+  clip-path: var(--sv-pix-clip-sm);
+  -webkit-clip-path: var(--sv-pix-clip-sm);
+  overflow: hidden;
+}
+.sv-loader-bar-fill {
+  display: block;
+  height: 100%;
+  width: 42%;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      #df2a2f 0 6px,
+      #1a7fc4 6px 12px,
+      #f0dfa8 12px 18px
+    );
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.35);
+  animation: sv-loader-bar 1.4s steps(8, end) infinite;
+}
+@keyframes sv-loader-silk {
+  0%, 100% { transform: scaleY(1); opacity: 0.85; }
+  50% { transform: scaleY(1.08); opacity: 1; }
+}
+@keyframes sv-loader-mask {
+  0%, 100% { transform: translateY(0); }
+  40% { transform: translateY(4px); }
+  70% { transform: translateY(-2px); }
+}
+@keyframes sv-loader-side {
+  0%, 100% { transform: translateY(0); opacity: 0.7; }
+  50% { transform: translateY(-6px); opacity: 1; }
+}
+@keyframes sv-loader-thwip {
+  0%, 100% { opacity: 0.55; transform: scale(0.98); }
+  50% { opacity: 1; transform: scale(1.04); }
+}
+@keyframes sv-loader-bar {
+  0% { transform: translateX(-110%); }
+  100% { transform: translateX(260%); }
 }
 .sv-fx {
   pointer-events: none;
@@ -2027,7 +2926,7 @@ html.sv-entering .sv-stage { animation: sv-pop-in 0.45s 0.38s both; }
   [data-theme='spider-verse'] .chip:hover,
   [data-theme='spider-verse'] .nav-link:not(.active):hover,
   [data-theme='spider-verse'] .nav-link.active:hover,
-  [data-theme='spider-verse'] .card:hover:not(.dragging):not(.overlay),
+  [data-theme='spider-verse'] .card:hover:not(.card--overlay),
   [data-theme='spider-verse'] .ui-select-trigger:hover,
   [data-theme='spider-verse'] .ui-select-option:hover,
   [data-theme='spider-verse'] .settings-nav-item:not(.is-active):hover,
@@ -2044,7 +2943,16 @@ html.sv-entering .sv-stage { animation: sv-pop-in 0.45s 0.38s both; }
   .sv-fx {
     display: none !important;
   }
+  [data-theme='spider-verse'] .overlay::after,
+  [data-theme='spider-verse'] .tiptap-expand-overlay::after,
+  [data-theme='spider-verse'] .upd-backdrop::after {
+    animation: none !important;
+  }
   .sv-loader-label::after,
+  .sv-loader-brand-mark,
+  .sv-loader-brand,
+  .sv-loader-kicker,
+  .sv-loader-bar-fill,
   html.sv-entering .sv-decor-tl,
   html.sv-entering .sv-decor-tr,
   html.sv-entering .sv-decor-bl,
@@ -2060,4 +2968,616 @@ html.sv-entering .sv-stage { animation: sv-pop-in 0.45s 0.38s both; }
   html.sv-entering body::after {
     display: none !important;
   }
+}
+
+/* In-app dialogs must sit above drawers / mail (composer z-index is 52 in SV) */
+[data-theme='spider-verse'] .app-dialog-overlay {
+  z-index: 320 !important;
+}
+[data-theme='spider-verse'] .app-dialog {
+  z-index: 330 !important;
+  top: 18% !important;
+  width: min(440px, calc(100vw - 2rem)) !important;
+}
+[data-theme='spider-verse'] .app-dialog-icon {
+  clip-path: var(--sv-pix-clip-sm);
+  -webkit-clip-path: var(--sv-pix-clip-sm);
+  border-radius: 0 !important;
+  box-shadow: inset 0 0 0 2px var(--sv-black) !important;
+}
+[data-theme='spider-verse'] .app-dialog-icon--danger {
+  background: var(--sv-red) !important;
+  color: var(--sv-cream) !important;
+}
+[data-theme='spider-verse'] .app-dialog-icon--warning {
+  background: #d4a017 !important;
+  color: var(--sv-black) !important;
+}
+[data-theme='spider-verse'] .app-dialog-icon--default {
+  background: var(--sv-frame-dark) !important;
+  color: var(--sv-cream) !important;
+}
+[data-theme='spider-verse'] .app-dialog-message {
+  color: var(--text-secondary) !important;
+  font-size: 1.05rem !important;
+}
+[data-theme='spider-verse'] .app-dialog-footer {
+  overflow: visible !important;
+  display: flex;
+  align-items: center;
+  padding: 0.85rem 1.15rem !important;
+}
+[data-theme='spider-verse'] .time-picker-trigger {
+  clip-path: var(--sv-pix-clip-sm);
+  -webkit-clip-path: var(--sv-pix-clip-sm);
+  background: var(--sv-panel-inset) !important;
+  border: none !important;
+  box-shadow: inset 3px 3px 0 rgba(0, 0, 0, 0.5) !important;
+  color: var(--sv-cream) !important;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+[data-theme='spider-verse'] .time-picker-trigger.open {
+  box-shadow: inset 3px 3px 0 rgba(0, 0, 0, 0.5) !important;
+}
+[data-theme='spider-verse'] .time-popover {
+  clip-path: var(--sv-pix-clip-sm);
+  -webkit-clip-path: var(--sv-pix-clip-sm);
+  background: var(--sv-panel) !important;
+  box-shadow: none !important;
+  border: none !important;
+  border-radius: 0 !important;
+}
+[data-theme='spider-verse'] .schedule-card {
+  clip-path: var(--sv-pix-clip-sm);
+  -webkit-clip-path: var(--sv-pix-clip-sm);
+  background: var(--sv-panel-inset) !important;
+  border: none !important;
+  box-shadow: inset 3px 3px 0 rgba(0, 0, 0, 0.45) !important;
+}
+[data-theme='spider-verse'] .schedule-card-title {
+  color: var(--sv-frame-light) !important;
+  letter-spacing: 2px;
+}
+[data-theme='spider-verse'] .day-badge-btn {
+  background: var(--sv-panel-raised) !important;
+  color: var(--sv-cream) !important;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 400 !important;
+}
+[data-theme='spider-verse'] .day-badge-btn:hover {
+  background: var(--sv-panel) !important;
+  color: var(--sv-cream) !important;
+  transform: translate(-1px, -1px);
+  filter: var(--sv-pix-shadow-hover) !important;
+}
+[data-theme='spider-verse'] .day-badge-btn.is-active {
+  background: var(--sv-cream) !important;
+  color: var(--sv-black) !important;
+  box-shadow:
+    inset 0 3px 0 0 rgba(255, 255, 255, 0.45),
+    inset 0 -5px 0 0 var(--sv-cream-dark) !important;
+}
+
+[data-theme='spider-verse'] .category-list {
+  clip-path: var(--sv-pix-clip-sm);
+  -webkit-clip-path: var(--sv-pix-clip-sm);
+  border: none !important;
+  border-radius: 0 !important;
+  background: var(--sv-panel-inset) !important;
+  box-shadow: inset 3px 3px 0 rgba(0, 0, 0, 0.45) !important;
+  overflow: hidden;
+}
+[data-theme='spider-verse'] .category-row {
+  background: transparent !important;
+  border-bottom: 3px solid var(--sv-black) !important;
+}
+[data-theme='spider-verse'] .category-row:hover {
+  background: var(--sv-panel-raised) !important;
+}
+[data-theme='spider-verse'] .category-name-btn {
+  color: var(--sv-cream) !important;
+  text-shadow: none !important;
+  border-radius: 0 !important;
+}
+[data-theme='spider-verse'] .category-name-btn:hover {
+  background: var(--sv-panel) !important;
+}
+[data-theme='spider-verse'] .category-edit-input,
+[data-theme='spider-verse'] .category-add-row input {
+  clip-path: var(--sv-pix-clip-sm);
+  -webkit-clip-path: var(--sv-pix-clip-sm);
+}
+[data-theme='spider-verse'] .settings-label {
+  text-transform: uppercase !important;
+  letter-spacing: 2px !important;
+  color: var(--sv-frame-light) !important;
+}
+
+[data-theme='spider-verse'] .settings-danger-box {
+  clip-path: var(--sv-pix-clip-sm);
+  -webkit-clip-path: var(--sv-pix-clip-sm);
+  border: none !important;
+  border-radius: 0 !important;
+  background: var(--sv-panel-inset) !important;
+  box-shadow: inset 3px 3px 0 rgba(0, 0, 0, 0.45) !important;
+}
+[data-theme='spider-verse'] .settings-danger-head {
+  color: var(--sv-cream) !important;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+[data-theme='spider-verse'] .settings-danger-head strong {
+  color: var(--sv-cream) !important;
+  text-shadow: 2px 2px 0 var(--sv-black);
+  font-weight: 400 !important;
+}
+[data-theme='spider-verse'] .settings-danger-box > p {
+  color: var(--text-secondary) !important;
+  font-size: 1.05rem !important;
+}
+[data-theme='spider-verse'] .settings-inline-actions {
+  gap: 0.65rem;
+}
+
+[data-theme='spider-verse'] .updates-hero,
+[data-theme='spider-verse'] .updates-metric,
+[data-theme='spider-verse'] .updater-releases {
+  clip-path: var(--sv-pix-clip-lg);
+  -webkit-clip-path: var(--sv-pix-clip-lg);
+  border: none !important;
+  border-radius: 0 !important;
+  background: var(--sv-panel) !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+[data-theme='spider-verse'] .updater-releases {
+  background: var(--sv-panel-inset) !important;
+}
+[data-theme='spider-verse'] .updater-releases .release-card {
+  background: var(--sv-panel-raised) !important;
+  clip-path: var(--sv-pix-clip);
+  -webkit-clip-path: var(--sv-pix-clip);
+  box-shadow:
+    inset 0 2px 0 0 rgba(255, 255, 255, 0.08),
+    inset 0 -3px 0 0 rgba(0, 0, 0, 0.4) !important;
+}
+[data-theme='spider-verse'] .updater-releases .release-card:hover {
+  transform: none;
+  background: var(--bg-overlay) !important;
+}
+[data-theme='spider-verse'] .release-card-header {
+  border-bottom: 3px solid var(--sv-black) !important;
+}
+[data-theme='spider-verse'] .updates-metric {
+  clip-path: var(--sv-pix-clip-sm);
+  -webkit-clip-path: var(--sv-pix-clip-sm);
+  box-shadow:
+    inset 0 2px 0 0 rgba(255, 255, 255, 0.06),
+    inset 0 -3px 0 0 rgba(0, 0, 0, 0.35) !important;
+}
+[data-theme='spider-verse'] .updates-kicker {
+  color: var(--sv-red-bright) !important;
+  letter-spacing: 2px;
+}
+[data-theme='spider-verse'] .updates-hero h1,
+[data-theme='spider-verse'] .updates-metric-value,
+[data-theme='spider-verse'] .updater-releases-head h2,
+[data-theme='spider-verse'] .release-card-title-row h3 {
+  color: var(--sv-cream) !important;
+  text-shadow: 2px 2px 0 var(--sv-black);
+}
+[data-theme='spider-verse'] .updates-sub,
+[data-theme='spider-verse'] .updates-metric-hint,
+[data-theme='spider-verse'] .updater-releases-head p,
+[data-theme='spider-verse'] .updater-releases-count,
+[data-theme='spider-verse'] .release-card-date {
+  color: var(--text-secondary) !important;
+}
+[data-theme='spider-verse'] .updates-metric-label {
+  color: var(--sv-frame-light) !important;
+  letter-spacing: 2px;
+}
+[data-theme='spider-verse'] .updater-releases-head {
+  background: var(--sv-frame-dark) !important;
+  border-bottom: 4px solid var(--sv-black) !important;
+}
+[data-theme='spider-verse'] .update-status-pill {
+  clip-path: var(--sv-pix-clip-sm);
+  -webkit-clip-path: var(--sv-pix-clip-sm);
+  border: none !important;
+  background: var(--sv-panel-inset) !important;
+  color: var(--sv-cream) !important;
+  box-shadow: inset 0 0 0 2px var(--sv-black) !important;
+}
+[data-theme='spider-verse'] .release-card-icon {
+  clip-path: var(--sv-pix-clip-sm);
+  -webkit-clip-path: var(--sv-pix-clip-sm);
+  border: none !important;
+  background: var(--sv-red) !important;
+  color: var(--sv-cream) !important;
+  box-shadow: inset 0 0 0 2px var(--sv-black) !important;
+}
+[data-theme='spider-verse'] .release-badge,
+[data-theme='spider-verse'] .release-badge--new {
+  clip-path: var(--sv-pix-clip-sm);
+  -webkit-clip-path: var(--sv-pix-clip-sm);
+  border: none !important;
+  background: var(--sv-frame-dark) !important;
+  color: var(--sv-cream) !important;
+  box-shadow: inset 0 0 0 2px var(--sv-black) !important;
+  font-weight: 400 !important;
+}
+[data-theme='spider-verse'] .update-download-track {
+  clip-path: var(--sv-pix-clip-sm);
+  -webkit-clip-path: var(--sv-pix-clip-sm);
+  background: var(--sv-panel-inset) !important;
+  box-shadow: inset 0 0 0 2px var(--sv-black) !important;
+  border-radius: 0 !important;
+}
+[data-theme='spider-verse'] .update-download-fill {
+  background: var(--sv-frame) !important;
+  border-radius: 0 !important;
+}
+
+[data-theme='spider-verse'] .an-kicker {
+  color: var(--sv-red-bright) !important;
+  letter-spacing: 2px;
+}
+[data-theme='spider-verse'] .an-hero,
+[data-theme='spider-verse'] .an-panel,
+[data-theme='spider-verse'] .an-metric {
+  clip-path: var(--sv-pix-clip-lg);
+  -webkit-clip-path: var(--sv-pix-clip-lg);
+  border: none !important;
+  border-radius: 0 !important;
+  background: var(--sv-panel) !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+[data-theme='spider-verse'] .an-metric {
+  clip-path: var(--sv-pix-clip-sm);
+  -webkit-clip-path: var(--sv-pix-clip-sm);
+  box-shadow:
+    inset 0 2px 0 0 rgba(255, 255, 255, 0.06),
+    inset 0 -3px 0 0 rgba(0, 0, 0, 0.35) !important;
+}
+[data-theme='spider-verse'] .an-hero h1,
+[data-theme='spider-verse'] .an-panel-head h2,
+[data-theme='spider-verse'] .an-metric-value {
+  color: var(--sv-cream) !important;
+  text-shadow: 2px 2px 0 var(--sv-black);
+}
+[data-theme='spider-verse'] .an-period {
+  color: var(--sv-frame-light) !important;
+}
+[data-theme='spider-verse'] .an-sub,
+[data-theme='spider-verse'] .an-panel-head p,
+[data-theme='spider-verse'] .an-metric-hint,
+[data-theme='spider-verse'] .an-metric-label {
+  color: var(--text-secondary) !important;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+[data-theme='spider-verse'] .an-range {
+  clip-path: var(--sv-pix-clip-sm);
+  -webkit-clip-path: var(--sv-pix-clip-sm);
+  border-radius: 0 !important;
+  background: var(--sv-panel-inset) !important;
+  border: none !important;
+  box-shadow: inset 0 0 0 2px var(--sv-black) !important;
+}
+[data-theme='spider-verse'] .an-range-btn {
+  clip-path: var(--sv-pix-clip-sm);
+  -webkit-clip-path: var(--sv-pix-clip-sm);
+  border-radius: 0 !important;
+  border: none !important;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-muted) !important;
+}
+[data-theme='spider-verse'] .an-range-btn.is-active {
+  background: var(--sv-red) !important;
+  color: var(--sv-cream) !important;
+  box-shadow: inset 0 0 0 2px var(--sv-black) !important;
+}
+[data-theme='spider-verse'] .an-range-btn.is-active .an-range-btn-dates {
+  color: var(--sv-cream) !important;
+}
+[data-theme='spider-verse'] .an-tooltip {
+  clip-path: var(--sv-pix-clip-sm);
+  -webkit-clip-path: var(--sv-pix-clip-sm);
+  border: none !important;
+  border-radius: 0 !important;
+  background: var(--sv-panel) !important;
+  box-shadow: inset 0 0 0 2px var(--sv-black) !important;
+  color: var(--sv-cream) !important;
+}
+[data-theme='spider-verse'] .an-page .recharts-legend-item-text {
+  fill: var(--text-secondary) !important;
+  color: var(--text-secondary) !important;
+}
+[data-theme='spider-verse'] .pj-kicker {
+  color: var(--sv-red-bright) !important;
+  letter-spacing: 2px;
+}
+[data-theme='spider-verse'] .pj-hero,
+[data-theme='spider-verse'] .pj-panel {
+  clip-path: var(--sv-pix-clip-lg);
+  -webkit-clip-path: var(--sv-pix-clip-lg);
+  border: none !important;
+  border-radius: 0 !important;
+  background: var(--sv-panel) !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+[data-theme='spider-verse'] .pj-hero h1,
+[data-theme='spider-verse'] .pj-panel-head h2,
+[data-theme='spider-verse'] .pj-empty h2 {
+  color: var(--sv-cream) !important;
+  text-shadow: 2px 2px 0 var(--sv-black);
+}
+[data-theme='spider-verse'] .pj-row-name {
+  color: var(--sv-cream) !important;
+  text-shadow: none !important;
+}
+[data-theme='spider-verse'] .pj-panel-head {
+  background: var(--sv-frame-dark) !important;
+  border-bottom: 4px solid var(--sv-black) !important;
+}
+[data-theme='spider-verse'] .pj-panel-head p,
+[data-theme='spider-verse'] .pj-sub {
+  color: var(--text-secondary) !important;
+}
+[data-theme='spider-verse'] .pj-panel-head p strong {
+  color: var(--sv-cream) !important;
+}
+[data-theme='spider-verse'] .pj-search.ui-input {
+  width: 16rem !important;
+  max-width: 100%;
+}
+[data-theme='spider-verse'] .pj-row {
+  border-bottom: 3px solid var(--sv-black) !important;
+}
+[data-theme='spider-verse'] .pj-row:hover {
+  background: var(--sv-panel-raised) !important;
+}
+[data-theme='spider-verse'] .pj-row.is-default {
+  background: rgba(223, 42, 47, 0.16) !important;
+}
+[data-theme='spider-verse'] .pj-row.is-default:hover {
+  background: rgba(223, 42, 47, 0.22) !important;
+}
+[data-theme='spider-verse'] .pj-swatch {
+  border-radius: 0 !important;
+  width: 10px;
+  height: 10px;
+  box-shadow: inset 0 0 0 2px var(--sv-black);
+}
+[data-theme='spider-verse'] .pj-tabs {
+  clip-path: var(--sv-pix-clip-sm);
+  -webkit-clip-path: var(--sv-pix-clip-sm);
+  border-radius: 0 !important;
+  background: var(--sv-panel-inset) !important;
+  border: none !important;
+  box-shadow: none !important;
+  gap: 0.15rem;
+  padding: 0.18rem;
+}
+[data-theme='spider-verse'] .pj-tab {
+  clip-path: var(--sv-pix-clip-sm);
+  -webkit-clip-path: var(--sv-pix-clip-sm);
+  border-radius: 0 !important;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border: none !important;
+}
+[data-theme='spider-verse'] .pj-tab.is-active {
+  background: var(--sv-red) !important;
+  color: var(--sv-cream) !important;
+  box-shadow: inset 0 0 0 2px var(--sv-black) !important;
+}
+[data-theme='spider-verse'] .pj-tab-count {
+  border-radius: 0 !important;
+  background: var(--sv-black) !important;
+  color: var(--sv-cream) !important;
+}
+[data-theme='spider-verse'] .pj-badge {
+  clip-path: var(--sv-pix-clip-sm);
+  -webkit-clip-path: var(--sv-pix-clip-sm);
+  border-radius: 0 !important;
+  border: none !important;
+  box-shadow: inset 0 0 0 2px var(--sv-black) !important;
+  font-weight: 400 !important;
+  font-size: 0.78rem !important;
+}
+[data-theme='spider-verse'] .pj-badge--default {
+  background: var(--sv-red) !important;
+  color: var(--sv-cream) !important;
+}
+[data-theme='spider-verse'] .pj-badge--archived {
+  background: var(--sv-panel-inset) !important;
+  color: var(--text-muted) !important;
+}
+[data-theme='spider-verse'] .pj-row-actions {
+  clip-path: var(--sv-pix-clip-sm);
+  -webkit-clip-path: var(--sv-pix-clip-sm);
+  border-radius: 0 !important;
+  background: var(--sv-panel-inset) !important;
+  border: none !important;
+  box-shadow: inset 0 0 0 2px var(--sv-black) !important;
+  opacity: 1;
+}
+[data-theme='spider-verse'] .pj-icon-btn {
+  clip-path: var(--sv-pix-clip-sm);
+  -webkit-clip-path: var(--sv-pix-clip-sm);
+  border-radius: 0 !important;
+  color: var(--sv-cream) !important;
+}
+[data-theme='spider-verse'] .pj-icon-btn:hover {
+  background: var(--sv-panel-raised) !important;
+  color: var(--sv-frame-light) !important;
+}
+[data-theme='spider-verse'] .pj-icon-btn--danger {
+  color: var(--sv-red-bright) !important;
+}
+[data-theme='spider-verse'] .pj-actions-sep {
+  background: var(--sv-black) !important;
+}
+
+[data-theme='spider-verse'] .tiptap-shell,
+[data-theme='spider-verse'] .tiptap-shell-parked {
+  clip-path: var(--sv-pix-clip-sm);
+  -webkit-clip-path: var(--sv-pix-clip-sm);
+  border: none !important;
+  border-radius: 0 !important;
+  background: var(--sv-panel-inset) !important;
+  box-shadow: inset 3px 3px 0 rgba(0, 0, 0, 0.5) !important;
+  filter: none !important;
+  overflow: hidden;
+}
+[data-theme='spider-verse'] .tiptap-shell-parked {
+  color: var(--sv-cream) !important;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+[data-theme='spider-verse'] .tiptap-shell-parked:hover {
+  background: var(--sv-panel-raised) !important;
+  color: var(--sv-cream) !important;
+}
+[data-theme='spider-verse'] .tiptap-toolbar {
+  border-radius: 0 !important;
+  border-bottom: 3px solid var(--sv-black) !important;
+  background: var(--sv-frame-dark) !important;
+  box-shadow: none !important;
+  padding: 0.35rem 2.55rem 0.35rem 0.4rem;
+}
+[data-theme='spider-verse'] .tiptap-sep {
+  background: var(--sv-black) !important;
+  height: 1.1rem;
+}
+[data-theme='spider-verse'] .tiptap-btn,
+[data-theme='spider-verse'] .tiptap-color,
+[data-theme='spider-verse'] .tiptap-expand-btn {
+  clip-path: var(--sv-pix-clip-sm);
+  -webkit-clip-path: var(--sv-pix-clip-sm);
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: var(--sv-cream) !important;
+  box-shadow: none !important;
+  filter: none !important;
+  min-width: 1.7rem;
+  height: 1.7rem;
+  width: 1.7rem;
+}
+[data-theme='spider-verse'] .tiptap-btn:hover,
+[data-theme='spider-verse'] .tiptap-color:hover {
+  background: var(--sv-panel) !important;
+  color: var(--sv-cream) !important;
+}
+[data-theme='spider-verse'] .tiptap-btn.active,
+[data-theme='spider-verse'] .tiptap-btn.ui-btn-primary {
+  background: var(--sv-red) !important;
+  color: var(--sv-cream) !important;
+  box-shadow: inset 0 0 0 2px var(--sv-black) !important;
+}
+[data-theme='spider-verse'] .tiptap-expand-btn {
+  background: var(--sv-cream) !important;
+  color: var(--sv-black) !important;
+  box-shadow:
+    inset 0 2px 0 0 rgba(255, 255, 255, 0.35),
+    inset 0 -3px 0 0 var(--sv-cream-dark) !important;
+}
+[data-theme='spider-verse'] .tiptap-expand-btn:hover {
+  background: #f5e8b8 !important;
+  color: var(--sv-black) !important;
+}
+[data-theme='spider-verse'] .tiptap-editor,
+[data-theme='spider-verse'] .tiptap-editor.ProseMirror,
+[data-theme='spider-verse'] .ProseMirror {
+  outline: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: var(--text) !important;
+}
+[data-theme='spider-verse'] .tiptap-editor p.is-editor-empty:first-child::before,
+[data-theme='spider-verse'] .ProseMirror p.is-editor-empty:first-child::before {
+  color: var(--text-dim) !important;
+}
+[data-theme='spider-verse'] .tiptap-editor blockquote {
+  border-left: 4px solid var(--sv-black);
+  color: var(--sv-cream);
+}
+[data-theme='spider-verse'] .tiptap-shell-fixed .tiptap-editor::-webkit-scrollbar-thumb,
+[data-theme='spider-verse'] .tiptap-shell-fixed .ProseMirror::-webkit-scrollbar-thumb {
+  background: var(--sv-frame-dark);
+  border-radius: 0;
+}
+[data-theme='spider-verse'] .tiptap-expand-head {
+  background: var(--sv-frame-dark) !important;
+  border-bottom: 4px solid var(--sv-black) !important;
+  box-shadow: none !important;
+  padding: 0.7rem 1rem 0.65rem 1.15rem !important;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+[data-theme='spider-verse'] .tiptap-expand-kicker {
+  color: var(--sv-red-bright) !important;
+  letter-spacing: 2px;
+  font-size: 0.85rem !important;
+  font-weight: 400 !important;
+}
+[data-theme='spider-verse'] .tiptap-expand-head strong {
+  color: var(--sv-cream) !important;
+  text-shadow: 2px 2px 0 var(--sv-black);
+  font-size: 1.2rem !important;
+  font-weight: 400 !important;
+  letter-spacing: 1px;
+}
+/* Below app-dialog (320/330) so link prompts stay on top */
+[data-theme='spider-verse'] .tiptap-dialog-root {
+  z-index: 300 !important;
+  padding: 1.25rem !important;
+}
+[data-theme='spider-verse'] .tiptap-dialog {
+  clip-path: var(--sv-pix-clip-lg);
+  -webkit-clip-path: var(--sv-pix-clip-lg);
+  border: none !important;
+  border-radius: 0 !important;
+  background: var(--sv-panel) !important;
+  width: min(72rem, calc(100vw - 2.5rem)) !important;
+  height: min(92vh, calc(100vh - 2.5rem)) !important;
+  box-shadow: 8px 8px 0 #000 !important;
+  filter: none !important;
+  overflow: hidden;
+}
+[data-theme='spider-verse'] .tiptap-dialog::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 4;
+  background: var(--sv-frame);
+  clip-path: var(--sv-pix-ring-lg-4);
+  -webkit-clip-path: var(--sv-pix-ring-lg-4);
+  box-shadow: none;
+}
+[data-theme='spider-verse'] .tiptap-dialog .tiptap-toolbar {
+  background: var(--sv-panel-raised) !important;
+  border-bottom: 3px solid var(--sv-black) !important;
+  padding-right: 3.5rem;
+}
+[data-theme='spider-verse'] .tiptap-dialog .tiptap-expand-btn {
+  right: 1.15rem;
+}
+[data-theme='spider-verse'] .tiptap-dialog-body {
+  background: var(--sv-panel-inset) !important;
+  margin: 0.65rem 0.85rem;
+  clip-path: var(--sv-pix-clip-sm);
+  -webkit-clip-path: var(--sv-pix-clip-sm);
+  box-shadow:
+    inset 0 0 0 2px var(--sv-black),
+    inset 3px 3px 0 rgba(0, 0, 0, 0.5) !important;
 }

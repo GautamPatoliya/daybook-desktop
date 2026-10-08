@@ -1,7 +1,7 @@
-# Daybook — Project Overview
+# Daybook - Project Overview
 
 **Product name:** Daybook  
-**Version:** 1.1.1  
+**Version:** 1.2.0  
 **Type:** Offline desktop app (Windows + macOS)  
 **Audience:** Office employees who log daily work and send end-of-day updates to a manager  
 **Repo:** [GautamPatoliya/daybook-desktop](https://github.com/GautamPatoliya/daybook-desktop)  
@@ -91,12 +91,12 @@ It is **not** a cloud project-management tool (no Jira-style assignees, sprints,
 
 ### Local AI (optional)
 - Install AI engine + download a small GGUF model (Qwen, Llama, Phi, Gemma variants)  
-- Runs on-device for email polish — no API keys  
+- Runs on-device for email polish - no API keys  
 - Off by default; not required for core use  
 
 ### Themes
-- **Default** — clean office UI  
-- **Spider-Verse** — pixel HUD, hanging spiders, cobwebs, thwip / hero-landing beats, Spidey loader  
+- **Default** - clean office UI  
+- **Spider-Verse** - pixel HUD, hanging spiders, cobwebs, thwip / hero-landing beats, Spidey loader  
 
 ### Updates
 - `electron-updater` against GitHub Releases  
@@ -108,7 +108,7 @@ It is **not** a cloud project-management tool (no Jira-style assignees, sprints,
 ## 5. How employees use it (day in the life)
 
 1. **Install** `Daybook-Setup-x.y.z.exe` (Windows) or `.dmg` (Mac).  
-2. **First launch — onboarding:** name, email To (manager), working days, work hours / EOD time.  
+2. **First launch - onboarding:** name, email To (manager), working days, work hours / EOD time.  
 3. **During the day:** add tasks, drag to WIP/Done, add bullets as work happens.  
 4. **Hourly reminder:** tray/notification → log what you’re doing.  
 5. **Next morning:** unfinished work appears again via carry-forward.  
@@ -181,9 +181,9 @@ userData/
 └── models/                # Optional GGUF + engine bits
 ```
 
-**Task (simplified):** id, project, category, title, status, priority, subItems[], timestamps, carry-forward fields (`carriedFrom`, `sourceTaskId`, `carriedAwayAt`), optional `titleEnhanced` / sub-item `enhanced` from polish.
+**Task (simplified):** id, project, category, title, status, priority, subItems[], optional `detailsHtml`, timestamps, carry-forward fields (`carriedFrom`, `sourceTaskId`, `carriedAwayAt`), optional `titleEnhanced` / sub-item `enhanced` from polish.
 
-**Settings highlights:** author name, sign-off, projects meta, categories, timezone (`Asia/Kolkata` default), working days, hourly window, EOD hour/minute, reminder interval, email To, Gmail compose URL, AI enable + model id, include backlog in email, autostart, theme, onboarding flag.
+**Settings highlights:** author name, sign-off, projects meta, categories + `defaultCategory`, timezone (`Asia/Kolkata` default), working days, hourly window, EOD hour/minute, reminder interval, email To, Gmail compose URL, AI enable + model id, include backlog in email, `emailSentDates`, autostart, theme, onboarding flag.
 
 Uninstall does **not** delete app data by default (`deleteAppDataOnUninstall: false`). Wipe via Settings → Data if needed.
 
@@ -224,7 +224,7 @@ See [VERSION_MANAGEMENT.md](./VERSION_MANAGEMENT.md) and [PILOT.md](./PILOT.md).
 ## 10. Distribution & IT notes
 
 - **Pilot:** share unsigned installer; expect SmartScreen / Gatekeeper prompts (“More info → Run anyway” / right-click Open).  
-- **Production:** code signing — Windows (`CSC_LINK`, `CSC_KEY_PASSWORD`); macOS Apple ID + notarization secrets.  
+- **Production:** code signing - Windows (`CSC_LINK`, `CSC_KEY_PASSWORD`); macOS Apple ID + notarization secrets.  
 - Offline for daily work; open outbound only for Hugging Face (models) and GitHub (updates) when used.  
 - Backup / migrate: Settings → open data folder, or copy the `userData` directory.  
 - Support docs for internal announcement emails live under `docs/email-templates/`.
@@ -233,12 +233,12 @@ See [VERSION_MANAGEMENT.md](./VERSION_MANAGEMENT.md) and [PILOT.md](./PILOT.md).
 
 ## 11. Design principles (product)
 
-1. **Email is the product outcome** — the board exists to feed a trustworthy daily update.  
-2. **Local-first** — no account, no server dependency for core workflows.  
-3. **Low friction capture** — reminders and quick add beat perfect project management.  
-4. **Carry-forward over re-entry** — don’t make people retype unfinished work.  
-5. **Optional AI** — never block EOD on model downloads.  
-6. **Stay out of Jira’s lane** — no multi-user boards, sprints, or cloud sync in the current product definition.
+1. **Email is the product outcome** - the board exists to feed a trustworthy daily update.  
+2. **Local-first** - no account, no server dependency for core workflows.  
+3. **Low friction capture** - reminders and quick add beat perfect project management.  
+4. **Carry-forward over re-entry** - don’t make people retype unfinished work.  
+5. **Optional AI** - never block EOD on model downloads.  
+6. **Stay out of Jira’s lane** - no multi-user boards, sprints, or cloud sync in the current product definition.
 
 ---
 
@@ -251,7 +251,8 @@ See [VERSION_MANAGEMENT.md](./VERSION_MANAGEMENT.md) and [PILOT.md](./PILOT.md).
 | [PILOT.md](./PILOT.md) | Office rollout checklist |
 | [VERSION_MANAGEMENT.md](./VERSION_MANAGEMENT.md) | Versioning, tagging, auto-update |
 | [email-templates/](./email-templates/) | v1.1.1 announcement HTML + Gmail send helpers |
-| [PRODUCT_VISION.md](./PRODUCT_VISION.md) | Next product direction (composer, Focus, AI summary, companion, etc.) |
+| [PRODUCT_VISION.md](./PRODUCT_VISION.md) | Pointer → **Daybook 2.0** phase suite |
+| [daybook-2.0/](./daybook-2.0/README.md) | **Daybook 2.0** vision + detailed phase specs (implement from here) |
 
 ---
 
@@ -259,7 +260,7 @@ See [VERSION_MANAGEMENT.md](./VERSION_MANAGEMENT.md) and [PILOT.md](./PILOT.md).
 
 | Item | Value |
 |------|--------|
-| Current version | 1.1.1 |
+| Current version | 1.2.0 |
 | Platforms | Windows x64, macOS arm64 |
 | UI themes | Default, Spider-Verse |
 | Default timezone | Asia/Kolkata |
@@ -270,4 +271,4 @@ See [VERSION_MANAGEMENT.md](./VERSION_MANAGEMENT.md) and [PILOT.md](./PILOT.md).
 
 ---
 
-*Last updated to reflect Daybook v1.1.1 (Spider-Verse theme release).*
+*Last updated to reflect Daybook v1.2.0 (capture, email, analytics, and brand icons).*

@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import PixelWebCorner from './PixelWebCorner';
 
-/** Deterministic pseudo-random in [0, 1) — stable across renders */
+/** Deterministic pseudo-random in [0, 1) - stable across renders */
 function hash01(n: number) {
   const x = Math.sin(n * 12.9898) * 43758.5453;
   return x - Math.floor(x);

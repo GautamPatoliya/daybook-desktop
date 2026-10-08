@@ -4,7 +4,7 @@ import React from 'react';
 
 type Corner = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
 
-/** Classic cobweb drawn from a corner — spokes + silk rings. */
+/** Classic cobweb drawn from a corner - spokes + silk rings. */
 export default function Cobweb({
   size = 88,
   corner = 'top-left',

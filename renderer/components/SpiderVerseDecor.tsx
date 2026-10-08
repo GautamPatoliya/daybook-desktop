@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Cobweb from './spider/Cobweb';
 import SpiderHeroPixel from './spider/SpiderHeroPixel';
 
-/** Corner cobwebs + mask — spider-verse only. Clipped; no page overflow. */
+/** Corner cobwebs + mask - spider-verse only. Clipped; no page overflow. */
 export default function SpiderVerseDecor() {
   const [active, setActive] = useState(false);
 
