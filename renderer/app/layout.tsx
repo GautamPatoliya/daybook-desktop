@@ -69,7 +69,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <header className="topbar">
               <div className="brand">
                 <div className="brand-mark" aria-hidden>
-                  <BrandMark size={36} />
+                  <BrandMark size={40} />
                 </div>
                 <div>
                   <div className="brand-name">Daybook</div>

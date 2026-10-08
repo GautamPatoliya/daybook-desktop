@@ -1,44 +1,45 @@
-# App icons for electron-builder
+# Daybook Icon System
 
-## Masters (edit these only)
+Pattern matches **PDF-ERP POS** (`pdf_erp_pos`): transparent app mark + NSIS **BMP** sidebars.
 
-| Source | Path / method | Used for |
-|--------|----------------|----------|
-| Hero | `docs/Main Logo.png` | App icon, window icon, NSIS sidebar, large `.ico`/`.icns`, in-app brand |
-| Tray glyph | Drawn in `scripts/generate-icons.mjs` (crisp SVG at exact px) | `tray-16` / `tray-32` + ICO 16–32 |
+**Do not** take one PNG and AI-resize it into 20 files.  
+**Do** keep two masters, then run a deterministic generator.
 
-Do **not** downscale the illustrated logo into the tray. Do **not** hand-edit derived files.
+```text
+assets/icons/source/
+├── daybook-app.png              ← APP ICON MASTER (transparent hero)
+├── daybook-tray.svg             ← WINDOWS TRAY MASTER (simple color)
+└── daybook-tray-template.svg    ← MAC MENU BAR MASTER (black template)
+```
 
-## Generate all derived assets
+## Generate
 
 ```bash
 npm run icons:generate
 ```
 
-`dist` / `dist:win` / `dist:mac` / `publish:github` run this automatically before packaging.
+| Output | From | Notes |
+|--------|------|--------|
+| `build/icon.png` | App master | **Transparent** 1024 — Start Menu / electron-builder |
+| `build/icon.ico` / `icon.icns` | Transparent PNG | HERMITE multi-size; no navy plate |
+| `build/installerSidebar.bmp` | App master | **164×314 24-bit BMP** (NSIS requires BMP, not PNG) |
+| `build/uninstallerSidebar.bmp` | same | |
+| `electron/assets/app-icon.png` | App master | Window / taskbar runtime |
+| `electron/assets/tray-*.png` | Tray SVG | |
+| `electron/assets/trayTemplate*` | Template SVG | macOS |
+| `renderer/public/brand/logo.png` | App master | In-app |
 
-| Output | Size / notes |
-|--------|----------------|
-| `build/icon.png` | 1024×1024 **transparent** Main Logo |
-| `build/icon-win.png` | 1024×1024 **opaque** navy plate (Windows / Dock master) |
-| `build/icon.ico` | Windows `.exe` / taskbar / Start Menu (from opaque master) |
-| `build/icon.icns` | macOS bundle icon (from opaque master) |
-| `build/nsis-sidebar.png` | 164×314 installer banner (opaque navy — NSIS requirement) |
-| `electron/assets/app-icon.png` | 256×256 window / Dock / taskbar |
-| `electron/assets/tray-16.png` | Windows tray — solid notebook glyph @ 16px |
-| `electron/assets/tray-32.png` | macOS / HiDPI tray — same glyph @ 32px |
-| `renderer/public/brand/logo.png` | In-app brand (topbar, onboarding, loaders) |
-| `renderer/public/brand/logo-64.png` | Optional 64px copy of the same mark |
+## Rules (from PDF-ERP + Windows shell)
 
-## Packaging wiring
+1. **App icon ≠ tray icon** — two designs.  
+2. **No navy plate** on the Start Menu / `.exe` icon — use the transparent master.  
+3. **NSIS sidebar must be `.bmp` 164×314** — PNG sidebars show blank on the installer.  
+4. **Mac tray** = black template + optical padding.  
+5. Judge tray art at **real menu-bar / tray size**, not zoomed to 512px.
 
-| Config | Path |
-|--------|------|
-| `build.icon` | `build/icon.png` |
-| `build.win.icon` | `build/icon.ico` |
-| `build.mac.icon` | `build/icon.icns` |
-| NSIS sidebars | `build/nsis-sidebar.png` |
-| Electron runtime | `electron/assets/*` (copied into `dist-electron` on `build:electron`) |
-| Renderer UI | `renderer/public/brand/*` → static export `out/brand/` |
+## Edit workflow
 
-After replacing a master, run `npm run icons:generate` (or any `dist*` script).
+1. Replace `assets/icons/source/daybook-app.png` (or `docs/Main Logo.png`).  
+2. Tweak tray SVGs if the tiny mark needs work.  
+3. `npm run icons:generate`  
+4. Ship. After Windows update, unpin/repin if a pinned taskbar icon is still stale.

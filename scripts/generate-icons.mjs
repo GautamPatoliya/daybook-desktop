@@ -1,10 +1,17 @@
 /**
- * Derive packaging + in-app icons from:
- *   docs/Main Logo.png  → app icon, window, NSIS, brand mark, large ICO/ICNS
- * Tray + tiny ICO (16–32) → purpose-built crisp SVG (not from masters —
- * soft downscales look like a blurred white square in the Windows tray).
+ * Daybook Icon System — deterministic packaging (PDF-ERP POS pattern).
  *
- * Re-run: npm run icons:generate
+ * Masters (edit these):
+ *   assets/icons/source/daybook-app.png           → app / .exe / brand (transparent)
+ *   assets/icons/source/daybook-tray.svg          → Windows tray
+ *   assets/icons/source/daybook-tray-template.svg → macOS menu-bar template
+ *
+ * Fallback app master: docs/Main Logo.png
+ *
+ * npm run icons:generate
+ *
+ * NSIS expects 164×314 24-bit BMP sidebars (PNG is ignored / blank).
+ * Windows Start menu uses the transparent ICO — no navy plate.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -12,16 +19,17 @@ import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
 import png2icons from 'png2icons';
 
-const NAVY_HEX = '#0a1a3a';
-
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 
-const MASTER_HERO = path.join(ROOT, 'docs', 'Main Logo.png');
+const SOURCE = path.join(ROOT, 'assets', 'icons', 'source');
+const MASTER_APP_PRIMARY = path.join(SOURCE, 'daybook-app.png');
+const MASTER_APP_FALLBACK = path.join(ROOT, 'docs', 'Main Logo.png');
+const MASTER_TRAY = path.join(SOURCE, 'daybook-tray.svg');
+const MASTER_TRAY_TEMPLATE = path.join(SOURCE, 'daybook-tray-template.svg');
 
 const BUILD = path.join(ROOT, 'build');
 const ASSETS = path.join(ROOT, 'electron', 'assets');
-/** In-app brand mark (Next static export serves `renderer/public`). */
 const PUBLIC_BRAND = path.join(ROOT, 'renderer', 'public', 'brand');
 
 const SIZE_APP = 1024;
@@ -33,10 +41,12 @@ function ensureDir(dir) {
   fs.mkdirSync(dir, { recursive: true });
 }
 
-/**
- * Soft white / near-white canvas → transparent.
- * Also fades very light fringe so the notebook edge stays clean on any OS chrome.
- */
+function resolveAppMaster() {
+  if (fs.existsSync(MASTER_APP_PRIMARY)) return MASTER_APP_PRIMARY;
+  if (fs.existsSync(MASTER_APP_FALLBACK)) return MASTER_APP_FALLBACK;
+  return null;
+}
+
 async function knockOutWhite(inputPath, threshold = 242) {
   const { data, info } = await sharp(inputPath)
     .ensureAlpha()
@@ -54,12 +64,10 @@ async function knockOutWhite(inputPath, threshold = 242) {
     }
     const min = Math.min(r, g, b);
     const max = Math.max(r, g, b);
-    // Near-white and low chroma (canvas), not pale blue glow on the art
     const isCanvas = min >= threshold && max - min < 18;
     if (isCanvas) {
       data[i + 3] = 0;
     } else if (min >= 220 && max - min < 28) {
-      // Soft fringe: fade instead of hard cut
       const t = (min - 220) / (255 - 220);
       data[i + 3] = Math.round(a * (1 - t * 0.85));
     }
@@ -70,13 +78,10 @@ async function knockOutWhite(inputPath, threshold = 242) {
   }).png();
 }
 
-/**
- * Transparent square with the hero logo centered (no plate).
- * Slight padding so Dock / Start Menu masks do not clip sparkles.
- */
-async function composeAppIcon(size, { opaque = false } = {}) {
-  const cutout = await knockOutWhite(MASTER_HERO);
-  const padded = Math.round(size * (opaque ? 0.82 : 0.9));
+/** Transparent app icon — fills most of the canvas (PDF-ERP style, no navy plate). */
+async function composeAppIcon(appMaster, size) {
+  const cutout = await knockOutWhite(appMaster);
+  const padded = Math.round(size * 0.96);
   const logo = await cutout
     .resize(padded, padded, {
       fit: 'contain',
@@ -86,31 +91,6 @@ async function composeAppIcon(size, { opaque = false } = {}) {
     .toBuffer();
 
   const offset = Math.round((size - padded) / 2);
-
-  // Windows .exe / taskbar / Start Menu need an opaque icon — transparent
-  // ICOs often fail to embed, so the old Daybook.exe icon sticks around.
-  if (opaque) {
-    // Full-bleed navy (no rounded transparent corners) so Windows rcedit
-    // embeds a real opaque .ico into Daybook.exe for the taskbar.
-    const plate = Buffer.from(
-      `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
-        <defs>
-          <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="#122a52"/>
-            <stop offset="100%" stop-color="${NAVY_HEX}"/>
-          </linearGradient>
-        </defs>
-        <rect width="${size}" height="${size}" fill="url(#g)"/>
-      </svg>`,
-    );
-    const platePng = await sharp(plate).png().toBuffer();
-    return sharp(platePng)
-      .composite([{ input: logo, left: offset, top: offset }])
-      .removeAlpha()
-      .png()
-      .toBuffer();
-  }
-
   return sharp({
     create: {
       width: size,
@@ -120,12 +100,11 @@ async function composeAppIcon(size, { opaque = false } = {}) {
     },
   })
     .composite([{ input: logo, left: offset, top: offset }])
-    .png()
+    .png({ compressionLevel: 9 })
     .toBuffer();
 }
 
-/** NSIS requires an opaque banner — navy wash + transparent-cutout logo. */
-async function composeNsisSidebar() {
+async function composeNsisSidebarPng(appMaster) {
   const bgSvg = Buffer.from(
     `<svg xmlns="http://www.w3.org/2000/svg" width="${NSIS_W}" height="${NSIS_H}">
       <defs>
@@ -134,8 +113,8 @@ async function composeNsisSidebar() {
           <stop offset="55%" stop-color="#0a1a3a"/>
           <stop offset="100%" stop-color="#061028"/>
         </linearGradient>
-        <radialGradient id="glow" cx="50%" cy="32%" r="55%">
-          <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.35"/>
+        <radialGradient id="glow" cx="50%" cy="28%" r="52%">
+          <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.4"/>
           <stop offset="100%" stop-color="#3b82f6" stop-opacity="0"/>
         </radialGradient>
       </defs>
@@ -144,9 +123,8 @@ async function composeNsisSidebar() {
     </svg>`,
   );
   const bg = await sharp(bgSvg).png().toBuffer();
-
-  const cutout = await knockOutWhite(MASTER_HERO);
-  const logoSize = 132;
+  const cutout = await knockOutWhite(appMaster);
+  const logoSize = 128;
   const logo = await cutout
     .resize(logoSize, logoSize, {
       fit: 'contain',
@@ -154,87 +132,124 @@ async function composeNsisSidebar() {
       kernel: sharp.kernel.lanczos3,
     })
     .toBuffer();
-
   const left = Math.round((NSIS_W - logoSize) / 2);
-  const top = 48;
+  const top = 40;
 
   return sharp(bg)
     .composite([{ input: logo, left, top }])
+    .flatten({ background: '#061028' })
+    .removeAlpha()
     .png()
     .toBuffer();
 }
 
 /**
- * Purpose-built tray / tiny-OS glyph — NOT from user masters.
- * Integer-pixel SVG at the exact size (16 / 24 / 32). Soft downscales of
- * illustrations always look like a blurred white square on Windows trays.
+ * Classic Windows BMP (BI_RGB 24-bit), bottom-up — required by NSIS MUI sidebars.
+ * Matches PDF-ERP: build/installerSidebar.bmp @ 164×314.
  */
-function trayGlyphSvg(size) {
-  const s = size / 16;
-  const px = (n) => Math.round(n * s);
-  const page = '#FFFFFF';
-  const accent = '#3B82F6';
-  const dark = '#1E3A8A';
+function writeBmp24(filePath, width, height, rgbTopDown) {
+  const rowSize = Math.floor((width * 3 + 3) / 4) * 4;
+  const pixelBytes = rowSize * height;
+  const fileSize = 54 + pixelBytes;
+  const out = Buffer.alloc(fileSize);
+  out.write('BM', 0);
+  out.writeUInt32LE(fileSize, 2);
+  out.writeUInt32LE(0, 6);
+  out.writeUInt32LE(54, 10);
+  out.writeUInt32LE(40, 14);
+  out.writeInt32LE(width, 18);
+  out.writeInt32LE(height, 22);
+  out.writeUInt16LE(1, 26);
+  out.writeUInt16LE(24, 28);
+  out.writeUInt32LE(0, 30);
+  out.writeUInt32LE(pixelBytes, 34);
+  out.writeInt32LE(2835, 38);
+  out.writeInt32LE(2835, 42);
+  out.writeUInt32LE(0, 46);
+  out.writeUInt32LE(0, 50);
 
-  // Hollow checkbox as four edge blocks (no stroked rects — those blur at 16px)
-  const hollow = (x, y, w, h) => {
-    const t = Math.max(1, px(1));
-    return [
-      `<rect x="${x}" y="${y}" width="${w}" height="${t}" fill="${dark}"/>`,
-      `<rect x="${x}" y="${y + h - t}" width="${w}" height="${t}" fill="${dark}"/>`,
-      `<rect x="${x}" y="${y}" width="${t}" height="${h}" fill="${dark}"/>`,
-      `<rect x="${x + w - t}" y="${y}" width="${t}" height="${h}" fill="${dark}"/>`,
-    ].join('');
-  };
-
-  return Buffer.from(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" shape-rendering="crispEdges">
-      <rect x="${px(2)}" y="${px(2)}" width="${px(9)}" height="${px(12)}" fill="${page}"/>
-      <rect x="${px(11)}" y="${px(2)}" width="${px(3)}" height="${px(12)}" fill="${accent}"/>
-      <rect x="${px(3)}" y="${px(4)}" width="${px(2)}" height="${px(2)}" fill="${dark}"/>
-      <rect x="${px(4)}" y="${px(4)}" width="${px(1)}" height="${px(1)}" fill="${accent}"/>
-      <rect x="${px(6)}" y="${px(4)}" width="${px(4)}" height="${px(1)}" fill="${dark}"/>
-      <rect x="${px(3)}" y="${px(7)}" width="${px(2)}" height="${px(2)}" fill="${dark}"/>
-      <rect x="${px(4)}" y="${px(7)}" width="${px(1)}" height="${px(1)}" fill="${accent}"/>
-      <rect x="${px(6)}" y="${px(7)}" width="${px(4)}" height="${px(1)}" fill="${dark}"/>
-      ${hollow(px(3), px(10), px(2), px(2))}
-      <rect x="${px(6)}" y="${px(10)}" width="${px(4)}" height="${px(1)}" fill="${dark}"/>
-      <rect x="${px(4)}" y="${px(13)}" width="${px(2)}" height="${px(1)}" fill="${accent}"/>
-    </svg>`,
-  );
+  for (let y = 0; y < height; y++) {
+    const srcY = height - 1 - y;
+    for (let x = 0; x < width; x++) {
+      const si = (srcY * width + x) * 3;
+      const di = 54 + y * rowSize + x * 3;
+      out[di] = rgbTopDown[si + 2];
+      out[di + 1] = rgbTopDown[si + 1];
+      out[di + 2] = rgbTopDown[si];
+    }
+  }
+  fs.writeFileSync(filePath, out);
 }
 
-async function composeTray(size) {
-  return sharp(trayGlyphSvg(size)).png().toBuffer();
+async function pngToBmp24(pngBuffer, filePath) {
+  // Force 3-channel RGB (sharp may keep an opaque alpha plane after removeAlpha).
+  const { data, info } = await sharp(pngBuffer)
+    .flatten({ background: '#061028' })
+    .removeAlpha()
+    .toColorspace('srgb')
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+
+  let rgb = data;
+  if (info.channels === 4) {
+    rgb = Buffer.alloc(info.width * info.height * 3);
+    for (let i = 0, j = 0; i < data.length; i += 4, j += 3) {
+      rgb[j] = data[i];
+      rgb[j + 1] = data[i + 1];
+      rgb[j + 2] = data[i + 2];
+    }
+  } else if (info.channels !== 3) {
+    throw new Error(`BMP encode expected RGB, got ${info.channels} channels`);
+  }
+  writeBmp24(filePath, info.width, info.height, rgb);
 }
 
-/**
- * Windows .exe icon — build from an opaque 256/512 master via png2icons (BMP
- * layers). Do not put the tray SVG into the ICO; taskbar uses this file.
- */
-async function writeIco(opaquePngBuffer) {
-  // false = BMP entries inside ICO (best compatibility with electron-builder / rcedit)
-  const ico = png2icons.createICO(opaquePngBuffer, png2icons.BILINEAR, 0, false);
-  if (!ico || !ico.length) {
+/** Render tray SVG into a padded canvas (optical size, not edge-to-edge). */
+async function composeTrayFromSvg(svgPath, size, { pad = 0.94 } = {}) {
+  const inner = Math.max(10, Math.round(size * pad));
+  const glyph = await sharp(svgPath)
+    .resize(inner, inner, {
+      fit: 'contain',
+      background: { r: 0, g: 0, b: 0, alpha: 0 },
+      kernel: sharp.kernel.nearest,
+    })
+    .png()
+    .toBuffer();
+  const offset = Math.round((size - inner) / 2);
+  return sharp({
+    create: {
+      width: size,
+      height: size,
+      channels: 4,
+      background: { r: 0, g: 0, b: 0, alpha: 0 },
+    },
+  })
+    .composite([{ input: glyph, left: offset, top: offset }])
+    .png()
+    .toBuffer();
+}
+
+async function writeIco(transparentPngBuffer) {
+  // HERMITE keeps edges sharper than BILINEAR for multi-size ICO frames.
+  const ico = png2icons.createICO(transparentPngBuffer, png2icons.HERMITE, 0, false);
+  if (!ico?.length) {
     throw new Error('png2icons.createICO returned empty — Windows exe icon would stay stale');
   }
   fs.writeFileSync(path.join(BUILD, 'icon.ico'), ico);
 }
 
 async function writeIcns(png1024) {
-  const icns = png2icons.createICNS(png1024, png2icons.BILINEAR, 0);
+  const icns = png2icons.createICNS(png1024, png2icons.HERMITE, 0);
   if (!icns) {
-    console.warn(
-      'warn: could not build icon.icns (png2icons returned empty); electron-builder can still use icon.png',
-    );
+    console.warn('warn: icon.icns empty; electron-builder can still use icon.png');
     return;
   }
   fs.writeFileSync(path.join(BUILD, 'icon.icns'), icns);
 }
 
-/** Write nearest-neighbor previews under build/.qa/ for visual review. */
-async function writeQaPreviews(png1024, tray16, tray32) {
+async function writeQaPreviews(png1024, tray16, tray32, template22) {
   const qa = path.join(BUILD, '.qa');
+  fs.rmSync(qa, { recursive: true, force: true });
   ensureDir(qa);
   for (const s of [16, 32, 48, 128, 256]) {
     await sharp(png1024)
@@ -246,92 +261,106 @@ async function writeQaPreviews(png1024, tray16, tray32) {
       .png()
       .toFile(path.join(qa, `app-${s}@preview.png`));
   }
-  await sharp(tray16)
-    .resize(128, 128, { kernel: sharp.kernel.nearest })
-    .png()
-    .toFile(path.join(qa, 'tray-16@preview.png'));
-  await sharp(tray32)
-    .resize(128, 128, { kernel: sharp.kernel.nearest })
-    .png()
-    .toFile(path.join(qa, 'tray-32@preview.png'));
+  await sharp(tray16).resize(128, 128, { kernel: sharp.kernel.nearest }).png().toFile(path.join(qa, 'tray-16@preview.png'));
+  await sharp(tray32).resize(128, 128, { kernel: sharp.kernel.nearest }).png().toFile(path.join(qa, 'tray-32@preview.png'));
+  if (template22) {
+    await sharp(template22)
+      .resize(128, 128, { kernel: sharp.kernel.nearest })
+      .png()
+      .toFile(path.join(qa, 'tray-template@preview.png'));
+  }
 }
 
 async function main() {
-  if (!fs.existsSync(MASTER_HERO)) {
-    console.error(`Missing master: ${MASTER_HERO}`);
+  const appMaster = resolveAppMaster();
+  if (!appMaster) {
+    console.error(`Missing app master. Add:\n  ${MASTER_APP_PRIMARY}\nor\n  ${MASTER_APP_FALLBACK}`);
     process.exit(1);
+  }
+  if (!fs.existsSync(MASTER_TRAY)) {
+    console.error(`Missing tray master: ${MASTER_TRAY}`);
+    process.exit(1);
+  }
+  if (!fs.existsSync(MASTER_TRAY_TEMPLATE)) {
+    console.error(`Missing tray template master: ${MASTER_TRAY_TEMPLATE}`);
+    process.exit(1);
+  }
+
+  if (appMaster === MASTER_APP_FALLBACK) {
+    ensureDir(SOURCE);
+    fs.copyFileSync(MASTER_APP_FALLBACK, MASTER_APP_PRIMARY);
+    console.log('Synced docs/Main Logo.png → assets/icons/source/daybook-app.png');
   }
 
   ensureDir(BUILD);
   ensureDir(ASSETS);
+  ensureDir(PUBLIC_BRAND);
 
-  console.log('Composing transparent 1024 app icon…');
-  const icon1024 = await composeAppIcon(SIZE_APP, { opaque: false });
+  console.log(`App master: ${path.relative(ROOT, appMaster)}`);
+  console.log('Composing transparent 1024 (no navy plate)…');
+  const icon1024 = await composeAppIcon(appMaster, SIZE_APP);
   fs.writeFileSync(path.join(BUILD, 'icon.png'), icon1024);
 
-  console.log('Composing opaque Windows / Dock master…');
-  const iconOpaque1024 = await composeAppIcon(SIZE_APP, { opaque: true });
-  fs.writeFileSync(path.join(BUILD, 'icon-win.png'), iconOpaque1024);
-
-  console.log('Writing window app-icon.png (256, opaque for taskbar)…');
-  await sharp(iconOpaque1024)
+  console.log('Writing app-icon.png (256 transparent)…');
+  await sharp(icon1024)
     .resize(SIZE_WINDOW, SIZE_WINDOW, { kernel: sharp.kernel.lanczos3 })
     .png()
     .toFile(path.join(ASSETS, 'app-icon.png'));
 
-  console.log('Writing in-app brand mark (renderer/public/brand)…');
-  ensureDir(PUBLIC_BRAND);
-  // 256 for crisp Retina topbar / loader (displayed ~36–88 CSS px)
-  await sharp(icon1024)
+  console.log('Writing in-app brand…');
+  const brandCutout = await knockOutWhite(appMaster);
+  const brandBuf = await brandCutout
+    .resize(512, 512, {
+      fit: 'contain',
+      background: { r: 0, g: 0, b: 0, alpha: 0 },
+      kernel: sharp.kernel.lanczos3,
+    })
+    .png({ compressionLevel: 9 })
+    .toBuffer();
+  await sharp(brandBuf)
     .resize(256, 256, { kernel: sharp.kernel.lanczos3 })
-    .modulate({ brightness: 1.08, saturation: 1.2 })
-    .png()
+    .png({ compressionLevel: 9 })
     .toFile(path.join(PUBLIC_BRAND, 'logo.png'));
-  await sharp(icon1024)
+  await sharp(brandBuf)
     .resize(64, 64, { kernel: sharp.kernel.lanczos3 })
-    .modulate({ brightness: 1.08, saturation: 1.2 })
-    .png()
+    .png({ compressionLevel: 9 })
     .toFile(path.join(PUBLIC_BRAND, 'logo-64.png'));
 
-  console.log('Writing NSIS sidebar 164×314…');
-  const sidebar = await composeNsisSidebar();
-  fs.writeFileSync(path.join(BUILD, 'nsis-sidebar.png'), sidebar);
+  console.log('Writing NSIS sidebar BMP 164×314 (PDF-ERP pattern)…');
+  const sidebarPng = await composeNsisSidebarPng(appMaster);
+  fs.writeFileSync(path.join(BUILD, 'nsis-sidebar.png'), sidebarPng);
+  await pngToBmp24(sidebarPng, path.join(BUILD, 'installerSidebar.bmp'));
+  await pngToBmp24(sidebarPng, path.join(BUILD, 'uninstallerSidebar.bmp'));
 
-  console.log('Writing tray-16 / tray-32…');
-  const tray16 = await composeTray(16);
-  const tray32 = await composeTray(32);
+  console.log('Writing Windows tray-16 / tray-32…');
+  const tray16 = await composeTrayFromSvg(MASTER_TRAY, 16, { pad: 1 });
+  const tray32 = await composeTrayFromSvg(MASTER_TRAY, 32, { pad: 1 });
   fs.writeFileSync(path.join(ASSETS, 'tray-16.png'), tray16);
   fs.writeFileSync(path.join(ASSETS, 'tray-32.png'), tray32);
 
-  console.log('Writing icon.ico (opaque, for Daybook.exe)…');
-  await writeIco(iconOpaque1024);
+  console.log('Writing macOS tray templates…');
+  const template22 = await composeTrayFromSvg(MASTER_TRAY_TEMPLATE, 22, { pad: 0.55 });
+  const template44 = await composeTrayFromSvg(MASTER_TRAY_TEMPLATE, 44, { pad: 0.55 });
+  fs.writeFileSync(path.join(ASSETS, 'trayTemplate.png'), template22);
+  fs.writeFileSync(path.join(ASSETS, 'trayTemplate@2x.png'), template44);
 
-  console.log('Writing icon.icns…');
-  await writeIcns(iconOpaque1024);
+  console.log('Writing icon.ico / icon.icns from transparent master…');
+  await writeIco(icon1024);
+  await writeIcns(icon1024);
 
-  console.log('Writing QA previews…');
-  await writeQaPreviews(icon1024, tray16, tray32);
-
-  // Drop legacy spider OS icons if present
-  for (const name of ['spider-icon.png', 'spider-icon.jpg']) {
-    const p = path.join(ASSETS, name);
+  // Drop legacy opaque plate if present
+  for (const name of ['icon-win.png', 'spider-icon.png', 'spider-icon.jpg']) {
+    const p = path.join(name.startsWith('icon') ? BUILD : ASSETS, name);
     if (fs.existsSync(p)) {
       fs.unlinkSync(p);
       console.log(`Removed ${path.relative(ROOT, p)}`);
     }
   }
 
+  console.log('Writing QA previews…');
+  await writeQaPreviews(icon1024, tray16, tray32, template22);
+
   console.log('Done.');
-  console.log(`  ${path.relative(ROOT, path.join(BUILD, 'icon.png'))}`);
-  console.log(`  ${path.relative(ROOT, path.join(BUILD, 'icon-win.png'))}`);
-  console.log(`  ${path.relative(ROOT, path.join(BUILD, 'icon.ico'))}`);
-  console.log(`  ${path.relative(ROOT, path.join(BUILD, 'icon.icns'))}`);
-  console.log(`  ${path.relative(ROOT, path.join(BUILD, 'nsis-sidebar.png'))}`);
-  console.log(`  ${path.relative(ROOT, path.join(ASSETS, 'app-icon.png'))}`);
-  console.log(`  ${path.relative(ROOT, path.join(ASSETS, 'tray-16.png'))}`);
-  console.log(`  ${path.relative(ROOT, path.join(ASSETS, 'tray-32.png'))}`);
-  console.log(`  ${path.relative(ROOT, path.join(PUBLIC_BRAND, 'logo.png'))}`);
-  console.log(`  ${path.relative(ROOT, path.join(PUBLIC_BRAND, 'logo-64.png'))}`);
 }
 
 main().catch((err) => {

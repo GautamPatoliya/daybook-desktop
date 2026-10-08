@@ -122,7 +122,10 @@ export const api = {
       error: string | null;
       packaged?: boolean;
       version?: string;
+      platform?: string;
       updaterActive?: boolean;
+      isUpdateAvailable?: boolean;
+      updateInfo?: { version?: string } | null;
     }>('updater:status'),
   checkUpdates: () =>
     invoke<{

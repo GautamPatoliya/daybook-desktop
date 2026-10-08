@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { usePathname, useRouter } from 'next/navigation';
 import { api } from '../lib/api';
@@ -33,6 +33,7 @@ type ModalState =
     };
 
 const DISMISS_KEY = 'daybook-update-dismissed-session';
+const LAUNCH_CHECK_KEY = 'daybook-update-launch-checked';
 
 export function UpdateModal() {
   const pathname = usePathname();
@@ -41,14 +42,14 @@ export function UpdateModal() {
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+  const installedVersionRef = useRef('');
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
+  // Mount once — do not depend on pathname (nav must not cancel/re-hit GitHub).
   useEffect(() => {
-    if (pathname?.startsWith('/onboarding')) return;
-
     if (isUpdateUiPreview()) {
       sessionStorage.removeItem(DISMISS_KEY);
 
@@ -90,27 +91,61 @@ export function UpdateModal() {
       return () => stopMock();
     }
 
-    if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem(DISMISS_KEY) === '1') {
-      return;
+    let cancelled = false;
+
+    void api.getVersion().then((v) => {
+      if (!cancelled && v) installedVersionRef.current = v;
+    });
+
+    function applyAvailable(version: string, platform = '') {
+      if (cancelled || sessionStorage.getItem(DISMISS_KEY) === '1') return;
+      setState((prev) => {
+        if (prev.kind === 'mac-assist' || prev.kind === 'ready') return prev;
+        const current =
+          (prev.kind === 'available' ? prev.current : '') || installedVersionRef.current || '';
+        const plat = (prev.kind === 'available' ? prev.platform : '') || platform || '';
+        return {
+          kind: 'available',
+          version,
+          current,
+          downloading: true,
+          progress: prev.kind === 'available' ? prev.progress : undefined,
+          platform: plat,
+        };
+      });
     }
 
-    let cancelled = false;
+    function applyReady(version: string, platform = '') {
+      if (cancelled || sessionStorage.getItem(DISMISS_KEY) === '1') return;
+      setState((prev) => {
+        if (prev.kind === 'mac-assist') return prev;
+        const current =
+          prev.kind !== 'hidden' ? prev.current : installedVersionRef.current || '';
+        const plat =
+          prev.kind === 'available' || prev.kind === 'ready' ? prev.platform : platform;
+        return { kind: 'ready', version, current, platform: plat };
+      });
+    }
 
     async function runLaunchCheck() {
       try {
         const launch = await api.checkUpdatesOnLaunch();
         if (cancelled || launch.deferred || !launch.packaged) return;
+        if (sessionStorage.getItem(DISMISS_KEY) === '1') return;
 
-        const assist = await api.getMacAssist(launch.updateInfo?.version);
+        if (launch.version) installedVersionRef.current = launch.version;
+
+        const ver = launch.updateInfo?.version;
+        const assist = await api.getMacAssist(ver);
         const isMac = launch.platform === 'darwin' || assist.unsigned;
 
-        if (isMac && launch.isUpdateAvailable) {
-          const ver = launch.updateInfo?.version || 'latest';
-          const assistForVer = await api.getMacAssist(ver === 'latest' ? undefined : ver);
+        if (isMac && launch.isUpdateAvailable && ver) {
+          const assistForVer = await api.getMacAssist(ver);
+          if (cancelled) return;
           setState({
             kind: 'mac-assist',
             version: ver,
-            current: launch.version || '',
+            current: launch.version || installedVersionRef.current || '',
             dmgUrl: assistForVer.dmgUrl,
             xattrCommand: assistForVer.xattrCommand,
             error: launch.ok ? undefined : launch.error || undefined,
@@ -118,31 +153,18 @@ export function UpdateModal() {
           return;
         }
 
-        if (launch.ready && launch.updateInfo?.version) {
-          setState({
-            kind: 'ready',
-            version: launch.updateInfo.version,
-            current: launch.version || '',
-            platform: launch.platform || '',
-          });
+        if (launch.ready && ver) {
+          applyReady(ver, launch.platform || '');
           return;
         }
 
-        if (launch.ok && launch.isUpdateAvailable && launch.updateInfo?.version) {
-          setState({
-            kind: 'available',
-            version: launch.updateInfo.version,
-            current: launch.version || '',
-            downloading: true,
-            platform: launch.platform || '',
-          });
+        if (launch.isUpdateAvailable && ver) {
+          applyAvailable(ver, launch.platform || '');
         }
       } catch {
-        /* ignore */
+        /* Updates page remains the manual path */
       }
     }
-
-    void runLaunchCheck();
 
     const off = window.wtt?.on('updater:event', (evt) => {
       const e = evt as {
@@ -151,18 +173,7 @@ export function UpdateModal() {
         progress?: { percent: number };
       };
       if (sessionStorage.getItem(DISMISS_KEY) === '1') return;
-      if (e.type === 'available' && e.info?.version) {
-        setState((prev) => {
-          if (prev.kind === 'mac-assist') return prev;
-          return {
-            kind: 'available',
-            version: e.info!.version!,
-            current: prev.kind === 'available' || prev.kind === 'ready' ? prev.current : '',
-            downloading: true,
-            platform: prev.kind === 'available' || prev.kind === 'ready' ? prev.platform : '',
-          };
-        });
-      }
+      if (e.type === 'available' && e.info?.version) applyAvailable(e.info.version);
       if (e.type === 'progress') {
         setState((prev) =>
           prev.kind === 'available'
@@ -170,24 +181,26 @@ export function UpdateModal() {
             : prev,
         );
       }
-      if (e.type === 'downloaded' && e.info?.version) {
-        setState((prev) => {
-          if (prev.kind === 'mac-assist') return prev;
-          return {
-            kind: 'ready',
-            version: e.info!.version!,
-            current: prev.kind !== 'hidden' ? prev.current : '',
-            platform: prev.kind === 'available' || prev.kind === 'ready' ? prev.platform : '',
-          };
-        });
-      }
+      if (e.type === 'downloaded' && e.info?.version) applyReady(e.info.version);
     });
+
+    let launchTimer: number | undefined;
+    if (sessionStorage.getItem(LAUNCH_CHECK_KEY) === '1') {
+      // Session already checked (e.g. Soft remount) — hydrate from main-process cache only.
+      void runLaunchCheck();
+    } else {
+      launchTimer = window.setTimeout(() => {
+        sessionStorage.setItem(LAUNCH_CHECK_KEY, '1');
+        void runLaunchCheck();
+      }, 1200);
+    }
 
     return () => {
       cancelled = true;
+      if (launchTimer !== undefined) window.clearTimeout(launchTimer);
       off?.();
     };
-  }, [pathname]);
+  }, []);
 
   if (!mounted || state.kind === 'hidden' || pathname?.startsWith('/onboarding')) return null;
 

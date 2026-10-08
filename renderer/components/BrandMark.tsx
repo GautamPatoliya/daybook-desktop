@@ -8,7 +8,9 @@ type Props = {
 
 /**
  * Daybook notebook mark from `npm run icons:generate`
- * → `renderer/public/brand/logo.png`
+ * → `renderer/public/brand/logo.png` (256, from a 512 cutout)
+ *
+ * Always load the 256 asset so ~36–88px UI stays sharp on Retina.
  */
 export function BrandMark({ size = 28, className }: Props) {
   return (

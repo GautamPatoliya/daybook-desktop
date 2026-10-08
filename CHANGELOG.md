@@ -2,6 +2,11 @@
 
 All notable changes to Daybook will be documented in this file.
 
+## 1.2.2 - 2026-10-08
+
+### Fixes
+* Bug fixes.
+
 ## 1.2.1 - 2026-10-08
 
 ### Fixes

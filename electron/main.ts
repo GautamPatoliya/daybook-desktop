@@ -16,10 +16,14 @@ import { DataRoot, readSettings, readStore, todayDate, statsOf } from '../shared
 import { shouldFireReminder } from './scheduler/reminders';
 import {
   clearPendingReminder,
+  getUpdaterSnapshot,
+  markUpdateAvailable,
   markUpdateError,
+  markUpdateNotAvailable,
   markUpdateReady,
   queueReminder,
   registerIpc,
+  runUpdateCheck,
 } from './ipc/handlers';
 import { adoptExistingEngine } from './llm/engine';
 import {
@@ -120,23 +124,39 @@ function loadAppIcon(): Electron.NativeImage | undefined {
   return undefined;
 }
 
-/** Tray icons from `npm run icons:generate` (tray-16 / tray-32). */
+/**
+ * Tray icons from `npm run icons:generate`.
+ * Windows: color tray-16 / tray-32.
+ * macOS: black template PNGs so the menu bar can tint for light/dark.
+ */
 function loadTrayIcon(): Electron.NativeImage {
-  const trayFile = process.platform === 'win32' ? 'tray-16.png' : 'tray-32.png';
-  const candidates = [
-    path.join(__dirname, 'assets', trayFile),
-    path.join(__dirname, 'assets', 'tray-16.png'),
-    path.join(__dirname, 'assets', 'tray-32.png'),
-    path.join(process.cwd(), 'electron', 'assets', trayFile),
-    path.join(app.getAppPath(), 'dist-electron', 'electron', 'assets', trayFile),
+  const assetDirs = [
+    path.join(__dirname, 'assets'),
+    path.join(process.cwd(), 'electron', 'assets'),
+    path.join(app.getAppPath(), 'dist-electron', 'electron', 'assets'),
   ];
-  for (const candidate of candidates) {
-    try {
-      if (!fs.existsSync(candidate)) continue;
-      const img = nativeImage.createFromPath(candidate);
-      if (!img.isEmpty()) return img;
-    } catch {
-      /* ignore */
+
+  const names =
+    process.platform === 'darwin'
+      ? ['trayTemplate@2x.png', 'trayTemplate.png', 'tray-32.png', 'tray-16.png']
+      : process.platform === 'win32'
+        ? ['tray-16.png', 'tray-32.png']
+        : ['tray-32.png', 'tray-16.png'];
+
+  for (const dir of assetDirs) {
+    for (const name of names) {
+      const candidate = path.join(dir, name);
+      try {
+        if (!fs.existsSync(candidate)) continue;
+        const img = nativeImage.createFromPath(candidate);
+        if (img.isEmpty()) continue;
+        if (process.platform === 'darwin' && name.startsWith('trayTemplate')) {
+          img.setTemplateImage(true);
+        }
+        return img;
+      } catch {
+        /* ignore */
+      }
     }
   }
 
@@ -259,6 +279,11 @@ async function createWindow(mode?: string): Promise<BrowserWindow> {
 
   mainWindow.webContents.on('did-fail-load', (_e, code, desc, url) => {
     console.error('Renderer failed to load', { code, desc, url });
+  });
+
+  mainWindow.webContents.on('did-finish-load', () => {
+    // Background check may have finished before the first paint — catch the UI up.
+    syncUpdaterStateToRenderer();
   });
 
   mainWindow.once('ready-to-show', () => {
@@ -458,6 +483,27 @@ function startReminderLoop(delayMs = 12_000) {
   }
 }
 
+function pushUpdaterEventToRenderer(payload: Record<string, unknown>) {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  try {
+    mainWindow.webContents.send('updater:event', payload);
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Re-send cached updater state after the UI mounts (events often fire too early). */
+function syncUpdaterStateToRenderer() {
+  const snap = getUpdaterSnapshot();
+  if (snap.ready && snap.updateInfo?.version) {
+    pushUpdaterEventToRenderer({ type: 'downloaded', info: snap.updateInfo });
+    return;
+  }
+  if (snap.isUpdateAvailable && snap.updateInfo?.version) {
+    pushUpdaterEventToRenderer({ type: 'available', info: snap.updateInfo });
+  }
+}
+
 function setupUpdater() {
   autoUpdater.logger = console;
   autoUpdater.autoDownload = !isDev;
@@ -468,31 +514,37 @@ function setupUpdater() {
 
   autoUpdater.on('update-available', (info) => {
     markUpdateReady(false);
-    mainWindow?.webContents.send('updater:event', { type: 'available', info });
+    markUpdateAvailable(info);
+    pushUpdaterEventToRenderer({ type: 'available', info });
   });
   autoUpdater.on('update-not-available', (info) => {
     markUpdateReady(false);
-    mainWindow?.webContents.send('updater:event', { type: 'not-available', info });
+    markUpdateNotAvailable();
+    pushUpdaterEventToRenderer({ type: 'not-available', info });
   });
   autoUpdater.on('download-progress', (progress) => {
-    mainWindow?.webContents.send('updater:event', { type: 'progress', progress });
+    pushUpdaterEventToRenderer({ type: 'progress', progress });
   });
   autoUpdater.on('update-downloaded', (info) => {
     markUpdateReady(true);
-    mainWindow?.webContents.send('updater:event', { type: 'downloaded', info });
+    markUpdateAvailable(info);
+    pushUpdaterEventToRenderer({ type: 'downloaded', info });
   });
   autoUpdater.on('error', (err) => {
     markUpdateError(err.message);
-    mainWindow?.webContents.send('updater:event', { type: 'error', message: err.message });
+    pushUpdaterEventToRenderer({ type: 'error', message: err.message });
   });
 
-  void autoUpdater.checkForUpdates().catch((err) => {
-    markUpdateError((err as Error).message);
+  // Must go through runUpdateCheck (mutex) — never call autoUpdater.checkForUpdates in parallel.
+  void runUpdateCheck().then((res) => {
+    if (!res.ok && res.error) markUpdateError(res.error);
+    syncUpdaterStateToRenderer();
   });
   if (!isDev) {
     setInterval(() => {
-      void autoUpdater.checkForUpdates().catch((err) => {
-        markUpdateError((err as Error).message);
+      void runUpdateCheck().then((res) => {
+        if (!res.ok && res.error) markUpdateError(res.error);
+        syncUpdaterStateToRenderer();
       });
     }, 4 * 60 * 60 * 1000);
   }
@@ -548,8 +600,10 @@ if (gotSingleInstanceLock) {
     setupTray();
     // Defer reminder engine so first paint / login stay snappy on low-end PCs
     startReminderLoop(12_000);
-    setupUpdater();
+    // Window first so updater events have a target; then check + sync on did-finish-load.
     await createWindow(settings.onboardingComplete ? undefined : 'onboarding');
+    setupUpdater();
+    syncUpdaterStateToRenderer();
 
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) void createWindow();

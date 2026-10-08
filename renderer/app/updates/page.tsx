@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Icon, I } from '../../lib/icons';
 import { api } from '../../lib/api';
 import { parseIsoDate } from '../../lib/format';
@@ -146,6 +146,8 @@ export default function UpdatesPage() {
     dmgUrl: string;
   } | null>(null);
   const [availableVersion, setAvailableVersion] = useState<string | null>(null);
+  const phaseRef = useRef<Phase>(phase);
+  phaseRef.current = phase;
 
   const releases = useMemo(() => parseReleaseNotes(changelog), [changelog]);
 
@@ -167,9 +169,17 @@ export default function UpdatesPage() {
       if (a.unsigned) setMacAssist(a);
     });
     void api.updaterStatus().then((s) => {
+      if (s.updateInfo?.version) setAvailableVersion(s.updateInfo.version);
       if (s.ready) {
         setPhase('ready');
         setMessage('An update is downloaded and ready. Restart to finish installing.');
+      } else if (s.isUpdateAvailable) {
+        setPhase('downloading');
+        setMessage(
+          s.updateInfo?.version
+            ? `Version ${s.updateInfo.version} found - downloading…`
+            : 'A newer version was found. Downloading in the background…',
+        );
       } else if (s.error) {
         setPhase(
           /not configured|not set up|YOUR_GITHUB|packaged install|Updater did not run|unsigned/i.test(s.error)
@@ -209,6 +219,8 @@ export default function UpdatesPage() {
         setMessage('Update ready. Restart the app to install it.');
       }
       if (e.type === 'error') {
+        // Don't hide Restart if the package is already downloaded (VPN/proxy blip).
+        if (phaseRef.current === 'ready') return;
         const friendly = friendlyEventError(e.message);
         setPhase(
           /not set up|not configured|packaged install|Updater did not run|unsigned/i.test(friendly)

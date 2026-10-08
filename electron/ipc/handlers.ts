@@ -96,6 +96,16 @@ type Deps = {
 /** Shared updater state so UI never shows "Restart & install" on errors. */
 let updateReady = false;
 let lastUpdateError: string | null = null;
+/** Cached feed result — survives events that fired before the renderer mounted. */
+let updateAvailable = false;
+let lastAvailableVersion: string | null = null;
+let checkInFlight: Promise<{
+  ok: boolean;
+  isUpdateAvailable: boolean;
+  updateInfo: { version: string } | null;
+  ready: boolean;
+  error: string | null;
+}> | null = null;
 
 /** Reminder mode waiting for the board page to mount (hourly | eod). */
 let pendingReminderMode: string | null = null;
@@ -118,9 +128,110 @@ export function markUpdateReady(ready: boolean) {
   if (ready) lastUpdateError = null;
 }
 
+export function markUpdateAvailable(info?: { version?: string } | null) {
+  updateAvailable = true;
+  if (info?.version) lastAvailableVersion = String(info.version);
+  lastUpdateError = null;
+}
+
+export function markUpdateNotAvailable() {
+  // Never wipe a package that is already downloaded and waiting to install.
+  if (updateReady) return;
+  updateAvailable = false;
+  lastAvailableVersion = null;
+}
+
+/**
+ * Record a feed/network error without destroying a completed download.
+ * (Common on office VPN / proxy flaps after the package is already local.)
+ */
 export function markUpdateError(message: string) {
-  updateReady = false;
   lastUpdateError = message;
+  if (!updateReady) {
+    // Leave updateAvailable / version intact so a flaky check doesn't hide a known update.
+  }
+}
+
+/** Snapshot for IPC + re-broadcast after the window loads (avoids missed events). */
+export function getUpdaterSnapshot() {
+  return {
+    ready: updateReady,
+    isUpdateAvailable: updateAvailable || updateReady,
+    updateInfo: lastAvailableVersion ? { version: lastAvailableVersion } : null,
+    error: lastUpdateError ? friendlyUpdateError(lastUpdateError) : null,
+    packaged: app.isPackaged,
+    version: app.getVersion(),
+    platform: process.platform,
+    updaterActive: autoUpdater.isUpdaterActive(),
+  };
+}
+
+/**
+ * Single-flight update check — used by IPC, launch modal, and the background timer.
+ * Never call `autoUpdater.checkForUpdates()` elsewhere or checks will race.
+ */
+export async function runUpdateCheck() {
+  if (checkInFlight) return checkInFlight;
+  checkInFlight = (async () => {
+    try {
+      if (!autoUpdater.isUpdaterActive()) {
+        return {
+          ok: false,
+          isUpdateAvailable: updateAvailable || updateReady,
+          updateInfo: lastAvailableVersion ? { version: lastAvailableVersion } : null,
+          ready: updateReady,
+          error:
+            process.platform === 'darwin'
+              ? 'Automatic update isn’t available for this Mac build yet (unsigned).'
+              : 'The updater is disabled in this build.',
+        };
+      }
+      const result = await autoUpdater.checkForUpdates();
+      lastUpdateError = null;
+      if (!result) {
+        return {
+          ok: false,
+          isUpdateAvailable: updateAvailable || updateReady,
+          updateInfo: lastAvailableVersion ? { version: lastAvailableVersion } : null,
+          ready: updateReady,
+          error: 'Updater did not run.',
+        };
+      }
+      const remoteVersion = result.updateInfo?.version ? String(result.updateInfo.version) : null;
+      const hasUpdate = Boolean(result.isUpdateAvailable);
+      if (hasUpdate && remoteVersion) {
+        updateAvailable = true;
+        lastAvailableVersion = remoteVersion;
+      } else if (!hasUpdate && !updateReady) {
+        // Only clear the cache when we are truly up to date (not mid/post download).
+        updateAvailable = false;
+        lastAvailableVersion = null;
+      }
+      return {
+        ok: true,
+        isUpdateAvailable: hasUpdate || updateReady,
+        updateInfo:
+          (hasUpdate && remoteVersion) || lastAvailableVersion
+            ? { version: (hasUpdate && remoteVersion) || lastAvailableVersion! }
+            : null,
+        ready: updateReady,
+        error: null,
+      };
+    } catch (err) {
+      const raw = (err as Error).message;
+      markUpdateError(raw);
+      return {
+        ok: false,
+        isUpdateAvailable: updateAvailable || updateReady,
+        updateInfo: lastAvailableVersion ? { version: lastAvailableVersion } : null,
+        ready: updateReady,
+        error: friendlyUpdateError(raw),
+      };
+    } finally {
+      checkInFlight = null;
+    }
+  })();
+  return checkInFlight;
 }
 
 function friendlyUpdateError(raw: string): string {
@@ -556,77 +667,26 @@ export function registerIpc(deps: Deps) {
     return '# What\'s new\n\n- Offline board for daily work\n- Daily email draft\n- Local analytics\n';
   });
 
-  ipcMain.handle('updater:status', () => ({
-    ready: updateReady,
-    error: lastUpdateError ? friendlyUpdateError(lastUpdateError) : null,
-    packaged: app.isPackaged,
-    version: app.getVersion(),
-    updaterActive: autoUpdater.isUpdaterActive(),
-  }));
+  ipcMain.handle('updater:status', () => getUpdaterSnapshot());
 
   ipcMain.handle('updater:check', async () => {
-    try {
-      if (!autoUpdater.isUpdaterActive()) {
-        const hint = app.isPackaged
-          ? 'The updater is disabled in this build.'
-          : 'Updates only run in a packaged install (or with forceDevUpdateConfig). Use the Setup/.dmg build to test end-to-end.';
-        return {
-          ok: false,
-          error: hint,
-          ready: false,
-          packaged: app.isPackaged,
-          version: app.getVersion(),
-        };
-      }
-
-      const result = await autoUpdater.checkForUpdates();
-      lastUpdateError = null;
-
-      // checkForUpdates() returns null when the updater is inactive.
-      // When active, always prefer isUpdateAvailable - updateInfo is present even when up to date.
-      if (!result) {
-        return {
-          ok: false,
-          error:
-            'Updater did not run. Install Daybook from the Setup/.dmg package to check for updates.',
-          ready: false,
-          packaged: app.isPackaged,
-          version: app.getVersion(),
-        };
-      }
-
-      const remoteVersion = result.updateInfo?.version || null;
-      const hasUpdate = Boolean(result.isUpdateAvailable);
-      const downloading = hasUpdate && Boolean(result.downloadPromise);
-
-      return {
-        ok: true,
-        updateInfo: remoteVersion ? { version: remoteVersion } : null,
-        isUpdateAvailable: hasUpdate,
-        ready: updateReady,
-        packaged: app.isPackaged,
-        version: app.getVersion(),
-        message: hasUpdate
+    const checked = await runUpdateCheck();
+    const remoteVersion = checked.updateInfo?.version || null;
+    const hasUpdate = checked.isUpdateAvailable;
+    return {
+      ...checked,
+      packaged: app.isPackaged,
+      version: app.getVersion(),
+      message: !checked.ok
+        ? checked.error || 'Update check failed.'
+        : hasUpdate
           ? updateReady
             ? `Version ${remoteVersion} is ready to install.`
-            : downloading
-              ? `Version ${remoteVersion} found - downloading…`
-              : `Version ${remoteVersion} is available.`
+            : `Version ${remoteVersion} found - downloading…`
           : `You’re on the latest version (${app.getVersion()}${
               remoteVersion ? `; feed ${remoteVersion}` : ''
             }).`,
-      };
-    } catch (err) {
-      const raw = (err as Error).message;
-      markUpdateError(raw);
-      return {
-        ok: false,
-        error: friendlyUpdateError(raw),
-        ready: false,
-        packaged: app.isPackaged,
-        version: app.getVersion(),
-      };
-    }
+    };
   });
 
   ipcMain.handle('updater:install', () => {
@@ -686,42 +746,32 @@ export function registerIpc(deps: Deps) {
       error: lastUpdateError ? friendlyUpdateError(lastUpdateError) : null,
     };
     if (!settings.onboardingComplete || !app.isPackaged) {
-      return { ...base, ok: true, isUpdateAvailable: false };
+      return { ...base, ok: true, isUpdateAvailable: false, updateInfo: null };
     }
-    try {
-      if (!autoUpdater.isUpdaterActive()) {
-        return {
-          ...base,
-          ok: false,
-          isUpdateAvailable: false,
-          error:
-            process.platform === 'darwin'
-              ? 'Automatic update isn’t available for this Mac build yet (unsigned).'
-              : 'The updater is disabled in this build.',
-        };
-      }
-      const result = await autoUpdater.checkForUpdates();
-      lastUpdateError = null;
-      if (!result) {
-        return { ...base, ok: false, isUpdateAvailable: false, error: 'Updater did not run.' };
-      }
+
+    // Prefer cached feed/event state so the launch modal works even if the
+    // background check already ran (or fired before the renderer mounted).
+    const snap = getUpdaterSnapshot();
+    if (snap.ready || (snap.isUpdateAvailable && snap.updateInfo?.version)) {
       return {
         ...base,
         ok: true,
-        isUpdateAvailable: Boolean(result.isUpdateAvailable),
-        updateInfo: result.updateInfo?.version ? { version: result.updateInfo.version } : null,
-        ready: updateReady,
-      };
-    } catch (err) {
-      const raw = (err as Error).message;
-      markUpdateError(raw);
-      return {
-        ...base,
-        ok: false,
-        isUpdateAvailable: false,
-        error: friendlyUpdateError(raw),
+        isUpdateAvailable: snap.isUpdateAvailable,
+        updateInfo: snap.updateInfo,
+        ready: snap.ready,
+        error: snap.error,
       };
     }
+
+    const checked = await runUpdateCheck();
+    return {
+      ...base,
+      ok: checked.ok,
+      isUpdateAvailable: checked.isUpdateAvailable,
+      updateInfo: checked.updateInfo,
+      ready: checked.ready,
+      error: checked.error,
+    };
   });
 
   ipcMain.handle('shell:openPath', async (_e, target: string) => shell.openPath(target));
